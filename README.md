@@ -60,6 +60,7 @@ tests/IoProbe/         타임아웃·열거 성능 점검용 콘솔
 | Ctrl+1~4 / Ctrl+Shift+1~4 | 해당 패널로 이동 / 해당 패널을 복사·이동 대상으로 고정 |
 | Ctrl+← / Ctrl+→ | 커서의 폴더를 왼쪽/오른쪽 패널에서 열기 |
 | Alt+← / Alt+→ | 뒤로 / 앞으로 |
+| Alt+↓ (또는 경로 옆 시계 버튼) | 폴더 히스토리: 자주 머문 폴더 5개 + 최근 폴더 |
 | Alt+F1 / Alt+F2 | 드라이브 선택 (2창: 왼쪽/오른쪽, 3·4창: 활성/대상 패널) |
 | Ctrl+U | 활성·대상 패널 경로 교체 |
 | Ctrl+R / Ctrl+H / Ctrl+L | 새로고침 / 숨김 파일 / 경로 입력란 |
@@ -77,6 +78,24 @@ tests/IoProbe/         타임아웃·열거 성능 점검용 콘솔
 - **드래그 앤 드롭**: 파일을 다른 패널(또는 그 안의 폴더 위)에 놓으면 복사/이동 메뉴가 뜬다.
   Ctrl 을 누른 채 놓으면 바로 복사, Shift 는 바로 이동. 탐색기와도 주고받을 수 있다.
 
+## 폴더 히스토리
+
+- 폴더를 옮기면 떠난 폴더가 **최근 폴더** 맨 앞에 들어간다 (모든 패널 공용, 중복 제거, 최대 `MaxHistory` 개).
+- 패널이 각 폴더에 머문 시간과 방문 횟수를 기록해 **자주 머문 폴더**(스마트 히스토리) 상위 `SmartCount` 개를 메뉴 맨 위에 따로 보여 준다.
+  - 점수 = (체류 분 + 방문수 × 0.5) × 0.5^(마지막 방문 후 일수 / `SmartHalfLifeDays`)
+  - 한 번 방문의 체류 시간은 `MaxDwellMinutesPerVisit` 분까지만 인정 (켜 두고 퇴근해도 왜곡되지 않게)
+  - 2회 이상 방문했거나 1분 이상 머문 폴더만 후보. 스마트 목록에 있는 폴더는 최근 목록에서 뺀다.
+  - 레이아웃에서 숨겨진 패널은 시간을 세지 않는다.
+
 ## 설정
 
-`%APPDATA%\TvCommander\settings.json` — 패널 수·배치·경로·정렬, 창 위치, `Editor`, `Terminal`.
+- `%APPDATA%\TvCommander\TvCommander.ini` — 히스토리 설정과 기록
+
+  ```ini
+  [History]
+  MaxHistory=30                 ; 최근 폴더 최대 개수 (5~500)
+  SmartCount=5                  ; 자주 머문 폴더 개수 (0 이면 끔)
+  SmartHalfLifeDays=14
+  MaxDwellMinutesPerVisit=30
+  ```
+- `%APPDATA%\TvCommander\settings.json` — 패널 수·배치·경로·정렬, 창 위치, `Editor`, `Terminal`.

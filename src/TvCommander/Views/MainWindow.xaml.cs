@@ -15,6 +15,7 @@ namespace TvCommander.Views;
 public partial class MainWindow : Window
 {
     private readonly AppSettings _settings = AppSettings.Load();
+    private readonly DirectoryHistory _history = DirectoryHistory.Load();
     private readonly List<FilePanel> _panels = new();
     private int _panelCount = 2;
     private bool _grid;
@@ -41,6 +42,7 @@ public partial class MainWindow : Window
     }
 
     public bool ShowHidden => _settings.ShowHidden;
+    public DirectoryHistory History => _history;
     public FilePanel? ActivePanel => _active;
     public FilePanel? PanelAt(int index) => index >= 0 && index < _panels.Count ? _panels[index] : null;
     private FilePanel P => _active ?? _panels[0];
@@ -71,6 +73,8 @@ public partial class MainWindow : Window
         _settings.WindowWidth = b.Width;
         _settings.WindowHeight = b.Height;
         _settings.Save();
+        foreach (var p in _panels) p.FlushDwell();
+        _history.Save();
         _searchWindow?.Close();
     }
 
@@ -146,6 +150,8 @@ public partial class MainWindow : Window
                 PanelGrid.Children.Add(p);
             }
         }
+
+        foreach (var p in _panels) p.SetShownInLayout(p.Index < count);
 
         Layout2.IsChecked = count == 2;
         Layout3.IsChecked = count == 3;
@@ -290,6 +296,7 @@ public partial class MainWindow : Window
             case (Key.Right, Alt): _ = P.GoForwardAsync(); break;
             case (Key.F1, Alt): DrivePanelFor(0).OpenDriveMenu(); break;
             case (Key.F2, Alt): DrivePanelFor(1).OpenDriveMenu(); break;
+            case (Key.Down, Alt): P.ShowHistoryMenu(); break;
 
             case (Key.U, Ctrl): CmdSwap(); break;
             case (Key.R, Ctrl): _ = P.RefreshAsync(); break;

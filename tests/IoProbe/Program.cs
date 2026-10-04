@@ -24,6 +24,28 @@ if (args is ["--hang"])
     return;
 }
 
+if (args is ["--history", var iniPath])
+{
+    // 히스토리 저장/불러오기, 스마트 순위, 최대 개수 점검
+    File.Delete(iniPath);
+    var h = TvCommander.Model.DirectoryHistory.Load(iniPath);
+    for (int i = 0; i < 40; i++) { h.RecordVisit($@"C:\tmp\d{i}"); h.AddRecent($@"C:\tmp\d{i}"); }
+    for (int i = 0; i < 3; i++) h.RecordVisit(@"C:\work\proj_a");
+    h.AddDwell(@"C:\work\proj_a", TimeSpan.FromMinutes(12));
+    h.RecordVisit(@"D:\data"); h.AddDwell(@"D:\data", TimeSpan.FromHours(5));   // 1회 최대 30분으로 잘림
+    h.RecordVisit(@"\\nas\share"); h.RecordVisit(@"\\nas\share");
+    h.AddRecent(@"C:\work\proj_a");
+    h.Save();
+
+    var r = TvCommander.Model.DirectoryHistory.Load(iniPath);
+    Console.WriteLine($"MaxHistory={r.MaxHistory} SmartCount={r.SmartCount}");
+    Console.WriteLine("-- smart");
+    foreach (var e in r.GetSmart()) Console.WriteLine($"  {e.Path}  visits={e.Visits} dwell={e.DwellSeconds:0}s");
+    var recent = r.GetRecent(r.GetSmart().Select(e => e.Path));
+    Console.WriteLine($"-- recent (smart 제외) count={recent.Count}, first={recent[0]}, last={recent[^1]}");
+    return;
+}
+
 foreach (var path in args)
 {
     var sw = Stopwatch.StartNew();

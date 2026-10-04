@@ -39,6 +39,8 @@ public partial class FilePanel : UserControl
     private int _fileCount, _dirCount, _markedFiles, _markedDirs;
     private long _totalSize, _markedSize;
     private string _freeText = "";
+    private long _dwellStart;          // 현재 폴더에 들어온 시각 (0 = 측정 안 함: 패널이 숨겨짐)
+    private bool _shownInLayout = true;
 
     public FilePanel(MainWindow host, int index)
     {
@@ -150,11 +152,13 @@ public partial class FilePanel : UserControl
             var items = await DirectoryLoader.LoadAsync(full, _host.ShowHidden, progress, cts.Token);
             if (_loadCts != cts) return false;   // 더 새로운 탐색이 시작됨
 
-            if (addHistory && CurrentPath != null && !PathUtil.Same(CurrentPath, full))
+            bool changed = !PathUtil.Same(CurrentPath, full);
+            if (addHistory && CurrentPath != null && changed)
             {
                 _back.Push(CurrentPath);
                 _forward.Clear();
             }
+            if (changed) OnFolderChanged(CurrentPath, full);
             CurrentPath = full;
             _driveLastPath[DriveKey(full)] = full;
             ApplyItems(items, focusName, marks, keepState ? oldIndex : 0);
@@ -270,6 +274,134 @@ public partial class FilePanel : UserControl
         else if (it.IsDirectory) _ = NavigateAsync(it.FullPath);
         else _host.OpenWithShell(it.FullPath);
     }
+
+    // ───────────────────────── 폴더 히스토리 ─────────────────────────
+
+    /// <summary>폴더가 바뀌면 떠난 폴더를 최근 목록에 넣고, 체류 시간과 방문을 기록한다.</summary>
+    private void OnFolderChanged(string? oldPath, string newPath)
+    {
+        var history = _host.History;
+        if (oldPath != null)
+        {
+            EndDwell(oldPath);
+            history.AddRecent(oldPath);
+        }
+        history.RecordVisit(newPath);
+        if (_shownInLayout) _dwellStart = Environment.TickCount64;
+        history.Save();
+    }
+
+    private void EndDwell(string path)
+    {
+        if (_dwellStart == 0) return;
+        _host.History.AddDwell(path, TimeSpan.FromMilliseconds(Environment.TickCount64 - _dwellStart));
+        _dwellStart = 0;
+    }
+
+    /// <summary>지금까지 머문 시간을 기록 (종료 시). 측정은 계속된다.</summary>
+    public void FlushDwell()
+    {
+        if (CurrentPath == null || _dwellStart == 0) return;
+        EndDwell(CurrentPath);
+        if (_shownInLayout) _dwellStart = Environment.TickCount64;
+    }
+
+    /// <summary>레이아웃에서 숨겨진 패널은 체류 시간을 세지 않는다.</summary>
+    public void SetShownInLayout(bool shown)
+    {
+        if (_shownInLayout == shown) return;
+        if (!shown && CurrentPath != null) EndDwell(CurrentPath);
+        _shownInLayout = shown;
+        if (shown && CurrentPath != null) _dwellStart = Environment.TickCount64;
+    }
+
+    private void History_Click(object sender, RoutedEventArgs e) => ShowHistoryMenu();
+
+    /// <summary>히스토리 메뉴: 자주 머문 폴더(스마트) → 최근 폴더</summary>
+    public void ShowHistoryMenu()
+    {
+        Activated?.Invoke(this);
+        FlushDwell();   // 지금 폴더의 체류 시간도 점수에 반영
+        var history = _host.History;
+        var smart = history.GetSmart();
+        var recent = history.GetRecent(smart.Select(s => s.Path));
+
+        var menu = new ContextMenu
+        {
+            PlacementTarget = PathBox,
+            Placement = PlacementMode.Bottom,
+            MaxHeight = 640,
+        };
+        bool chosen = false;
+
+        MenuItem Entry(string path, string? info)
+        {
+            // Header 를 TextBlock 으로: 문자열이면 '_' 가 단축키로 해석되어 사라진다
+            var item = new MenuItem
+            {
+                Header = new TextBlock { Text = path },
+                InputGestureText = info ?? "",
+                FontWeight = PathUtil.Same(path, CurrentPath) ? FontWeights.SemiBold : FontWeights.Normal,
+                ToolTip = path,
+            };
+            item.Click += async (_, _) =>
+            {
+                chosen = true;
+                await NavigateAsync(path);
+                FocusList();
+            };
+            return item;
+        }
+
+        MenuItem Title(string text) => new()
+        {
+            Header = new TextBlock { Text = text, FontWeight = FontWeights.Bold, Foreground = Brushes.DimGray },
+            IsEnabled = false,
+        };
+
+        if (smart.Count > 0)
+        {
+            menu.Items.Add(Title("★ 자주 머문 폴더"));
+            foreach (var s in smart) menu.Items.Add(Entry(s.Path, $"{s.Visits}회 · {FormatDwell(s.DwellSeconds)}"));
+            menu.Items.Add(new Separator());
+        }
+
+        menu.Items.Add(Title($"최근 폴더 ({recent.Count}/{history.MaxHistory})"));
+        if (recent.Count == 0)
+            menu.Items.Add(new MenuItem { Header = new TextBlock { Text = "(없음)" }, IsEnabled = false });
+        foreach (var p in recent) menu.Items.Add(Entry(p, null));
+
+        menu.Items.Add(new Separator());
+        var clear = new MenuItem { Header = new TextBlock { Text = "히스토리 지우기..." } };
+        clear.Click += (_, _) =>
+        {
+            chosen = true;
+            if (MessageBox.Show(Window.GetWindow(this), "최근 폴더와 자주 머문 폴더 기록을 모두 지울까요?", "히스토리 지우기",
+                    MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.Yes)
+            {
+                history.Clear();
+                history.Save();
+            }
+            FocusList();
+        };
+        menu.Items.Add(clear);
+
+        menu.Opened += (_, _) =>
+        {
+            // 키보드로 바로 고를 수 있게 첫 항목에 포커스
+            var first = menu.Items.OfType<MenuItem>().FirstOrDefault(m => m.IsEnabled);
+            first?.Focus();
+        };
+        menu.Closed += (_, _) => { if (!chosen) FocusList(); };
+        menu.IsOpen = true;
+    }
+
+    private static string FormatDwell(double seconds) => seconds switch
+    {
+        < 60 => $"{seconds:0}초",
+        < 3600 => $"{seconds / 60:0}분",
+        _ => $"{seconds / 3600:0.#}시간",
+    };
 
     // ───────────────────────── 커서 / 포커스 ─────────────────────────
 
