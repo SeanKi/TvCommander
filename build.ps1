@@ -1,7 +1,9 @@
-# TvCommander build script
-#   .\build.ps1                    Release build (C++ FmCore + WPF app)
+# MP-Commander (Multi-Pane Commander) build script
+#   .\build.ps1                    Release build (C++ FmCore + WPF app, .NET Framework 4.7.2)
 #   .\build.ps1 -Configuration Debug
-#   .\build.ps1 -Publish           self-contained publish to .\publish (no .NET install needed, compressed exe ~65 MB)
+#   .\build.ps1 -Publish           copy the runnable files to .\publish and make a release zip (~0.2 MB)
+#                                  No install needed on Windows 10 1803+ / LTSC 2019 / Windows 11
+#                                  (.NET Framework 4.7.2 is built in)
 param(
     [ValidateSet('Debug', 'Release')][string]$Configuration = 'Release',
     [switch]$Publish
@@ -18,14 +20,23 @@ Write-Host "== FmCore (C++) $Configuration" -ForegroundColor Cyan
 & $msbuild "$root\src\FmCore\FmCore.vcxproj" /p:Configuration=$Configuration /p:Platform=x64 /m /nologo /v:minimal
 if ($LASTEXITCODE) { throw 'FmCore build failed' }
 
-$proj = "$root\src\TvCommander\TvCommander.csproj"
+$proj = "$root\src\MPCommander\MPCommander.csproj"
+Write-Host "== MP-Commander build $Configuration (net472)" -ForegroundColor Cyan
+dotnet build $proj -c $Configuration --nologo -v minimal
+if ($LASTEXITCODE) { throw 'MP-Commander build failed' }
+
 if ($Publish) {
-    Write-Host "== TvCommander publish (self-contained, win-x64)" -ForegroundColor Cyan
-    dotnet publish $proj -c $Configuration -r win-x64 --self-contained true `
-        -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true `
-        -p:IncludeNativeLibrariesForSelfExtract=false -o "$root\publish" --nologo
-} else {
-    Write-Host "== TvCommander build $Configuration" -ForegroundColor Cyan
-    dotnet build $proj -c $Configuration --nologo -v minimal
+    $out = "$root\publish"
+    Write-Host "== publish -> $out" -ForegroundColor Cyan
+    if (Test-Path $out) { Remove-Item "$out\*" -Recurse -Force }
+    New-Item -ItemType Directory -Force $out | Out-Null
+    $bin = "$root\src\MPCommander\bin\$Configuration\net472"
+    Copy-Item "$bin\MP-Commander.exe", "$bin\MP-Commander.exe.config", "$bin\FmCore.dll" $out
+
+    # 릴리스용 zip: MP-Commander-<version>-win-x64.zip
+    $version = (Get-Item "$out\MP-Commander.exe").VersionInfo.ProductVersion -replace '\+.*$', ''
+    $zip = "$root\MP-Commander-$version-win-x64.zip"
+    if (Test-Path $zip) { Remove-Item $zip }
+    Compress-Archive -Path "$out\*" -DestinationPath $zip
+    Get-ChildItem $out, $zip | Format-Table Name, Length -AutoSize
 }
-if ($LASTEXITCODE) { throw 'TvCommander build failed' }

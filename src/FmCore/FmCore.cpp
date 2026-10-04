@@ -1,4 +1,4 @@
-// FmCore.cpp - TvCommander 네이티브 파일시스템 모듈
+﻿// FmCore.cpp - MP-Commander 네이티브 파일시스템 모듈
 #include "FmCore.h"
 
 #include <windows.h>

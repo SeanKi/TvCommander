@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 using System.IO.Pipes;
-using TvCommander.IO;
+using MPCommander.IO;
 
 // 사용법: IoProbe <경로>...   각 경로를 DirectoryLoader 로 열어 결과와 걸린 시간을 출력한다.
 //        IoProbe --hang      응답 없는 동기 I/O(파이프 읽기)를 GuardedIo 가 끊어내는지 확인한다.
@@ -12,8 +12,9 @@ if (args is ["--hang"])
     {
         await GuardedIo.RunAsync(_ =>
         {
-            using var fs = new FileStream(@"\\.\pipe\tvc-hang", FileMode.Open, FileAccess.Read);
-            return fs.Read(new byte[16], 0, 16);   // 서버가 아무것도 안 보내므로 영원히 대기
+            using var pipe = new NamedPipeClientStream(".", "tvc-hang", PipeDirection.In);
+            pipe.Connect(1000);
+            return pipe.Read(new byte[16], 0, 16);   // 서버가 아무것도 안 보내므로 영원히 대기 (동기 ReadFile)
         }, 3000, "pipe");
         Console.WriteLine("UNEXPECTED: read returned");
     }
@@ -33,7 +34,7 @@ if (args is ["--zip"])
     Directory.CreateDirectory(Path.Combine(src, "하위", "빈폴더"));
     var rnd = new Random(7);
     var files = new Dictionary<string, byte[]> { ["큰파일.bin"] = new byte[5_000_000], [@"하위\메모.txt"] = System.Text.Encoding.UTF8.GetBytes("안녕하세요 zip") };
-    foreach (var (n, d) in files) { if (d.Length > 100) rnd.NextBytes(d); File.WriteAllBytes(Path.Combine(src, n), d); }
+    foreach (var kv in files) { if (kv.Value.Length > 100) rnd.NextBytes(kv.Value); File.WriteAllBytes(Path.Combine(src, kv.Key), kv.Value); }
 
     var zipPath = Path.Combine(work, "자료.zip");
     var sw = Stopwatch.StartNew();
@@ -45,8 +46,8 @@ if (args is ["--zip"])
     var ex = ZipOperation.Extract(zipPath, outDir);
     ex.AskError = (p, m) => { Console.WriteLine($"  extract error: {m} ({p})"); return ErrorChoice.Skip; };
     await ex.RunAsync();
-    Console.WriteLine($"  extracted: {string.Join(", ", Directory.EnumerateFileSystemEntries(outDir, "*", SearchOption.AllDirectories).Select(x => Path.GetRelativePath(outDir, x)))}");
-    bool same = files.All(f => File.ReadAllBytes(Path.Combine(outDir, "자료", f.Key)).AsSpan().SequenceEqual(f.Value));
+    Console.WriteLine($"  extracted: {string.Join(", ", Directory.EnumerateFileSystemEntries(outDir, "*", SearchOption.AllDirectories).Select(x => x.Substring(outDir.Length + 1)))}");
+    bool same = files.All(f => File.ReadAllBytes(Path.Combine(outDir, "자료", f.Key)).SequenceEqual(f.Value));
     Console.WriteLine($"extract: files {ex.DoneFiles}/{ex.TotalFiles}, errors {ex.Errors}, identical {same}, empty dir kept {Directory.Exists(Path.Combine(outDir, "자료", "하위", "빈폴더"))}");
 
     // CP949 이름 (UTF-8 표시 없음)
@@ -79,9 +80,9 @@ if (args is ["--zip"])
 if (args is ["--mtp-roundtrip", var device])
 {
     // 휴대폰 왕복 점검: PC 폴더 → 폰 (FileOperation) → PC, 바이트 비교, 이름 바꾸기, 정리
-    var phoneRoot = TvCommander.IO.Mtp.Prefix + device;
-    var storages = await GuardedIo.RunAsync(ctx => TvCommander.IO.Mtp.List(phoneRoot, true, ctx), 10000, phoneRoot);
-    var testDir = TvCommander.Model.PathUtil.Combine(TvCommander.Model.PathUtil.Combine(phoneRoot, storages[0].Name), "Download/TvCommander_test");
+    var phoneRoot = MPCommander.IO.Mtp.Prefix + device;
+    var storages = await GuardedIo.RunAsync(ctx => MPCommander.IO.Mtp.List(phoneRoot, true, ctx), 10000, phoneRoot);
+    var testDir = MPCommander.Model.PathUtil.Combine(MPCommander.Model.PathUtil.Combine(phoneRoot, storages[0].Name), "Download/MPCommander_test");
 
     var work = Path.Combine(Path.GetTempPath(), "tvc-mtp-test");
     if (Directory.Exists(work)) Directory.Delete(work, true);
@@ -89,7 +90,7 @@ if (args is ["--mtp-roundtrip", var device])
     Directory.CreateDirectory(Path.Combine(src, "sub"));
     var rnd = new Random(42);
     var files = new Dictionary<string, byte[]> { ["a.bin"] = new byte[3 * 1024 * 1024], ["한글 이름.txt"] = new byte[1234], [@"sub\c.dat"] = new byte[70_000] };
-    foreach (var (name, data) in files) { rnd.NextBytes(data); File.WriteAllBytes(Path.Combine(src, name), data); }
+    foreach (var kv in files) { rnd.NextBytes(kv.Value); File.WriteAllBytes(Path.Combine(src, kv.Key), kv.Value); }
 
     async Task Run(OpKind kind, string from, string to)
     {
@@ -105,28 +106,28 @@ if (args is ["--mtp-roundtrip", var device])
 
     try
     {
-        await GuardedIo.RunAsync(_ => TvCommander.IO.Mtp.EnsureFolder(testDir), 10000, testDir);
+        await GuardedIo.RunAsync(_ => MPCommander.IO.Mtp.EnsureFolder(testDir), 10000, testDir);
         await Run(OpKind.Copy, src, testDir + "/");                                  // PC → 폰
         var back = Path.Combine(work, "back");
         Directory.CreateDirectory(back);
         await Run(OpKind.Copy, testDir + "/pack", back + "\\");                       // 폰 → PC
-        bool same = files.All(f => File.ReadAllBytes(Path.Combine(back, "pack", f.Key)).AsSpan().SequenceEqual(f.Value));
+        bool same = files.All(f => File.ReadAllBytes(Path.Combine(back, "pack", f.Key)).SequenceEqual(f.Value));
         Console.WriteLine($"  bytes identical after round trip: {same}");
 
         await Run(OpKind.Copy, src, testDir + "/");                                  // 덮어쓰기
         try
         {
-            TvCommander.IO.Mtp.Rename(testDir + "/pack/a.bin", "a2.bin");
-            var names = TvCommander.IO.Mtp.ListChildren(testDir + "/pack").Select(e => e.Name);
+            MPCommander.IO.Mtp.Rename(testDir + "/pack/a.bin", "a2.bin");
+            var names = MPCommander.IO.Mtp.ListChildren(testDir + "/pack").Select(e => e.Name);
             Console.WriteLine($"  rename: {string.Join(", ", names)}");
         }
         catch (Exception ex) { Console.WriteLine($"  rename not supported: {ex.Message}"); }
     }
     finally
     {
-        try { TvCommander.IO.Mtp.Delete(testDir, recursive: true); Console.WriteLine("  cleanup: test folder deleted"); }
+        try { MPCommander.IO.Mtp.Delete(testDir, recursive: true); Console.WriteLine("  cleanup: test folder deleted"); }
         catch (Exception ex) { Console.WriteLine($"  cleanup FAILED: {ex.Message}"); }
-        var left = TvCommander.IO.Mtp.ListChildren(TvCommander.Model.PathUtil.Parent(testDir)!).Any(e => e.Name == "TvCommander_test");
+        var left = MPCommander.IO.Mtp.ListChildren(MPCommander.Model.PathUtil.Parent(testDir)!).Any(e => e.Name == "MPCommander_test");
         Console.WriteLine($"  test folder still on phone: {left}");
         Directory.Delete(work, true);
     }
@@ -137,35 +138,35 @@ if (args is ["--mtp", ..])
     // 경로 도우미 점검
     string[][] cases =
     {
-        new[] { "Parent", TvCommander.Model.PathUtil.Parent("mtp://Galaxy S23/내장 저장공간/DCIM") ?? "(null)", "mtp://Galaxy S23/내장 저장공간" },
-        new[] { "ParentRoot", TvCommander.Model.PathUtil.Parent("mtp://Galaxy S23") ?? "(null)", "(null)" },
-        new[] { "Root", TvCommander.Model.PathUtil.Root("mtp://Galaxy S23/내장 저장공간/DCIM"), "mtp://Galaxy S23" },
-        new[] { "Normalize", TvCommander.Model.PathUtil.Normalize(@"mtp://Galaxy S23\내장 저장공간//DCIM/../Download/"), "mtp://Galaxy S23/내장 저장공간/Download" },
-        new[] { "Relative", TvCommander.Model.PathUtil.Normalize("Camera", "mtp://Galaxy S23/내장 저장공간/DCIM"), "mtp://Galaxy S23/내장 저장공간/DCIM/Camera" },
-        new[] { "Combine", TvCommander.Model.PathUtil.Combine("mtp://P/S", "a.jpg"), "mtp://P/S/a.jpg" },
-        new[] { "LocalParent", TvCommander.Model.PathUtil.Parent(@"C:\a\b") ?? "(null)", @"C:\a" },
+        new[] { "Parent", MPCommander.Model.PathUtil.Parent("mtp://Galaxy S23/내장 저장공간/DCIM") ?? "(null)", "mtp://Galaxy S23/내장 저장공간" },
+        new[] { "ParentRoot", MPCommander.Model.PathUtil.Parent("mtp://Galaxy S23") ?? "(null)", "(null)" },
+        new[] { "Root", MPCommander.Model.PathUtil.Root("mtp://Galaxy S23/내장 저장공간/DCIM"), "mtp://Galaxy S23" },
+        new[] { "Normalize", MPCommander.Model.PathUtil.Normalize(@"mtp://Galaxy S23\내장 저장공간//DCIM/../Download/"), "mtp://Galaxy S23/내장 저장공간/Download" },
+        new[] { "Relative", MPCommander.Model.PathUtil.Normalize("Camera", "mtp://Galaxy S23/내장 저장공간/DCIM"), "mtp://Galaxy S23/내장 저장공간/DCIM/Camera" },
+        new[] { "Combine", MPCommander.Model.PathUtil.Combine("mtp://P/S", "a.jpg"), "mtp://P/S/a.jpg" },
+        new[] { "LocalParent", MPCommander.Model.PathUtil.Parent(@"C:\a\b") ?? "(null)", @"C:\a" },
     };
     foreach (var c in cases) Console.WriteLine($"{(c[1] == c[2] ? "PASS" : "FAIL")}  {c[0]}: {c[1]}");
 
     var sw = Stopwatch.StartNew();
-    var devices = TvCommander.IO.Mtp.ListDevices();
+    var devices = MPCommander.IO.Mtp.ListDevices();
     Console.WriteLine($"devices: {devices.Count} ({sw.ElapsedMilliseconds} ms)");
     foreach (var d in devices)
     {
         Console.WriteLine($"  [{d.Name}]  {d.Id}");
         try
         {
-            var root = TvCommander.IO.Mtp.Prefix + d.Name;
+            var root = MPCommander.IO.Mtp.Prefix + d.Name;
             sw.Restart();
-            var storages = await GuardedIo.RunAsync(ctx => TvCommander.IO.Mtp.List(root, true, ctx), 10000, root, onTimeout: () => TvCommander.IO.Mtp.Abandon(root));
+            var storages = await GuardedIo.RunAsync(ctx => MPCommander.IO.Mtp.List(root, true, ctx), 10000, root, onTimeout: () => MPCommander.IO.Mtp.Abandon(root));
             Console.WriteLine($"    storages: {string.Join(", ", storages.Select(s => s.Name))} ({sw.ElapsedMilliseconds} ms)");
             if (storages.Count > 0)
             {
-                var first = TvCommander.Model.PathUtil.Combine(root, storages[0].Name);
+                var first = MPCommander.Model.PathUtil.Combine(root, storages[0].Name);
                 sw.Restart();
-                var items = await GuardedIo.RunAsync(ctx => TvCommander.IO.Mtp.List(first, true, ctx), 10000, first, onTimeout: () => TvCommander.IO.Mtp.Abandon(first));
+                var items = await GuardedIo.RunAsync(ctx => MPCommander.IO.Mtp.List(first, true, ctx), 10000, first, onTimeout: () => MPCommander.IO.Mtp.Abandon(first));
                 Console.WriteLine($"    {first}: {items.Count} items ({sw.ElapsedMilliseconds} ms)  e.g. {string.Join(", ", items.Take(6).Select(i => i.Name))}");
-                Console.WriteLine($"    storage info: {TvCommander.IO.Mtp.StorageInfo(first)}");
+                Console.WriteLine($"    storage info: {MPCommander.IO.Mtp.StorageInfo(first)}");
             }
         }
         catch (Exception ex) { Console.WriteLine($"    FAIL {ex.GetType().Name}: {ex.Message}"); }
@@ -176,7 +177,7 @@ if (args is ["--history", var iniPath])
 {
     // 히스토리 저장/불러오기, 스마트 순위, 최대 개수 점검
     File.Delete(iniPath);
-    var h = TvCommander.Model.DirectoryHistory.Load(iniPath);
+    var h = MPCommander.Model.DirectoryHistory.Load(iniPath);
     for (int i = 0; i < 40; i++) { h.RecordVisit($@"C:\tmp\d{i}"); h.AddRecent($@"C:\tmp\d{i}"); }
     for (int i = 0; i < 3; i++) h.RecordVisit(@"C:\work\proj_a");
     h.AddDwell(@"C:\work\proj_a", TimeSpan.FromMinutes(12));
@@ -185,7 +186,7 @@ if (args is ["--history", var iniPath])
     h.AddRecent(@"C:\work\proj_a");
     h.Save();
 
-    var r = TvCommander.Model.DirectoryHistory.Load(iniPath);
+    var r = MPCommander.Model.DirectoryHistory.Load(iniPath);
     Console.WriteLine($"MaxHistory={r.MaxHistory} SmartCount={r.SmartCount}");
     Console.WriteLine("-- smart");
     foreach (var e in r.GetSmart()) Console.WriteLine($"  {e.Path}  visits={e.Visits} dwell={e.DwellSeconds:0}s");

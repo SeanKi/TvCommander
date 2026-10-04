@@ -1,4 +1,4 @@
-// FmCore - TvCommander 네이티브 파일시스템 모듈 (C ABI)
+﻿// FmCore - MP-Commander 네이티브 파일시스템 모듈 (C ABI)
 #pragma once
 #include <stdint.h>
 

@@ -1,19 +1,28 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- 먹통 방지 / 열거 성능 점검용 콘솔. 앱의 IO·Model·Native 소스를 그대로 컴파일한다. -->
+  <!-- 먹통 방지 / 열거 성능 / 휴대폰 / ZIP 점검용 콘솔. 앱의 IO·Model·Native 소스를 그대로 컴파일한다. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net472</TargetFramework>
     <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <ImplicitUsings>disable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\src\TvCommander\GlobalUsings.cs" />
-    <Compile Include="..\..\src\TvCommander\IO\*.cs" />
-    <Compile Include="..\..\src\TvCommander\Model\*.cs" />
-    <Compile Include="..\..\src\TvCommander\Native\*.cs" />
+    <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Runtime.Serialization" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\MPCommander\GlobalUsings.cs" />
+    <Compile Include="..\..\src\MPCommander\Compat.cs" />
+    <Compile Include="..\..\src\MPCommander\IO\*.cs" />
+    <Compile Include="..\..\src\MPCommander\Model\*.cs" />
+    <Compile Include="..\..\src\MPCommander\Native\*.cs" />
   </ItemGroup>
   <Target Name="CopyNativeDll" AfterTargets="Build">
     <Copy SourceFiles="$(MSBuildThisFileDirectory)..\..\build\Release\FmCore.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />

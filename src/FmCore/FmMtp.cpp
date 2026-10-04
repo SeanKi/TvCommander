@@ -1,4 +1,4 @@
-// FmMtp.cpp - MTP(안드로이드폰 등) 지원. Windows Portable Devices(WPD) API 사용.
+﻿// FmMtp.cpp - MTP(안드로이드폰 등) 지원. Windows Portable Devices(WPD) API 사용.
 #include "FmCore.h"
 
 #include <windows.h>
@@ -44,7 +44,7 @@ HRESULT MakeClientInfo(DWORD access, ComPtr<IPortableDeviceValues>& info)
 {
     HRESULT hr = CoCreateInstance(CLSID_PortableDeviceValues, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&info));
     if (FAILED(hr)) return hr;
-    info->SetStringValue(WPD_CLIENT_NAME, L"TvCommander");
+    info->SetStringValue(WPD_CLIENT_NAME, L"MP-Commander");
     info->SetUnsignedIntegerValue(WPD_CLIENT_MAJOR_VERSION, 0);
     info->SetUnsignedIntegerValue(WPD_CLIENT_MINOR_VERSION, 2);
     info->SetUnsignedIntegerValue(WPD_CLIENT_REVISION, 0);

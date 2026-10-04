@@ -1,25 +1,27 @@
-# TvCommander
+# MP-Commander (Multi-Pane Commander)
 
-Double Commander 스타일의 멀티 패널(2·3·4·6·8창) 파일 매니저. WPF(.NET 8) + C++ 네이티브 모듈(FmCore.dll).
+Double Commander 스타일의 멀티 패널(2·3·4·6·8창) 파일 매니저. WPF(.NET Framework 4.7.2) + C++ 네이티브 모듈(FmCore.dll).
 
 ## 빌드 / 배포
 
 ```powershell
 .\build.ps1                 # Release 빌드 (C++ FmCore → WPF 앱)
-.\build.ps1 -Publish        # .\publish 에 self-contained 배포본 (.NET 설치 불필요, 압축 exe 약 65 MB)
+.\build.ps1 -Publish        # .\publish 에 실행 파일 3개 복사 (약 0.4 MB)
 ```
 
-- 필요: Visual Studio 2022 (C++ 데스크톱 워크로드), .NET 8 이상 SDK
-- Visual Studio 에서는 `TvCommander.sln` 을 열고 x64 로 빌드 (FmCore 가 먼저 빌드됨)
+- 빌드에 필요: Visual Studio 2022 (C++ 데스크톱 워크로드), .NET SDK (8 이상, 빌드 도구로만 사용)
+- Visual Studio 에서는 `MP-Commander.sln` 을 열고 x64 로 빌드 (FmCore 가 먼저 빌드됨)
 - FmCore 는 정적 CRT(/MT) 로 빌드되어 VC++ 재배포 패키지가 필요 없다
-- 배포본: `TvCommander.exe` + `FmCore.dll` 두 파일을 같은 폴더에 두면 끝
+- 배포본: `MP-Commander.exe` + `MP-Commander.exe.config` + `FmCore.dll` 세 파일(약 0.4 MB)을 같은 폴더에 두면 끝
+- 실행 환경: .NET Framework 4.7.2 가 기본 내장된 Windows 10 1803 이후(LTSC 2019 포함)·Windows 11 은 추가 설치 없음.
+  그보다 오래된 Windows 10 은 .NET Framework 4.7.2 이상 설치 필요.
 
 ## 구조
 
 ```
 src/FmCore/            C++ DLL — 디렉터리 열거, 복사/이동(CopyFileEx), 셸 삭제, 아이콘,
                        멀티스레드 파일 찾기(I/O 워치독 내장), 자연 정렬
-src/TvCommander/
+src/MPCommander/
   Native/              P/Invoke 선언
   IO/                  GuardedIo(먹통 방지 실행기), NetworkHealth(사전 통신 체크),
                        DirectoryLoader, FileOperation(복사/이동 엔진)
@@ -95,12 +97,12 @@ tests/IoProbe/         타임아웃·열거 성능 점검용 콘솔
 - Enter: 프로그램(.exe)은 바로 실행, 문서·바로 가기는 연결 프로그램으로, 내부 명령(dir, copy, echo...)과 배치 파일은 cmd 창에서 실행하고 창을 남긴다.
 - Shift+Enter: 항상 cmd 창에서 실행하고 창을 남긴다.
 - `cd 경로`, `cd..`, `cd \`, `D:` 는 실행하지 않고 활성 패널을 이동한다 (`%TEMP%` 같은 환경 변수도 됨).
-- ↑↓ 또는 Alt+↓ 로 이전 명령 (최근 50개, settings.json `CommandHistory`), Esc 는 지우고 목록으로.
+- ↑↓ 또는 Alt+↓ 로 이전 명령 (최근 50개, settings.ini `[CommandHistory]`), Esc 는 지우고 목록으로.
 - 네트워크 폴더는 실행 전에 서버 응답을 확인하고, UNC 폴더에서 cmd 를 쓸 때는 `pushd` 로 임시 드라이브를 잡는다. 휴대폰 폴더에서는 실행하지 않는다.
 
 ## 오른쪽 버튼 메뉴
 
-- 위쪽: TvCommander 명령 (보기, 편집, 대상 패널로 복사/이동, 이름 바꾸기, 경로·이름 복사, ZIP 압축/풀기).
+- 위쪽: MP-Commander 명령 (보기, 편집, 대상 패널로 복사/이동, 이름 바꾸기, 경로·이름 복사, ZIP 압축/풀기).
 - 아래쪽: **탐색기와 같은 셸 메뉴** — 7-Zip·반디집 압축, 보내기, 연결 프로그램, 잘라내기/복사, 삭제, 속성, Git 등 설치된 확장이 그대로 나온다. Shift 를 누른 채 열면 확장 메뉴(경로로 복사 등)도 보인다.
 - 빈 곳을 누르면 폴더 메뉴 (새 폴더, 새로고침, 경로 복사, 터미널 + 셸의 붙여넣기·속성 등).
 - 표시된 항목(빨간색) 위에서 누르면 표시된 항목 전체, 아니면 누른 항목 하나가 대상이다.
@@ -137,7 +139,7 @@ tests/IoProbe/         타임아웃·열거 성능 점검용 콘솔
 
 ## 설정
 
-- `%APPDATA%\TvCommander\TvCommander.ini` — 히스토리 설정과 기록
+- `%APPDATA%\MP-Commander\MP-Commander.ini` — 히스토리 설정과 기록
 
   ```ini
   [History]
@@ -146,4 +148,5 @@ tests/IoProbe/         타임아웃·열거 성능 점검용 콘솔
   SmartHalfLifeDays=14
   MaxDwellMinutesPerVisit=30
   ```
-- `%APPDATA%\TvCommander\settings.json` — 패널 수·배치·경로·정렬, 창 위치, `Editor`, `Terminal`.
+- `%APPDATA%\MP-Commander\settings.ini` — 패널 수·배치·경로·정렬, 창 위치, `Editor`, `Terminal`, 명령줄 기록.
+  (0.4.0 이전의 `settings.json` 은 처음 실행할 때 옮겨 오고 `settings.json.migrated` 로 이름을 바꾼다.)
