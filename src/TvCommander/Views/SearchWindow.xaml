@@ -41,7 +41,7 @@
             <TextBlock x:Name="StatusText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
         </DockPanel>
 
-        <ListView x:Name="ResultList" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+        <ListView x:Name="ResultList" FontSize="{DynamicResource ListFontSize}" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                   MouseDoubleClick="ResultList_MouseDoubleClick" KeyDown="ResultList_KeyDown">
             <ListView.View>
                 <GridView>

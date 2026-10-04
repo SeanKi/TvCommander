@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Runtime.InteropServices;
 using TvCommander.Native;
 
@@ -56,8 +56,9 @@ public sealed class IoContext
 /// </summary>
 public static class GuardedIo
 {
+    /// <param name="onTimeout">타임아웃/취소 시 추가로 할 일 (예: MTP 기기 작업 취소)</param>
     public static Task<T> RunAsync<T>(Func<IoContext, T> work, int idleTimeoutMs, string? target,
-                                      CancellationToken ct = default, bool sta = false)
+                                      CancellationToken ct = default, bool sta = false, Action? onTimeout = null)
     {
         var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
         var ctx = new IoContext();
@@ -107,6 +108,7 @@ public static class GuardedIo
                     if (!finished && handle != IntPtr.Zero)
                         NativeMethods.FmCancelThreadIo(handle);
                 }
+                try { onTimeout?.Invoke(); } catch { }
                 return;
             }
         }

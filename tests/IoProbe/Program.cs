@@ -24,6 +24,154 @@ if (args is ["--hang"])
     return;
 }
 
+if (args is ["--zip"])
+{
+    // 내장 ZIP 압축/풀기 점검: 한글 이름, 하위 폴더, 빈 폴더, CP949 이름 ZIP
+    var work = Path.Combine(Path.GetTempPath(), "tvc-zip-test");
+    if (Directory.Exists(work)) Directory.Delete(work, true);
+    var src = Path.Combine(work, "자료");
+    Directory.CreateDirectory(Path.Combine(src, "하위", "빈폴더"));
+    var rnd = new Random(7);
+    var files = new Dictionary<string, byte[]> { ["큰파일.bin"] = new byte[5_000_000], [@"하위\메모.txt"] = System.Text.Encoding.UTF8.GetBytes("안녕하세요 zip") };
+    foreach (var (n, d) in files) { if (d.Length > 100) rnd.NextBytes(d); File.WriteAllBytes(Path.Combine(src, n), d); }
+
+    var zipPath = Path.Combine(work, "자료.zip");
+    var sw = Stopwatch.StartNew();
+    var pack = ZipOperation.Pack(new[] { src }, zipPath);
+    await pack.RunAsync();
+    Console.WriteLine($"pack: files {pack.DoneFiles}/{pack.TotalFiles}, errors {pack.Errors}, {new FileInfo(zipPath).Length:N0} B, {sw.ElapsedMilliseconds} ms, temp left: {File.Exists(zipPath + ".tvc-tmp")}");
+
+    var outDir = Path.Combine(work, "풀기");
+    var ex = ZipOperation.Extract(zipPath, outDir);
+    ex.AskError = (p, m) => { Console.WriteLine($"  extract error: {m} ({p})"); return ErrorChoice.Skip; };
+    await ex.RunAsync();
+    Console.WriteLine($"  extracted: {string.Join(", ", Directory.EnumerateFileSystemEntries(outDir, "*", SearchOption.AllDirectories).Select(x => Path.GetRelativePath(outDir, x)))}");
+    bool same = files.All(f => File.ReadAllBytes(Path.Combine(outDir, "자료", f.Key)).AsSpan().SequenceEqual(f.Value));
+    Console.WriteLine($"extract: files {ex.DoneFiles}/{ex.TotalFiles}, errors {ex.Errors}, identical {same}, empty dir kept {Directory.Exists(Path.Combine(outDir, "자료", "하위", "빈폴더"))}");
+
+    // CP949 이름 (UTF-8 표시 없음)
+    var legacyZip = Path.Combine(work, "legacy.zip");
+    using (var fs = File.Create(legacyZip))
+    using (var z = new System.IO.Compression.ZipArchive(fs, System.IO.Compression.ZipArchiveMode.Create, false, System.Text.Encoding.GetEncoding(949)))
+    using (var w = new StreamWriter(z.CreateEntry("한글폴더/보고서.txt").Open())) w.Write("cp949");
+    var ex2 = ZipOperation.Extract(legacyZip, Path.Combine(work, "legacy"));
+    await ex2.RunAsync();
+    Console.WriteLine($"cp949 names decoded: {File.Exists(Path.Combine(work, "legacy", "한글폴더", "보고서.txt"))}");
+
+    // zip slip 방지
+    var evil = Path.Combine(work, "evil.zip");
+    using (var fs = File.Create(evil))
+    using (var z = new System.IO.Compression.ZipArchive(fs, System.IO.Compression.ZipArchiveMode.Create))
+    using (var w = new StreamWriter(z.CreateEntry("../../escaped.txt").Open())) w.Write("x");
+    var ex3 = ZipOperation.Extract(evil, Path.Combine(work, "evil"));
+    ex3.AskError = (p, m) => { Console.WriteLine($"  blocked: {p} ({m})"); return ErrorChoice.Skip; };
+    await ex3.RunAsync();
+    Console.WriteLine($"zip slip escaped file exists: {File.Exists(Path.Combine(Path.GetTempPath(), "escaped.txt"))}");
+
+    // 취소하면 깨진 zip 이 안 남는다
+    var cancelZip = Path.Combine(work, "cancel.zip");
+    var pc = ZipOperation.Pack(new[] { src }, cancelZip);
+    var run = pc.RunAsync(); pc.Cancel(); await run;
+    Console.WriteLine($"cancelled pack leaves zip: {File.Exists(cancelZip)}, temp: {File.Exists(cancelZip + ".tvc-tmp")}");
+    Directory.Delete(work, true);
+    return;
+}
+if (args is ["--mtp-roundtrip", var device])
+{
+    // 휴대폰 왕복 점검: PC 폴더 → 폰 (FileOperation) → PC, 바이트 비교, 이름 바꾸기, 정리
+    var phoneRoot = TvCommander.IO.Mtp.Prefix + device;
+    var storages = await GuardedIo.RunAsync(ctx => TvCommander.IO.Mtp.List(phoneRoot, true, ctx), 10000, phoneRoot);
+    var testDir = TvCommander.Model.PathUtil.Combine(TvCommander.Model.PathUtil.Combine(phoneRoot, storages[0].Name), "Download/TvCommander_test");
+
+    var work = Path.Combine(Path.GetTempPath(), "tvc-mtp-test");
+    if (Directory.Exists(work)) Directory.Delete(work, true);
+    var src = Path.Combine(work, "src", "pack");
+    Directory.CreateDirectory(Path.Combine(src, "sub"));
+    var rnd = new Random(42);
+    var files = new Dictionary<string, byte[]> { ["a.bin"] = new byte[3 * 1024 * 1024], ["한글 이름.txt"] = new byte[1234], [@"sub\c.dat"] = new byte[70_000] };
+    foreach (var (name, data) in files) { rnd.NextBytes(data); File.WriteAllBytes(Path.Combine(src, name), data); }
+
+    async Task Run(OpKind kind, string from, string to)
+    {
+        var op = new FileOperation(kind, new[] { from }, to)
+        {
+            AskError = (p, m) => { Console.WriteLine($"    error: {m} ({p})"); return ErrorChoice.Skip; },
+            AskConflict = _ => ConflictChoice.Overwrite,
+        };
+        var sw = Stopwatch.StartNew();
+        await op.RunAsync();
+        Console.WriteLine($"  {kind} {from} -> {to}: files {op.DoneFiles}/{op.TotalFiles}, {op.DoneBytes:N0} B, errors {op.Errors}, {sw.ElapsedMilliseconds} ms");
+    }
+
+    try
+    {
+        await GuardedIo.RunAsync(_ => TvCommander.IO.Mtp.EnsureFolder(testDir), 10000, testDir);
+        await Run(OpKind.Copy, src, testDir + "/");                                  // PC → 폰
+        var back = Path.Combine(work, "back");
+        Directory.CreateDirectory(back);
+        await Run(OpKind.Copy, testDir + "/pack", back + "\\");                       // 폰 → PC
+        bool same = files.All(f => File.ReadAllBytes(Path.Combine(back, "pack", f.Key)).AsSpan().SequenceEqual(f.Value));
+        Console.WriteLine($"  bytes identical after round trip: {same}");
+
+        await Run(OpKind.Copy, src, testDir + "/");                                  // 덮어쓰기
+        try
+        {
+            TvCommander.IO.Mtp.Rename(testDir + "/pack/a.bin", "a2.bin");
+            var names = TvCommander.IO.Mtp.ListChildren(testDir + "/pack").Select(e => e.Name);
+            Console.WriteLine($"  rename: {string.Join(", ", names)}");
+        }
+        catch (Exception ex) { Console.WriteLine($"  rename not supported: {ex.Message}"); }
+    }
+    finally
+    {
+        try { TvCommander.IO.Mtp.Delete(testDir, recursive: true); Console.WriteLine("  cleanup: test folder deleted"); }
+        catch (Exception ex) { Console.WriteLine($"  cleanup FAILED: {ex.Message}"); }
+        var left = TvCommander.IO.Mtp.ListChildren(TvCommander.Model.PathUtil.Parent(testDir)!).Any(e => e.Name == "TvCommander_test");
+        Console.WriteLine($"  test folder still on phone: {left}");
+        Directory.Delete(work, true);
+    }
+    return;
+}
+if (args is ["--mtp", ..])
+{
+    // 경로 도우미 점검
+    string[][] cases =
+    {
+        new[] { "Parent", TvCommander.Model.PathUtil.Parent("mtp://Galaxy S23/내장 저장공간/DCIM") ?? "(null)", "mtp://Galaxy S23/내장 저장공간" },
+        new[] { "ParentRoot", TvCommander.Model.PathUtil.Parent("mtp://Galaxy S23") ?? "(null)", "(null)" },
+        new[] { "Root", TvCommander.Model.PathUtil.Root("mtp://Galaxy S23/내장 저장공간/DCIM"), "mtp://Galaxy S23" },
+        new[] { "Normalize", TvCommander.Model.PathUtil.Normalize(@"mtp://Galaxy S23\내장 저장공간//DCIM/../Download/"), "mtp://Galaxy S23/내장 저장공간/Download" },
+        new[] { "Relative", TvCommander.Model.PathUtil.Normalize("Camera", "mtp://Galaxy S23/내장 저장공간/DCIM"), "mtp://Galaxy S23/내장 저장공간/DCIM/Camera" },
+        new[] { "Combine", TvCommander.Model.PathUtil.Combine("mtp://P/S", "a.jpg"), "mtp://P/S/a.jpg" },
+        new[] { "LocalParent", TvCommander.Model.PathUtil.Parent(@"C:\a\b") ?? "(null)", @"C:\a" },
+    };
+    foreach (var c in cases) Console.WriteLine($"{(c[1] == c[2] ? "PASS" : "FAIL")}  {c[0]}: {c[1]}");
+
+    var sw = Stopwatch.StartNew();
+    var devices = TvCommander.IO.Mtp.ListDevices();
+    Console.WriteLine($"devices: {devices.Count} ({sw.ElapsedMilliseconds} ms)");
+    foreach (var d in devices)
+    {
+        Console.WriteLine($"  [{d.Name}]  {d.Id}");
+        try
+        {
+            var root = TvCommander.IO.Mtp.Prefix + d.Name;
+            sw.Restart();
+            var storages = await GuardedIo.RunAsync(ctx => TvCommander.IO.Mtp.List(root, true, ctx), 10000, root, onTimeout: () => TvCommander.IO.Mtp.Abandon(root));
+            Console.WriteLine($"    storages: {string.Join(", ", storages.Select(s => s.Name))} ({sw.ElapsedMilliseconds} ms)");
+            if (storages.Count > 0)
+            {
+                var first = TvCommander.Model.PathUtil.Combine(root, storages[0].Name);
+                sw.Restart();
+                var items = await GuardedIo.RunAsync(ctx => TvCommander.IO.Mtp.List(first, true, ctx), 10000, first, onTimeout: () => TvCommander.IO.Mtp.Abandon(first));
+                Console.WriteLine($"    {first}: {items.Count} items ({sw.ElapsedMilliseconds} ms)  e.g. {string.Join(", ", items.Take(6).Select(i => i.Name))}");
+                Console.WriteLine($"    storage info: {TvCommander.IO.Mtp.StorageInfo(first)}");
+            }
+        }
+        catch (Exception ex) { Console.WriteLine($"    FAIL {ex.GetType().Name}: {ex.Message}"); }
+    }
+    return;
+}
 if (args is ["--history", var iniPath])
 {
     // 히스토리 저장/불러오기, 스마트 순위, 최대 개수 점검

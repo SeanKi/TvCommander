@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Threading;
 using TvCommander.IO;
@@ -10,12 +10,12 @@ public partial class ProgressWindow : Window
 {
     private const int StallWarningMs = 5000;
 
-    private readonly FileOperation _op;
+    private readonly ProgressOperation _op;
     private readonly DispatcherTimer _timer;
     private readonly long _startTick = Environment.TickCount64;
     private bool _finished;
 
-    public ProgressWindow(FileOperation op)
+    public ProgressWindow(ProgressOperation op)
     {
         InitializeComponent();
         _op = op;

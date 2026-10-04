@@ -14,6 +14,7 @@ namespace TvCommander.Views;
 public partial class FilePanel : UserControl
 {
     private const string DragFormat = "TvCommander.Panel";
+    private const string PathsFormat = "TvCommander.Paths";
     private static readonly Brush ActiveBrush = new SolidColorBrush(Color.FromRgb(0x1E, 0x78, 0xD7));
     private static readonly Brush TargetBrush = new SolidColorBrush(Color.FromRgb(0xF0, 0xA0, 0x30));
     private static readonly Brush ActivePathBrush = new SolidColorBrush(Color.FromRgb(0xDD, 0xEB, 0xFF));
@@ -24,6 +25,7 @@ public partial class FilePanel : UserControl
     private readonly FileItemComparer _comparer = new();
     private readonly Stack<string> _back = new(), _forward = new();
     private readonly Dictionary<string, string> _driveLastPath = new(StringComparer.OrdinalIgnoreCase);
+    private readonly System.Collections.ObjectModel.ObservableCollection<DriveEntry> _drives = new();
     private readonly DispatcherTimer _loadingDelay, _watchDebounce, _flashTimer;
 
     private List<FileItem> _items = new();
@@ -519,6 +521,14 @@ public partial class FilePanel : UserControl
         if (path == null) return;
         try
         {
+            if (PathUtil.IsMtp(path))
+            {
+                var info = await GuardedIo.RunAsync(_ => Mtp.StorageInfo(path), Mtp.IdleTimeoutMs, path);
+                if (path == CurrentPath)
+                    _freeText = info is { } i ? $"{PathUtil.FormatSize((long)i.Free)} / {PathUtil.FormatSize((long)i.Total)}" : "";
+                UpdateStatus();
+                return;
+            }
             var (free, total) = await GuardedIo.RunAsync(_ =>
             {
                 int rc = Native.NativeMethods.FmGetDiskFree(PathUtil.WithSlash(path), out var f, out var t);
@@ -564,7 +574,7 @@ public partial class FilePanel : UserControl
         _watcher?.Dispose();
         _watcher = null;
         var path = CurrentPath;
-        if (path == null || path.StartsWith(@"\\")) return;
+        if (path == null || path.StartsWith(@"\\") || PathUtil.IsMtp(path)) return;
         try
         {
             var type = new DriveInfo(PathUtil.Root(path)).DriveType;
@@ -646,7 +656,7 @@ public partial class FilePanel : UserControl
         _updatingDrives = true;
         try
         {
-            var list = new List<DriveEntry>();
+            _drives.Clear();
             foreach (var d in DriveInfo.GetDrives())
             {
                 string kind = d.DriveType switch
@@ -657,9 +667,31 @@ public partial class FilePanel : UserControl
                     _ => "",
                 };
                 var name = d.Name.TrimEnd('\\');
-                list.Add(new DriveEntry(name, kind.Length > 0 ? $"{name}  {kind}" : name));
+                _drives.Add(new DriveEntry(name, kind.Length > 0 ? $"{name}  {kind}" : name));
             }
-            DriveCombo.ItemsSource = list;
+            if (DriveCombo.ItemsSource == null) DriveCombo.ItemsSource = _drives;
+            UpdateDriveSelection();
+        }
+        finally
+        {
+            _updatingDrives = false;
+        }
+        _ = AddPhonesAsync();
+    }
+
+    /// <summary>USB 로 연결된 휴대폰(MTP)을 드라이브 목록 뒤에 붙인다. 느릴 수 있어 비동기.</summary>
+    private async Task AddPhonesAsync()
+    {
+        var devices = await Mtp.ListDevicesAsync();
+        _updatingDrives = true;
+        try
+        {
+            foreach (var d in devices)
+            {
+                var root = Mtp.Prefix + d.Name;
+                if (_drives.Any(x => x.Root.Equals(root, StringComparison.OrdinalIgnoreCase))) continue;
+                _drives.Add(new DriveEntry(root, "📱 " + d.Name));
+            }
             UpdateDriveSelection();
         }
         finally
@@ -674,7 +706,7 @@ public partial class FilePanel : UserControl
         try
         {
             var root = CurrentPath == null ? null : DriveKey(CurrentPath);
-            DriveCombo.SelectedItem = (DriveCombo.ItemsSource as List<DriveEntry>)?
+            DriveCombo.SelectedItem = _drives
                 .FirstOrDefault(d => string.Equals(d.Root, root, StringComparison.OrdinalIgnoreCase));
         }
         finally
@@ -714,7 +746,7 @@ public partial class FilePanel : UserControl
     {
         if (DriveCombo.SelectedItem is not DriveEntry d) return;
         if (CurrentPath != null && string.Equals(DriveKey(CurrentPath), d.Root, StringComparison.OrdinalIgnoreCase)) return;
-        var path = _driveLastPath.TryGetValue(d.Root, out var last) ? last : d.Root + "\\";
+        var path = _driveLastPath.TryGetValue(d.Root, out var last) ? last : PathUtil.IsMtp(d.Root) ? d.Root : d.Root + "\\";
         _ = NavigateAsync(path);
     }
 
@@ -905,7 +937,10 @@ public partial class FilePanel : UserControl
         if (item.IsParent) return;
 
         var items = item.IsMarked ? _items.Where(i => i.IsMarked).ToList() : new List<FileItem> { item };
-        var data = new DataObject(DataFormats.FileDrop, items.Select(i => i.FullPath).ToArray());
+        var paths = items.Select(i => i.FullPath).ToArray();
+        var data = new DataObject();
+        data.SetData(PathsFormat, paths);
+        if (!paths.Any(PathUtil.IsMtp)) data.SetData(DataFormats.FileDrop, paths);
         data.SetData(DragFormat, Index.ToString());
         var effect = DragDrop.DoDragDrop(FileList, data, DragDropEffects.Copy | DragDropEffects.Move);
         if (effect != DragDropEffects.None) _ = RefreshAsync();   // 탐색기 등 외부로 이동된 경우
@@ -920,6 +955,13 @@ public partial class FilePanel : UserControl
         return CurrentPath;
     }
 
+    private static string[]? GetDropPaths(IDataObject data)
+    {
+        if (data.GetDataPresent(PathsFormat) && data.GetData(PathsFormat) is string[] own && own.Length > 0) return own;
+        if (data.GetDataPresent(DataFormats.FileDrop) && data.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0) return files;
+        return null;
+    }
+
     private static string[] FilterDropPaths(string[] paths, string targetDir)
         => paths.Where(p => !PathUtil.Same(p, targetDir) && !PathUtil.Same(PathUtil.Parent(p), targetDir)).ToArray();
 
@@ -927,9 +969,9 @@ public partial class FilePanel : UserControl
     {
         e.Effects = DragDropEffects.None;
         e.Handled = true;
-        if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+
         var target = DropTargetDir(e.OriginalSource);
-        if (target == null || e.Data.GetData(DataFormats.FileDrop) is not string[] paths) return;
+        if (target == null || GetDropPaths(e.Data) is not { } paths) return;
         if (FilterDropPaths(paths, target).Length == 0) return;
 
         bool move = (e.KeyStates & DragDropKeyStates.ShiftKey) != 0;
@@ -946,7 +988,7 @@ public partial class FilePanel : UserControl
         UpdateStatus();
 
         var target = DropTargetDir(e.OriginalSource);
-        if (target == null || e.Data.GetData(DataFormats.FileDrop) is not string[] raw) return;
+        if (target == null || GetDropPaths(e.Data) is not { } raw) return;
         var paths = FilterDropPaths(raw, target);
         if (paths.Length == 0) return;
 
@@ -986,17 +1028,29 @@ public partial class FilePanel : UserControl
 
     // ───────────────────────── 컨텍스트 메뉴 ─────────────────────────
 
-    private void MenuOpen_Click(object sender, RoutedEventArgs e) { if (CursorItem is { } it) OpenItem(it); }
-    private void MenuView_Click(object sender, RoutedEventArgs e) => _host.CmdView();
-    private void MenuEdit_Click(object sender, RoutedEventArgs e) => _host.CmdEdit();
-    private void MenuCopy_Click(object sender, RoutedEventArgs e) => _host.CmdCopyMove(OpKind.Copy);
-    private void MenuMove_Click(object sender, RoutedEventArgs e) => _host.CmdCopyMove(OpKind.Move);
-    private void MenuRename_Click(object sender, RoutedEventArgs e) => _host.CmdRename();
-    private void MenuDelete_Click(object sender, RoutedEventArgs e) => _host.CmdDelete(false);
-    private void MenuCopyPath_Click(object sender, RoutedEventArgs e) => _host.CmdCopyText(MainWindow.CopyTextKind.FullPaths);
-    private void MenuCopyName_Click(object sender, RoutedEventArgs e) => _host.CmdCopyText(MainWindow.CopyTextKind.Names);
-    private void MenuProperties_Click(object sender, RoutedEventArgs e)
+    /// <summary>오른쪽 버튼을 놓을 때 탐색기처럼 메뉴 (항목 위 = 항목 메뉴, 빈 곳 = 폴더 메뉴)</summary>
+    private void FileList_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
     {
-        if (CursorItem is { IsParent: false } it) _host.ShowProperties(it.FullPath);
+        e.Handled = true;
+        var item = ItemFromSource(e.OriginalSource);
+        if (item == null && e.OriginalSource is DependencyObject d && IsInScrollBarOrHeader(d)) return;
+        var screen = FileList.PointToScreen(e.GetPosition(FileList));
+        _host.ShowContextMenu(this, item, screen);
+    }
+
+    private static bool IsInScrollBarOrHeader(DependencyObject d)
+    {
+        for (var x = d; x != null; x = x is Visual or Visual3D ? VisualTreeHelper.GetParent(x) : LogicalTreeHelper.GetParent(x))
+            if (x is ScrollBar or GridViewColumnHeader) return true;
+        return false;
+    }
+
+    /// <summary>키보드로 메뉴를 열 때 위치: 커서 항목 아래쪽 (화면 좌표)</summary>
+    public Point CursorScreenPoint()
+    {
+        int idx = FileList.SelectedIndex;
+        if (idx >= 0 && FileList.ItemContainerGenerator.ContainerFromIndex(idx) is ListViewItem c && c.IsVisible)
+            return c.PointToScreen(new Point(24, c.ActualHeight));
+        return FileList.PointToScreen(new Point(24, 24));
     }
 }

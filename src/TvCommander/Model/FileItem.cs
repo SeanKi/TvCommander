@@ -51,7 +51,7 @@ public sealed class FileItem : INotifyPropertyChanged
 
     public string FullPath => IsParent
         ? PathUtil.Parent(DirectoryPath) ?? DirectoryPath
-        : Path.Combine(DirectoryPath, Name);
+        : PathUtil.Combine(DirectoryPath, Name);
 
     public DateTime LastWrite => LastWriteRaw <= 0 ? DateTime.MinValue : DateTime.FromFileTimeUtc(LastWriteRaw).ToLocalTime();
 

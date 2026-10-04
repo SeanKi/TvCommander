@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using TvCommander.Model;
 using TvCommander.Native;
 
@@ -12,28 +12,22 @@ public sealed record ConflictInfo(string Source, string Destination, long Source
                                   long DestinationSize, DateTime DestinationTime);
 
 /// <summary>
-/// 복사/이동 엔진. 전용 스레드에서 실행되며 실제 파일 복사는 C++ (CopyFileEx) 이 담당한다.
+/// 복사/이동 엔진. 전용 스레드에서 실행된다.
+///  - PC↔PC: C++ CopyFileEx / MoveFileWithProgress
+///  - 휴대폰(mtp://)↔PC: C++ WPD 스트림 전송
+///  - 휴대폰↔휴대폰: 임시 파일을 거쳐 전송
 /// UI 는 공개 필드를 주기적으로 읽어 진행률을 그린다.
 /// </summary>
-public sealed class FileOperation
+public sealed class FileOperation : ProgressOperation
 {
     private sealed record WorkItem(string Src, string Dst, bool IsDir, long Size);
+    private readonly record struct Info(bool Exists, bool IsDir, long Size, DateTime LastWrite);
 
     private readonly IReadOnlyList<string> _sources;
     private readonly string _destination;
-    private readonly int[] _cancel = GC.AllocateArray<int>(1, pinned: true);
-    private readonly object _sync = new();
     private readonly FmProgressCallback _progressCb;
-    private IntPtr _thread;
     private long _bytesBase;
     private ConflictChoice? _conflictAll;
-
-    // ── 진행 상태 (UI 가 읽음) ──
-    public volatile string Phase = "준비 중";
-    public volatile string CurrentFile = "";
-    public long TotalBytes, DoneBytes, CurrentSize, CurrentDone;
-    public int TotalFiles, DoneFiles, Skipped, Errors;
-    public long LastProgressTick = Environment.TickCount64;
 
     public FileOperation(OpKind kind, IReadOnlyList<string> sources, string destination)
     {
@@ -44,50 +38,13 @@ public sealed class FileOperation
     }
 
     public OpKind Kind { get; }
-    public string Title => Kind == OpKind.Copy ? "복사" : "이동";
+    public override string Title => Kind == OpKind.Copy ? "복사" : "이동";
     public string? TargetDirectory { get; private set; }
-    public bool IsCancelled => Volatile.Read(ref _cancel[0]) != 0;
 
-    public Func<ConflictInfo, ConflictChoice> AskConflict { get; set; } = _ => ConflictChoice.Skip;
-    public Func<string, string, ErrorChoice> AskError { get; set; } = (_, _) => ErrorChoice.Skip;
-
-    private unsafe int* CancelPtr => (int*)Marshal.UnsafeAddrOfPinnedArrayElement(_cancel, 0);
-
-    public void Cancel()
+    public override void Cancel()
     {
-        Volatile.Write(ref _cancel[0], 1);
-        lock (_sync)
-        {
-            if (_thread != IntPtr.Zero) NativeMethods.FmCancelThreadIo(_thread);
-        }
-    }
-
-    public Task RunAsync()
-    {
-        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var t = new Thread(() =>
-        {
-            IntPtr h = NativeMethods.FmOpenCurrentThread();
-            lock (_sync) _thread = h;
-            try { Execute(); tcs.TrySetResult(); }
-            catch (OperationCanceledException) { tcs.TrySetResult(); }
-            catch (Exception ex) { tcs.TrySetException(ex); }
-            finally
-            {
-                lock (_sync) _thread = IntPtr.Zero;
-                NativeMethods.FmCloseHandle(h);
-            }
-        })
-        { IsBackground = true, Name = "FileOperation" };
-        t.Start();
-        return tcs.Task;
-    }
-
-    private void Touch() => Interlocked.Exchange(ref LastProgressTick, Environment.TickCount64);
-
-    private void ThrowIfCancelled()
-    {
-        if (IsCancelled) throw new OperationCanceledException();
+        base.Cancel();
+        if (_sources.Any(PathUtil.IsMtp) || PathUtil.IsMtp(_destination)) Mtp.CancelAll();
     }
 
     private int OnProgress(ulong transferred, ulong total, IntPtr user)
@@ -98,12 +55,12 @@ public sealed class FileOperation
         return IsCancelled ? 1 : 0;
     }
 
-    private unsafe void Execute()
+    protected override unsafe void Execute()
     {
         Touch();
         var (targetDir, newName) = ResolveDestination();
         TargetDirectory = targetDir;
-        if (!Attempt(targetDir, () => Directory.CreateDirectory(targetDir))) return;
+        if (!Attempt(targetDir, () => CreateDir(targetDir))) return;
 
         // ── 1단계: 목록 수집 ──
         Phase = "목록 수집 중";
@@ -112,26 +69,19 @@ public sealed class FileOperation
         {
             ThrowIfCancelled();
             var src = PathUtil.TrimEnd(raw);
-            var name = newName ?? Path.GetFileName(src);
-            if (string.IsNullOrEmpty(name)) { ReportError(src, "드라이브 루트는 복사/이동할 수 없습니다."); continue; }
+            var name = newName ?? PathUtil.LastSegment(src);
+            if (string.IsNullOrEmpty(name) || PathUtil.IsRoot(src)) { ReportError(src, "드라이브나 기기 루트는 복사/이동할 수 없습니다."); continue; }
 
-            var dst = Path.Combine(targetDir, name);
+            var dst = PathUtil.Combine(targetDir, name);
             if (PathUtil.Same(src, dst)) { ReportError(src, "원본과 대상이 같습니다."); continue; }
 
-            FileAttributes attr = 0;
-            long size = 0;
-            if (!Attempt(src, () =>
-                {
-                    var fi = new FileInfo(src);
-                    attr = fi.Attributes;
-                    if (!attr.HasFlag(FileAttributes.Directory)) size = fi.Length;
-                })) continue;
+            Info info = default;
+            if (!Attempt(src, () => info = GetInfo(src))) continue;
+            if (!info.Exists) { ReportError(src, "원본이 없습니다."); continue; }
+            if (info.IsDir && PathUtil.IsUnder(dst, src)) { ReportError(src, "폴더를 자기 자신의 하위 폴더로 복사/이동할 수 없습니다."); continue; }
 
-            bool isDir = attr.HasFlag(FileAttributes.Directory);
-            if (isDir && PathUtil.IsUnder(dst, src)) { ReportError(src, "폴더를 자기 자신의 하위 폴더로 복사/이동할 수 없습니다."); continue; }
-
-            // 같은 볼륨 이동 + 대상 없음 → 이름 변경 한 번으로 끝
-            if (Kind == OpKind.Move && PathUtil.SameVolume(src, dst) && !File.Exists(dst) && !Directory.Exists(dst))
+            // PC 같은 볼륨 이동 + 대상 없음 → 이름 변경 한 번으로 끝
+            if (Kind == OpKind.Move && IsLocalSameVolume(src, dst) && !File.Exists(dst) && !Directory.Exists(dst))
             {
                 Phase = "이동 중";
                 CurrentFile = src;
@@ -141,15 +91,8 @@ public sealed class FileOperation
                 ThrowIfCancelled();
             }
 
-            if (isDir)
-            {
-                work.Add(new WorkItem(src, dst, true, 0));
-                Scan(src, dst, work);
-            }
-            else
-            {
-                work.Add(new WorkItem(src, dst, false, size));
-            }
+            work.Add(new WorkItem(src, dst, info.IsDir, info.Size));
+            if (info.IsDir) Scan(src, dst, work);
         }
 
         // ── 2단계: 복사/이동 ──
@@ -165,7 +108,7 @@ public sealed class FileOperation
         {
             ThrowIfCancelled();
             if (w.IsDir)
-                Attempt(w.Dst, () => Directory.CreateDirectory(w.Dst));
+                Attempt(w.Dst, () => CreateDir(w.Dst));
             else
                 TransferFile(w);
         }
@@ -177,12 +120,12 @@ public sealed class FileOperation
             for (int i = work.Count - 1; i >= 0; i--)
             {
                 if (!work[i].IsDir) continue;
-                try { Directory.Delete(work[i].Src, false); } catch { /* 건너뛴 파일이 남은 폴더 */ }
+                try { DeleteEmptyDir(work[i].Src); } catch { /* 건너뛴 파일이 남은 폴더 */ }
             }
         }
     }
 
-    private unsafe void Scan(string srcRoot, string dstRoot, List<WorkItem> work)
+    private void Scan(string srcRoot, string dstRoot, List<WorkItem> work)
     {
         var stack = new Stack<(string Src, string Dst)>();
         stack.Push((srcRoot, dstRoot));
@@ -193,42 +136,20 @@ public sealed class FileOperation
             CurrentFile = s;
             Touch();
 
-            var entries = new List<(string Name, long Size, uint Attr)>();
-            FmEntryBatchCallback cb = (e, n, _) =>
-            {
-                for (int i = 0; i < n; i++)
-                    entries.Add((Marshal.PtrToStringUni(e[i].Name)!, (long)e[i].Size, e[i].Attributes));
-                Touch();
-                return IsCancelled ? 0 : 1;
-            };
+            List<(string Name, long Size, bool IsDir, bool IsLink)> entries = new();
+            if (!Attempt(s, () => entries = ListDir(s))) continue;
 
-            bool ok = Attempt(s, () =>
+            foreach (var (name, size, isDir, isLink) in entries)
             {
-                entries.Clear();
-                int rc = NativeMethods.FmEnumDirectory(s, cb, IntPtr.Zero, CancelPtr, null);
-                GC.KeepAlive(cb);
-                if (rc != 0) throw Win32Errors.ToIOException(rc, s);
-            });
-            if (!ok) continue;
-
-            foreach (var (name, size, attr) in entries)
-            {
-                var sp = Path.Combine(s, name);
-                var dp = Path.Combine(d, name);
-                if ((attr & (uint)FileAttributes.Directory) != 0)
-                {
-                    work.Add(new WorkItem(sp, dp, true, 0));
-                    if ((attr & (uint)FileAttributes.ReparsePoint) == 0) stack.Push((sp, dp));
-                }
-                else
-                {
-                    work.Add(new WorkItem(sp, dp, false, size));
-                }
+                var sp = PathUtil.Combine(s, name);
+                var dp = PathUtil.Combine(d, name);
+                work.Add(new WorkItem(sp, dp, isDir, isDir ? 0 : size));
+                if (isDir && !isLink) stack.Push((sp, dp));
             }
         }
     }
 
-    private unsafe void TransferFile(WorkItem w)
+    private void TransferFile(WorkItem w)
     {
         CurrentFile = w.Src;
         CurrentSize = w.Size;
@@ -238,37 +159,22 @@ public sealed class FileOperation
         try
         {
             bool overwrite = false;
-            if (Directory.Exists(w.Dst)) { ReportError(w.Dst, "같은 이름의 폴더가 이미 있습니다."); return; }
-            if (File.Exists(w.Dst))
-            {
-                if (!ResolveConflict(w, out overwrite)) { Skipped++; return; }
-            }
+            Info dst = default;
+            if (!Attempt(w.Dst, () => dst = GetInfo(w.Dst))) return;
+            if (dst.Exists && dst.IsDir) { ReportError(w.Dst, "같은 이름의 폴더가 이미 있습니다."); return; }
+            if (dst.Exists && !ResolveConflict(w, dst, out overwrite)) { Skipped++; return; }
 
-            bool rename = Kind == OpKind.Move && PathUtil.SameVolume(w.Src, w.Dst);
+            bool rename = Kind == OpKind.Move && IsLocalSameVolume(w.Src, w.Dst);
             bool ok = Attempt(w.Src, () =>
             {
                 CurrentDone = 0;
                 DoneBytes = _bytesBase;
-                int rc = rename
-                    ? NativeMethods.FmMoveFile(w.Src, w.Dst, overwrite ? 1 : 0, null, IntPtr.Zero, CancelPtr)
-                    : NativeMethods.FmCopyFile(w.Src, w.Dst, overwrite ? 1 : 0, _progressCb, IntPtr.Zero, CancelPtr);
-                if (rc != 0)
-                {
-                    ThrowIfCancelled();
-                    throw Win32Errors.ToIOException(rc, w.Src);
-                }
+                if (rename) MoveLocal(w.Src, w.Dst, overwrite);
+                else CopyFile(w.Src, w.Dst, overwrite);
             });
             if (!ok) return;
 
-            if (Kind == OpKind.Move && !rename)
-            {
-                Attempt(w.Src, () =>
-                {
-                    var a = File.GetAttributes(w.Src);
-                    if (a.HasFlag(FileAttributes.ReadOnly)) File.SetAttributes(w.Src, a & ~FileAttributes.ReadOnly);
-                    File.Delete(w.Src);
-                });
-            }
+            if (Kind == OpKind.Move && !rename) Attempt(w.Src, () => DeleteFile(w.Src));
             DoneFiles++;
         }
         finally
@@ -280,12 +186,11 @@ public sealed class FileOperation
         }
     }
 
-    private bool ResolveConflict(WorkItem w, out bool overwrite)
+    private bool ResolveConflict(WorkItem w, Info dst, out bool overwrite)
     {
         overwrite = false;
-        var src = new FileInfo(w.Src);
-        var dst = new FileInfo(w.Dst);
-        var choice = _conflictAll ?? AskConflict(new ConflictInfo(w.Src, w.Dst, src.Length, src.LastWriteTime, dst.Length, dst.LastWriteTime));
+        var src = GetInfo(w.Src);
+        var choice = _conflictAll ?? AskConflict(new ConflictInfo(w.Src, w.Dst, src.Size, src.LastWrite, dst.Size, dst.LastWrite));
         Touch();
         switch (choice)
         {
@@ -301,61 +206,161 @@ public sealed class FileOperation
         overwrite = choice switch
         {
             ConflictChoice.Overwrite or ConflictChoice.OverwriteAll => true,
-            ConflictChoice.OverwriteOlderAll => src.LastWriteTimeUtc > dst.LastWriteTimeUtc,
+            ConflictChoice.OverwriteOlderAll => src.LastWrite > dst.LastWrite,
             _ => false,
         };
         return overwrite;
     }
 
-    /// <summary>작업 실행. 실패하면 사용자에게 재시도/건너뛰기/중단을 묻는다. 건너뛰면 false.</summary>
-    private bool Attempt(string path, Action action)
+    // ───────────────────────── 경로 종류별 기본 동작 ─────────────────────────
+
+    private static bool IsLocalSameVolume(string a, string b)
+        => !PathUtil.IsMtp(a) && !PathUtil.IsMtp(b) && PathUtil.SameVolume(a, b);
+
+    private static Info GetInfo(string path)
     {
-        while (true)
+        if (PathUtil.IsMtp(path))
         {
-            try
+            var e = Mtp.GetEntry(path);
+            if (e == null) return default;
+            var time = e.LastWrite > 0 ? DateTime.FromFileTimeUtc(e.LastWrite).ToLocalTime() : DateTime.MinValue;
+            return new Info(true, e.IsFolder, e.Size, time);
+        }
+        if (Directory.Exists(path)) return new Info(true, true, 0, Directory.GetLastWriteTime(path));
+        var fi = new FileInfo(path);
+        return fi.Exists ? new Info(true, false, fi.Length, fi.LastWriteTime) : default;
+    }
+
+    private unsafe List<(string Name, long Size, bool IsDir, bool IsLink)> ListDir(string dir)
+    {
+        var result = new List<(string, long, bool, bool)>();
+        if (PathUtil.IsMtp(dir))
+        {
+            foreach (var e in Mtp.ListChildren(dir, CancelPtr))
+                result.Add((e.Name, e.Size, e.IsFolder, false));
+            Touch();
+            return result;
+        }
+
+        FmEntryBatchCallback cb = (e, n, _) =>
+        {
+            for (int i = 0; i < n; i++)
             {
-                action();
-                return true;
+                uint a = e[i].Attributes;
+                result.Add((Marshal.PtrToStringUni(e[i].Name)!, (long)e[i].Size,
+                    (a & (uint)FileAttributes.Directory) != 0, (a & (uint)FileAttributes.ReparsePoint) != 0));
             }
-            catch (OperationCanceledException) { throw; }
-            catch (Exception ex)
-            {
-                ThrowIfCancelled();
-                switch (AskError(path, ex.Message))
-                {
-                    case ErrorChoice.Retry: Touch(); continue;
-                    case ErrorChoice.Skip: Errors++; Touch(); return false;
-                    default: Cancel(); throw new OperationCanceledException();
-                }
-            }
+            Touch();
+            return IsCancelled ? 0 : 1;
+        };
+        int rc = NativeMethods.FmEnumDirectory(dir, cb, IntPtr.Zero, CancelPtr, null);
+        GC.KeepAlive(cb);
+        if (rc != 0) throw Win32Errors.ToIOException(rc, dir);
+        return result;
+    }
+
+    private static void CreateDir(string path)
+    {
+        if (PathUtil.IsMtp(path)) Mtp.EnsureFolder(path);
+        else Directory.CreateDirectory(path);
+    }
+
+    private unsafe void MoveLocal(string src, string dst, bool overwrite)
+    {
+        int rc = NativeMethods.FmMoveFile(src, dst, overwrite ? 1 : 0, null, IntPtr.Zero, CancelPtr);
+        if (rc != 0)
+        {
+            ThrowIfCancelled();
+            throw Win32Errors.ToIOException(rc, src);
         }
     }
 
-    private void ReportError(string path, string message)
+    private unsafe void CopyFile(string src, string dst, bool overwrite)
     {
-        Errors++;
-        if (AskError(path, message) == ErrorChoice.Cancel)
+        bool srcMtp = PathUtil.IsMtp(src), dstMtp = PathUtil.IsMtp(dst);
+
+        if (!srcMtp && !dstMtp)
         {
-            Cancel();
-            throw new OperationCanceledException();
+            int rc = NativeMethods.FmCopyFile(src, dst, overwrite ? 1 : 0, _progressCb, IntPtr.Zero, CancelPtr);
+            if (rc != 0)
+            {
+                ThrowIfCancelled();
+                throw Win32Errors.ToIOException(rc, src);
+            }
+            return;
         }
+
+        if (srcMtp && !dstMtp)
+        {
+            if (overwrite) ClearReadOnly(dst);
+            Mtp.Download(src, dst, overwrite, _progressCb, CancelPtr);
+            return;
+        }
+
+        if (!srcMtp && dstMtp)
+        {
+            if (overwrite) Mtp.Delete(dst, recursive: false);   // MTP 는 덮어쓰기가 없다 → 지우고 올린다
+            Mtp.Upload(src, dst, _progressCb, CancelPtr);
+            return;
+        }
+
+        // 휴대폰 → 휴대폰: 임시 파일 경유
+        var temp = Path.Combine(Path.GetTempPath(), "TvCommander", "mtp-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.GetDirectoryName(temp)!);
+        try
+        {
+            Mtp.Download(src, temp, true, _progressCb, CancelPtr);
+            if (overwrite) Mtp.Delete(dst, recursive: false);
+            Mtp.Upload(temp, dst, _progressCb, CancelPtr);
+        }
+        finally
+        {
+            try { File.Delete(temp); } catch { }
+        }
+    }
+
+    private static void ClearReadOnly(string path)
+    {
+        if (!File.Exists(path)) return;
+        var a = File.GetAttributes(path);
+        if (a.HasFlag(FileAttributes.ReadOnly)) File.SetAttributes(path, a & ~FileAttributes.ReadOnly);
+    }
+
+    private static void DeleteFile(string path)
+    {
+        if (PathUtil.IsMtp(path))
+        {
+            Mtp.Delete(path, recursive: false);
+            return;
+        }
+        ClearReadOnly(path);
+        File.Delete(path);
+    }
+
+    private static unsafe void DeleteEmptyDir(string path)
+    {
+        if (PathUtil.IsMtp(path))
+        {
+            if (Mtp.ListChildren(path).Count == 0) Mtp.Delete(path, recursive: false);
+            return;
+        }
+        Directory.Delete(path, false);
     }
 
     /// <summary>
-    /// 입력이 '\' 로 끝나거나 존재하는 폴더면 그 안으로, 아니면 (단일 항목일 때) 새 이름으로 해석한다.
+    /// 입력이 구분자로 끝나거나 존재하는 폴더면 그 안으로, 아니면 (단일 항목일 때) 새 이름으로 해석한다.
     /// </summary>
     private (string TargetDir, string? NewName) ResolveDestination()
     {
-        var input = Environment.ExpandEnvironmentVariables(_destination.Trim().Trim('"'));
-        if (!Path.IsPathRooted(input))
-            input = Path.Combine(Path.GetDirectoryName(PathUtil.TrimEnd(_sources[0])) ?? "", input);
-        bool endsWithSlash = input.EndsWith('\\') || input.EndsWith('/');
-        input = Path.GetFullPath(input);
+        var raw = Environment.ExpandEnvironmentVariables(_destination.Trim().Trim('"'));
+        bool endsWithSlash = raw.EndsWith('\\') || raw.EndsWith('/');
+        var input = PathUtil.Normalize(raw, PathUtil.Parent(PathUtil.TrimEnd(_sources[0])));
 
-        if (endsWithSlash || Directory.Exists(input))
-            return (PathUtil.TrimEnd(input), null);
+        bool isDir = PathUtil.IsMtp(input) ? (PathUtil.IsRoot(input) || Mtp.IsFolder(input)) : Directory.Exists(input);
+        if (endsWithSlash || isDir)
+            return (input, null);
         if (_sources.Count == 1)
-            return (Path.GetDirectoryName(input)!, Path.GetFileName(input));
+            return (PathUtil.Parent(input)!, PathUtil.LastSegment(input));
         return (input, null);
     }
 }

@@ -17,8 +17,14 @@ public partial class MainWindow : Window
     private readonly AppSettings _settings = AppSettings.Load();
     private readonly DirectoryHistory _history = DirectoryHistory.Load();
     private readonly List<FilePanel> _panels = new();
+    private const int MaxPanels = 8;
+    /// <summary>지원하는 패널 수와 배치 (행 × 열)</summary>
+    private static readonly Dictionary<int, (int Rows, int Cols)> Layouts = new()
+    {
+        [2] = (1, 2), [3] = (1, 3), [4] = (2, 2), [6] = (2, 3), [8] = (2, 4),
+    };
     private int _panelCount = 2;
-    private bool _grid;
+    private int _cols = 2;
     private FilePanel? _active, _target;
     private bool _targetPinned;
     private SearchWindow? _searchWindow;
@@ -26,7 +32,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        for (int i = 0; i < 4; i++)
+        Title = $"TvCommander {AppVersion.Display}";
+        for (int i = 0; i < MaxPanels; i++)
         {
             var p = new FilePanel(this, i);
             p.Activated += OnPanelActivated;
@@ -34,6 +41,8 @@ public partial class MainWindow : Window
             _panels.Add(p);
         }
         HiddenToggle.IsChecked = _settings.ShowHidden;
+        InitToolbarIcons();
+        ApplyFontLevel(_settings.FontLevel);
         RestoreWindowBounds();
 
         Loaded += OnLoaded;
@@ -53,7 +62,7 @@ public partial class MainWindow : Window
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         // SetLayout 이 보이는 패널들의 초기 탐색을 시작한다
-        SetLayout(Math.Clamp(_settings.PanelCount, 2, 4), _settings.GridLayout);
+        SetLayout(_settings.PanelCount);
         var first = _panels[Math.Clamp(_settings.ActivePanel, 0, _panelCount - 1)];
         ActivatePanel(first);
         while (first.IsLoading) await Task.Delay(50);
@@ -63,7 +72,6 @@ public partial class MainWindow : Window
     private void OnClosing(object? sender, CancelEventArgs e)
     {
         _settings.PanelCount = _panelCount;
-        _settings.GridLayout = _grid;
         _settings.ActivePanel = _active?.Index ?? 0;
         _settings.Panels = _panels.Select(p => p.GetState()).ToList();
         _settings.Maximized = WindowState == WindowState.Maximized;
@@ -95,70 +103,58 @@ public partial class MainWindow : Window
         if (_settings.Maximized) WindowState = WindowState.Maximized;
     }
 
-    // ───────────────────────── 레이아웃 (2/3/4창) ─────────────────────────
+    // ───────────────────────── 레이아웃 (2·3창 가로, 4·6·8창 2줄 격자) ─────────────────────────
 
-    private void SetLayout(int count, bool grid)
+    private void SetLayout(int count)
     {
-        grid = grid && count == 4;
+        if (!Layouts.TryGetValue(count, out var shape)) { count = 2; shape = Layouts[2]; }
+        var (rows, cols) = shape;
         _panelCount = count;
-        _grid = grid;
+        _cols = cols;
 
         PanelGrid.Children.Clear();
         PanelGrid.RowDefinitions.Clear();
         PanelGrid.ColumnDefinitions.Clear();
 
-        if (grid)
+        // 패널 사이마다 분할선용 Auto 행/열
+        for (int r = 0; r < rows; r++)
         {
-            PanelGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            PanelGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            PanelGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            PanelGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            PanelGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            PanelGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-            for (int i = 0; i < 4; i++)
-            {
-                var p = _panels[i];
-                Grid.SetRow(p, i / 2 * 2);
-                Grid.SetColumn(p, i % 2 * 2);
-                PanelGrid.Children.Add(p);
-            }
-            var v = NewSplitter(vertical: true);
-            Grid.SetColumn(v, 1);
-            Grid.SetRowSpan(v, 3);
-            PanelGrid.Children.Add(v);
-            var h = NewSplitter(vertical: false);
-            Grid.SetRow(h, 1);
-            Grid.SetColumnSpan(h, 3);
-            PanelGrid.Children.Add(h);
+            if (r > 0) PanelGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            PanelGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star), MinHeight = 120 });
         }
-        else
+        for (int c = 0; c < cols; c++)
         {
-            for (int i = 0; i < count; i++)
-            {
-                if (i > 0)
-                {
-                    PanelGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                    var s = NewSplitter(vertical: true);
-                    Grid.SetColumn(s, PanelGrid.ColumnDefinitions.Count - 1);
-                    PanelGrid.Children.Add(s);
-                }
-                PanelGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MinWidth = 150 });
-                var p = _panels[i];
-                Grid.SetRow(p, 0);
-                Grid.SetColumn(p, PanelGrid.ColumnDefinitions.Count - 1);
-                PanelGrid.Children.Add(p);
-            }
+            if (c > 0) PanelGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            PanelGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MinWidth = 150 });
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            var p = _panels[i];
+            Grid.SetRow(p, i / cols * 2);
+            Grid.SetColumn(p, i % cols * 2);
+            PanelGrid.Children.Add(p);
+        }
+        for (int c = 1; c < cols; c++)
+        {
+            var v = NewSplitter(vertical: true);
+            Grid.SetColumn(v, c * 2 - 1);
+            Grid.SetRowSpan(v, rows * 2 - 1);
+            PanelGrid.Children.Add(v);
+        }
+        for (int r = 1; r < rows; r++)
+        {
+            var h = NewSplitter(vertical: false);
+            Grid.SetRow(h, r * 2 - 1);
+            Grid.SetColumnSpan(h, cols * 2 - 1);
+            PanelGrid.Children.Add(h);
         }
 
         foreach (var p in _panels) p.SetShownInLayout(p.Index < count);
+        foreach (var rb in new[] { Layout2, Layout3, Layout4, Layout6, Layout8 })
+            rb.IsChecked = (string)rb.Tag == count.ToString();
 
-        Layout2.IsChecked = count == 2;
-        Layout3.IsChecked = count == 3;
-        Layout4.IsChecked = count == 4 && !grid;
-        Layout4Grid.IsChecked = count == 4 && grid;
-
-        // 새로 보이는 패널은 활성 패널 경로(또는 저장된 경로)로 연다
+        // 새로 보이는 패널은 저장된 경로(없으면 활성 패널 경로)로 연다
         foreach (var p in VisiblePanels.Where(p => p.CurrentPath == null && !p.IsLoading))
             _ = p.NavigateInitialAsync(_active?.CurrentPath);
 
@@ -182,8 +178,7 @@ public partial class MainWindow : Window
 
     private void Layout_Click(object sender, RoutedEventArgs e)
     {
-        var tag = (string)((FrameworkElement)sender).Tag;
-        SetLayout(tag == "4g" ? 4 : int.Parse(tag), tag == "4g");
+        SetLayout(int.Parse((string)((FrameworkElement)sender).Tag));
         P.FocusList();
     }
 
@@ -237,13 +232,10 @@ public partial class MainWindow : Window
     /// <summary>같은 줄에서 왼쪽(-1)/오른쪽(+1) 패널</summary>
     private FilePanel? Neighbour(FilePanel p, int dir)
     {
-        if (_grid)
-        {
-            int col = p.Index % 2 + dir;
-            return col is < 0 or > 1 ? null : _panels[p.Index / 2 * 2 + col];
-        }
-        int i = p.Index + dir;
-        return i < 0 || i >= _panelCount ? null : _panels[i];
+        int col = p.Index % _cols + dir;
+        if (col < 0 || col >= _cols) return null;
+        int i = p.Index / _cols * _cols + col;
+        return i < _panelCount ? _panels[i] : null;
     }
 
     private void FocusPanelByOffset(int delta)
@@ -280,6 +272,10 @@ public partial class MainWindow : Window
             case (Key.F2, None): CmdRename(); break;
             case (Key.F7, None): CmdMakeDir(); break;
             case (Key.F7, Alt): CmdSearch(); break;
+            case (Key.F5, Alt): CmdPack(); break;
+            case (Key.F9, Alt): CmdUnpack(); break;
+            case (Key.F10, Shift):
+            case (Key.Apps, None): ShowContextMenuAtCursor(); break;
             case (Key.F8, None):
             case (Key.Delete, None): CmdDelete(false); break;
             case (Key.F8, Shift):
@@ -303,16 +299,20 @@ public partial class MainWindow : Window
             case (Key.H, Ctrl): ToggleHidden(); break;
             case (Key.L, Ctrl): P.FocusPathBox(); break;
             case (Key.C, Ctrl | Shift): CmdCopyText(CopyTextKind.FullPaths); break;
-            case (Key.F2, Ctrl): SetLayout(2, false); P.FocusList(); break;
-            case (Key.F3, Ctrl): SetLayout(3, false); P.FocusList(); break;
-            case (Key.F4, Ctrl): SetLayout(4, _grid); P.FocusList(); break;
+            case (Key.F2, Ctrl): SetLayout(2); P.FocusList(); break;
+            case (Key.F3, Ctrl): SetLayout(3); P.FocusList(); break;
+            case (Key.F4, Ctrl): SetLayout(4); P.FocusList(); break;
+            case (Key.F6, Ctrl): SetLayout(6); P.FocusList(); break;
+            case (Key.F8, Ctrl): SetLayout(8); P.FocusList(); break;
+            case (Key.OemPlus or Key.Add, Ctrl): ApplyFontLevel(_settings.FontLevel + 1); break;
+            case (Key.OemMinus or Key.Subtract, Ctrl): ApplyFontLevel(_settings.FontLevel - 1); break;
 
             case (Key.Escape, None) when P.IsLoading: P.CancelLoad(); break;
 
-            case (>= Key.D1 and <= Key.D4, Ctrl):
+            case (>= Key.D1 and <= Key.D8, Ctrl):
                 if (key - Key.D1 < _panelCount) ActivatePanel(_panels[key - Key.D1]);
                 break;
-            case (>= Key.D1 and <= Key.D4, Ctrl | Shift):
+            case (>= Key.D1 and <= Key.D8, Ctrl | Shift):
                 SetTarget(key - Key.D1);
                 break;
 
@@ -361,18 +361,49 @@ public partial class MainWindow : Window
 
     // ───────────────────────── 명령 ─────────────────────────
 
-    public void CmdView()
+    public async void CmdView()
     {
         var it = P.CursorItem;
         if (it == null || it.IsDirectory) return;
-        new ViewerWindow(it.FullPath) { Owner = this }.Show();
+        var local = await MaterializeAsync(it.FullPath);
+        if (local != null) new ViewerWindow(local) { Owner = this }.Show();
     }
 
-    public void CmdEdit()
+    public async void CmdEdit()
     {
         var it = P.CursorItem;
         if (it == null || it.IsDirectory) return;
-        StartProcess(_settings.Editor, Quote(it.FullPath), it.DirectoryPath);
+        var local = await MaterializeAsync(it.FullPath);
+        if (local == null) return;
+        if (PathUtil.IsMtp(it.FullPath))
+            P.FlashStatus("휴대폰 파일은 임시 사본으로 열립니다. 수정한 뒤에는 F5 로 다시 복사하세요.");
+        StartProcess(_settings.Editor, Quote(local), Path.GetDirectoryName(local));
+    }
+
+    /// <summary>휴대폰 파일이면 임시 폴더로 받아 로컬 경로를 돌려준다. 실패하면 null.</summary>
+    private async Task<string?> MaterializeAsync(string path)
+    {
+        if (!PathUtil.IsMtp(path)) return path;
+        var p = P;
+        var dir = Path.Combine(Path.GetTempPath(), "TvCommander", "mtp", Guid.NewGuid().ToString("N")[..8]);
+        var local = Path.Combine(dir, PathUtil.LastSegment(path));
+        p.FlashStatus("휴대폰에서 가져오는 중... " + PathUtil.LastSegment(path));
+        try
+        {
+            await GuardedIo.RunAsync(ctx =>
+            {
+                Directory.CreateDirectory(dir);
+                FmProgressCallback cb = (_, _, _) => { ctx.Report(); return ctx.IsCancelled ? 1 : 0; };
+                unsafe { Mtp.Download(path, local, true, cb, ctx.CancelFlag); }
+                return true;
+            }, Mtp.IdleTimeoutMs, path, onTimeout: () => Mtp.Abandon(path));
+            return local;
+        }
+        catch (Exception ex)
+        {
+            ShowError(ex.Message);
+            return null;
+        }
     }
 
     public async void CmdCopyMove(OpKind kind)
@@ -405,6 +436,16 @@ public partial class MainWindow : Window
         }
 
         var op = new FileOperation(kind, sources, destination);
+        await RunWithProgressAsync(op);
+
+        if (!op.IsCancelled) sourcePanel?.ClearMarks();
+        await RefreshPanelsShowingAsync(PathUtil.Parent(sources[0]), op.TargetDirectory);
+        P.FocusList();
+    }
+
+    /// <summary>진행 창과 함께 작업 실행. 짧게 끝나면 창을 띄우지 않는다.</summary>
+    private async Task RunWithProgressAsync(ProgressOperation op)
+    {
         var win = new ProgressWindow(op) { Owner = this };
         var showTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
         showTimer.Tick += (_, _) => { showTimer.Stop(); win.Show(); };
@@ -431,14 +472,12 @@ public partial class MainWindow : Window
             showTimer.Stop();
             win.Finish();
         }
+    }
 
-        if (!op.IsCancelled) sourcePanel?.ClearMarks();
-        var dirs = new[] { PathUtil.Parent(sources[0]), op.TargetDirectory };
-        await Task.WhenAll(VisiblePanels
+    private Task RefreshPanelsShowingAsync(params string?[] dirs)
+        => Task.WhenAll(VisiblePanels
             .Where(p => dirs.Any(d => PathUtil.Same(d, p.CurrentPath)))
             .Select(p => p.RefreshAsync()));
-        P.FocusList();
-    }
 
     private static ErrorChoice AskError(Window owner, string path, string message)
     {
@@ -465,9 +504,12 @@ public partial class MainWindow : Window
         if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) { ShowError("이름에 사용할 수 없는 문자가 있습니다."); return; }
 
         var src = it.FullPath;
-        var dst = Path.Combine(it.DirectoryPath, name);
+        var dst = PathUtil.Combine(it.DirectoryPath, name);
         try
         {
+            if (PathUtil.IsMtp(src))
+                await GuardedIo.RunAsync(_ => { Mtp.Rename(src, name); return true; }, Mtp.IdleTimeoutMs, src, onTimeout: () => Mtp.Abandon(src));
+            else
             await GuardedIo.RunAsync(_ =>
             {
                 unsafe
@@ -493,10 +535,13 @@ public partial class MainWindow : Window
         var name = InputDialog.Show(this, "새 폴더", "폴더 이름 (a\\b 처럼 여러 단계도 가능):", "");
         if (string.IsNullOrWhiteSpace(name)) { p.FocusList(); return; }
 
-        var full = Path.Combine(p.CurrentPath, name.Trim());
+        var full = PathUtil.Combine(p.CurrentPath, name.Trim());
         try
         {
-            await GuardedIo.RunAsync(_ => Directory.CreateDirectory(full), 5000, full);
+            if (PathUtil.IsMtp(full))
+                await GuardedIo.RunAsync(_ => Mtp.EnsureFolder(full), Mtp.IdleTimeoutMs, full, onTimeout: () => Mtp.Abandon(full));
+            else
+                await GuardedIo.RunAsync(_ => Directory.CreateDirectory(full), 5000, full);
         }
         catch (Exception ex)
         {
@@ -513,6 +558,11 @@ public partial class MainWindow : Window
         if (items.Count == 0 || p.CurrentPath == null) return;
 
         string what = items.Count == 1 ? $"'{items[0].Name}'" : $"{items.Count}개 항목";
+        if (PathUtil.IsMtp(p.CurrentPath))
+        {
+            await DeleteOnPhoneAsync(p, items, what);
+            return;
+        }
         string msg = permanent
             ? $"{what}을(를) 영구 삭제합니다. 복구할 수 없습니다.\n계속할까요?"
             : $"{what}을(를) 휴지통으로 보낼까요?";
@@ -544,10 +594,44 @@ public partial class MainWindow : Window
         p.FocusList();
     }
 
+    /// <summary>휴대폰에는 휴지통이 없으므로 항상 영구 삭제</summary>
+    private async Task DeleteOnPhoneAsync(FilePanel p, List<FileItem> items, string what)
+    {
+        if (MessageBox.Show(this, $"{what}을(를) 휴대폰에서 영구 삭제합니다. 휴지통이 없어 복구할 수 없습니다.\n계속할까요?",
+                "휴대폰에서 삭제", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
+        {
+            p.FocusList();
+            return;
+        }
+        var focusAfter = p.NameAfterRemoval(items);
+        var paths = items.Select(i => i.FullPath).ToList();
+        try
+        {
+            await GuardedIo.RunAsync(ctx =>
+            {
+                foreach (var path in paths)
+                {
+                    if (ctx.IsCancelled) break;
+                    Mtp.Delete(path, recursive: true);
+                    ctx.Report();
+                }
+                return true;
+            }, 30000, p.CurrentPath, onTimeout: () => Mtp.Abandon(paths[0]));
+        }
+        catch (Exception ex)
+        {
+            ShowError(ex.Message);
+        }
+        p.ClearMarks();
+        await p.RefreshAsync(focusAfter);
+        p.FocusList();
+    }
+
     public void CmdTerminal()
     {
         var dir = P.CurrentPath;
         if (dir == null) return;
+        if (PathUtil.IsMtp(dir)) { P.FlashStatus("휴대폰 폴더에서는 터미널을 열 수 없습니다."); return; }
         var term = _settings.Terminal;
         bool unc = dir.StartsWith(@"\\");
 
@@ -572,6 +656,7 @@ public partial class MainWindow : Window
     public void CmdSearch()
     {
         var root = P.CurrentPath ?? "C:\\";
+        if (PathUtil.IsMtp(root)) root = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);   // 찾기는 PC 경로만
         if (_searchWindow == null)
         {
             _searchWindow = new SearchWindow(this, root) { Owner = this };
@@ -652,7 +737,11 @@ public partial class MainWindow : Window
         p.FocusList();
     }
 
-    public void OpenWithShell(string path) => StartProcess(path, "", Path.GetDirectoryName(path));
+    public async void OpenWithShell(string path)
+    {
+        var local = await MaterializeAsync(path);
+        if (local != null) StartProcess(local, "", Path.GetDirectoryName(local));
+    }
 
     public void ShowProperties(string path)
     {

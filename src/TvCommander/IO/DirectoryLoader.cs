@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using TvCommander.Model;
 using TvCommander.Native;
 
@@ -13,6 +13,16 @@ public static class DirectoryLoader
 
     public static async Task<List<FileItem>> LoadAsync(string path, bool showHidden, IProgress<int>? progress, CancellationToken ct)
     {
+        if (PathUtil.IsMtp(path))
+        {
+            return await GuardedIo.RunAsync(ctx =>
+            {
+                var items = Mtp.List(path, showHidden, ctx);
+                progress?.Report(items.Count);
+                return items;
+            }, Mtp.IdleTimeoutMs, path, ct, onTimeout: () => Mtp.Abandon(path));
+        }
+
         var host = await NetworkHealth.GetRemoteHostAsync(path);
         if (host != null && !await NetworkHealth.CheckHostAsync(host))
             throw new HostUnreachableException(host);

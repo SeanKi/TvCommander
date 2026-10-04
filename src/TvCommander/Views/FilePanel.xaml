@@ -1,4 +1,4 @@
-<UserControl x:Class="TvCommander.Views.FilePanel"
+﻿<UserControl x:Class="TvCommander.Views.FilePanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Border x:Name="OuterBorder" BorderThickness="2" BorderBrush="Transparent">
@@ -39,7 +39,7 @@
             </Border>
 
             <Grid>
-                <ListView x:Name="FileList" SelectionMode="Single" IsTextSearchEnabled="False" AllowDrop="True"
+                <ListView x:Name="FileList" SelectionMode="Single" FontSize="{DynamicResource ListFontSize}" IsTextSearchEnabled="False" AllowDrop="True"
                           BorderThickness="1"
                           VirtualizingPanel.IsVirtualizing="True"
                           VirtualizingPanel.VirtualizationMode="Recycling"
@@ -49,6 +49,7 @@
                           PreviewMouseLeftButtonDown="FileList_PreviewMouseLeftButtonDown"
                           PreviewMouseLeftButtonUp="FileList_PreviewMouseLeftButtonUp"
                           PreviewMouseRightButtonDown="FileList_PreviewMouseRightButtonDown"
+                          MouseRightButtonUp="FileList_MouseRightButtonUp"
                           PreviewMouseMove="FileList_PreviewMouseMove"
                           DragEnter="FileList_DragOver"
                           DragOver="FileList_DragOver"
@@ -95,23 +96,6 @@
                             <GridViewColumn x:Name="AttrColumn" Header="속성" Width="44" DisplayMemberBinding="{Binding AttrText}"/>
                         </GridView>
                     </ListView.View>
-                    <ListView.ContextMenu>
-                        <ContextMenu>
-                            <MenuItem Header="열기" InputGestureText="Enter" Click="MenuOpen_Click"/>
-                            <MenuItem Header="보기" InputGestureText="F3" Click="MenuView_Click"/>
-                            <MenuItem Header="편집" InputGestureText="F4" Click="MenuEdit_Click"/>
-                            <Separator/>
-                            <MenuItem Header="복사..." InputGestureText="F5" Click="MenuCopy_Click"/>
-                            <MenuItem Header="이동..." InputGestureText="F6" Click="MenuMove_Click"/>
-                            <MenuItem Header="이름 바꾸기" InputGestureText="Shift+F6" Click="MenuRename_Click"/>
-                            <MenuItem Header="삭제" InputGestureText="F8" Click="MenuDelete_Click"/>
-                            <Separator/>
-                            <MenuItem Header="전체 경로 복사" InputGestureText="Ctrl+Shift+C" Click="MenuCopyPath_Click"/>
-                            <MenuItem Header="이름 복사" Click="MenuCopyName_Click"/>
-                            <Separator/>
-                            <MenuItem Header="속성" Click="MenuProperties_Click"/>
-                        </ContextMenu>
-                    </ListView.ContextMenu>
                 </ListView>
 
                 <Border x:Name="LoadingOverlay" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"

@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace TvCommander.Model;
 
@@ -14,7 +14,8 @@ public sealed class AppSettings
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     public int PanelCount { get; set; } = 2;
-    public bool GridLayout { get; set; }
+    /// <summary>목록 글씨 크기: 0 작게, 1 보통, 2 크게</summary>
+    public int FontLevel { get; set; } = 1;
     public int ActivePanel { get; set; }
     public bool ShowHidden { get; set; }
     /// <summary>F4 편집기</summary>
