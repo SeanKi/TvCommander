@@ -37,11 +37,13 @@ public partial class MainWindow : Window
         {
             var p = new FilePanel(this, i);
             p.Activated += OnPanelActivated;
+            p.PathChanged += OnPanelPathChanged;
             if (i < _settings.Panels.Count) p.ApplyState(_settings.Panels[i]);
             _panels.Add(p);
         }
         HiddenToggle.IsChecked = _settings.ShowHidden;
         InitToolbarIcons();
+        InitCommandLine();
         ApplyFontLevel(_settings.FontLevel);
         RestoreWindowBounds();
 
@@ -195,6 +197,7 @@ public partial class MainWindow : Window
             _target = prev;
         FixTarget();
         UpdatePanelRoles();
+        UpdateCommandPrompt();
     }
 
     private void FixTarget()
@@ -295,6 +298,16 @@ public partial class MainWindow : Window
             case (Key.Down, Alt): P.ShowHistoryMenu(); break;
 
             case (Key.U, Ctrl): CmdSwap(); break;
+            case (Key.E, Ctrl): FocusCommandLine(); break;
+            case (Key.Enter, Ctrl):
+                if (P.CursorItem is { IsParent: false } ce) AppendToCommandLine(ce.Name);
+                break;
+            case (Key.Enter, Ctrl | Shift):
+                if (P.CursorItem is { IsParent: false } cf) AppendToCommandLine(cf.FullPath);
+                break;
+            case (Key.P, Ctrl):
+                if (P.CurrentPath is { } cp) AppendToCommandLine(cp);
+                break;
             case (Key.R, Ctrl): _ = P.RefreshAsync(); break;
             case (Key.H, Ctrl): ToggleHidden(); break;
             case (Key.L, Ctrl): P.FocusPathBox(); break;

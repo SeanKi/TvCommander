@@ -6,7 +6,7 @@ Double Commander 스타일의 멀티 패널(2·3·4·6·8창) 파일 매니저. 
 
 ```powershell
 .\build.ps1                 # Release 빌드 (C++ FmCore → WPF 앱)
-.\build.ps1 -Publish        # .\publish 에 self-contained 배포본 (.NET 설치 불필요)
+.\build.ps1 -Publish        # .\publish 에 self-contained 배포본 (.NET 설치 불필요, 압축 exe 약 65 MB)
 ```
 
 - 필요: Visual Studio 2022 (C++ 데스크톱 워크로드), .NET 8 이상 SDK
@@ -69,6 +69,8 @@ tests/IoProbe/         타임아웃·열거 성능 점검용 콘솔
 | Ctrl+F2 / F3 / F4 / F6 / F8 | 2창 / 3창 / 4창(2×2) / 6창(2×3) / 8창(2×4) |
 | Ctrl+= / Ctrl+- | 목록 글씨 크게 / 작게 (작게 12px · 보통 14px · 크게 16px) |
 | Ctrl+Shift+C | 선택 항목 전체 경로 복사 |
+| Ctrl+E | 명령줄로 이동 |
+| Ctrl+Enter / Ctrl+Shift+Enter / Ctrl+P | 명령줄에 파일 이름 / 전체 경로 / 현재 폴더 경로 넣기 |
 | Enter, Backspace, Ctrl+PgUp | 열기, 상위 폴더 |
 | Insert, Space, Shift+↑↓, Ctrl+클릭, Shift+클릭 | 선택(빨간색) |
 | Num+ / Num- / Num* / Ctrl+A | 마스크로 선택 / 해제 / 반전 / 전체 |
@@ -86,6 +88,15 @@ tests/IoProbe/         타임아웃·열거 성능 점검용 콘솔
   대상은 직전에 활성이던 패널이고, Ctrl+Shift+숫자로 고정할 수 있다. 2창에서는 항상 반대편.
 - **드래그 앤 드롭**: 파일을 다른 패널(또는 그 안의 폴더 위)에 놓으면 복사/이동 메뉴가 뜬다.
   Ctrl 을 누른 채 놓으면 바로 복사, Shift 는 바로 이동. 탐색기와도 주고받을 수 있다.
+
+## 명령줄 (하단)
+
+- 프롬프트에 **활성 패널의 폴더**가 표시되고, 입력한 명령은 그 폴더를 작업 폴더로 실행된다.
+- Enter: 프로그램(.exe)은 바로 실행, 문서·바로 가기는 연결 프로그램으로, 내부 명령(dir, copy, echo...)과 배치 파일은 cmd 창에서 실행하고 창을 남긴다.
+- Shift+Enter: 항상 cmd 창에서 실행하고 창을 남긴다.
+- `cd 경로`, `cd..`, `cd \`, `D:` 는 실행하지 않고 활성 패널을 이동한다 (`%TEMP%` 같은 환경 변수도 됨).
+- ↑↓ 또는 Alt+↓ 로 이전 명령 (최근 50개, settings.json `CommandHistory`), Esc 는 지우고 목록으로.
+- 네트워크 폴더는 실행 전에 서버 응답을 확인하고, UNC 폴더에서 cmd 를 쓸 때는 `pushd` 로 임시 드라이브를 잡는다. 휴대폰 폴더에서는 실행하지 않는다.
 
 ## 오른쪽 버튼 메뉴
 

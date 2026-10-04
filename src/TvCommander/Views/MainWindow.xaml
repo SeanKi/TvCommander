@@ -78,6 +78,16 @@
             <Button Style="{StaticResource FnButton}" Tag="F10" Click="FnKey_Click" Content="F10 종료"/>
         </UniformGrid>
 
+        <!-- 명령줄: 활성 패널 폴더에서 실행 (Enter / Shift+Enter 창 유지, Ctrl+Enter 로 파일 이름 넣기) -->
+        <DockPanel DockPanel.Dock="Bottom" Margin="4,2,4,2">
+            <TextBlock x:Name="CommandPrompt" DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,6,0"
+                       FontFamily="Consolas, Malgun Gothic" FontSize="{DynamicResource ListFontSize}"/>
+            <ComboBox x:Name="CommandBox" IsEditable="True" IsTextSearchEnabled="False" StaysOpenOnEdit="True"
+                      FontFamily="Consolas, Malgun Gothic" FontSize="{DynamicResource ListFontSize}"
+                      PreviewKeyDown="CommandBox_PreviewKeyDown"
+                      ToolTip="명령줄 (Ctrl+E) — Enter: 실행, Shift+Enter: 창 유지, Esc: 지우기, ↑↓: 이전 명령&#x0a;cd 경로 / 드라이브(D:) 는 패널을 이동합니다&#x0a;목록에서 Ctrl+Enter: 파일 이름, Ctrl+Shift+Enter: 전체 경로, Ctrl+P: 현재 폴더 경로 넣기"/>
+        </DockPanel>
+
         <Grid x:Name="PanelGrid" Margin="2"/>
     </DockPanel>
 </Window>

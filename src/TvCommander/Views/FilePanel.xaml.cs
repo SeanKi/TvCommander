@@ -66,6 +66,8 @@ public partial class FilePanel : UserControl
     }
 
     public event Action<FilePanel>? Activated;
+    /// <summary>폴더를 성공적으로 열었을 때 (명령줄 프롬프트 갱신용)</summary>
+    public event Action<FilePanel>? PathChanged;
 
     public int Index { get; }
     public string? CurrentPath { get; private set; }
@@ -166,6 +168,7 @@ public partial class FilePanel : UserControl
             ApplyItems(items, focusName, marks, keepState ? oldIndex : 0);
             HideError();
             PathBox.Text = full;
+            PathChanged?.Invoke(this);
             UpdateDriveSelection();
             SetupWatcher();
             _ = UpdateFreeSpaceAsync();

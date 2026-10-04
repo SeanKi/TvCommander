@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Security.Cryptography;
 
 namespace TvCommander;
@@ -32,7 +32,9 @@ public static class AppVersion
     {
         try
         {
-            using var fs = File.OpenRead(asm.Location);
+            // 단일 파일 배포에서는 어셈블리 파일이 따로 없으므로 실행 파일 자체를 해시한다
+            var path = string.IsNullOrEmpty(asm.Location) ? Environment.ProcessPath : asm.Location;
+            using var fs = File.OpenRead(path!);
             return Convert.ToHexString(MD5.HashData(fs))[..8].ToLowerInvariant();
         }
         catch

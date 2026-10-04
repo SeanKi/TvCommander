@@ -1,7 +1,7 @@
 # TvCommander build script
 #   .\build.ps1                    Release build (C++ FmCore + WPF app)
 #   .\build.ps1 -Configuration Debug
-#   .\build.ps1 -Publish           self-contained publish to .\publish (no .NET install needed)
+#   .\build.ps1 -Publish           self-contained publish to .\publish (no .NET install needed, compressed exe ~65 MB)
 param(
     [ValidateSet('Debug', 'Release')][string]$Configuration = 'Release',
     [switch]$Publish
@@ -22,7 +22,8 @@ $proj = "$root\src\TvCommander\TvCommander.csproj"
 if ($Publish) {
     Write-Host "== TvCommander publish (self-contained, win-x64)" -ForegroundColor Cyan
     dotnet publish $proj -c $Configuration -r win-x64 --self-contained true `
-        -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=false -o "$root\publish" --nologo
+        -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true `
+        -p:IncludeNativeLibrariesForSelfExtract=false -o "$root\publish" --nologo
 } else {
     Write-Host "== TvCommander build $Configuration" -ForegroundColor Cyan
     dotnet build $proj -c $Configuration --nologo -v minimal

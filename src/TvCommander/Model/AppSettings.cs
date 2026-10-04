@@ -23,6 +23,8 @@ public sealed class AppSettings
     /// <summary>F9 터미널. "auto" = Windows Terminal 이 있으면 wt, 없으면 cmd</summary>
     public string Terminal { get; set; } = "auto";
     public List<PanelState> Panels { get; set; } = new();
+    /// <summary>명령줄 이전 명령 (최근 것이 앞)</summary>
+    public List<string> CommandHistory { get; set; } = new();
 
     public double WindowLeft { get; set; } = double.NaN;
     public double WindowTop { get; set; } = double.NaN;
