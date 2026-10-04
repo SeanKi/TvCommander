@@ -299,6 +299,7 @@ public partial class MainWindow : Window
 
             case (Key.U, Ctrl): CmdSwap(); break;
             case (Key.E, Ctrl): FocusCommandLine(); break;
+            case (Key.F, Ctrl): CmdConnections(); break;
             case (Key.Enter, Ctrl):
                 if (P.CursorItem is { IsParent: false } ce) AppendToCommandLine(ce.Name);
                 break;
@@ -356,6 +357,7 @@ public partial class MainWindow : Window
     private void Up_Click(object sender, RoutedEventArgs e) { _ = P.GoUpAsync(); P.FocusList(); }
     private void Refresh_Click(object sender, RoutedEventArgs e) { NetworkHealth.InvalidateAll(); _ = P.RefreshAsync(); P.FocusList(); }
     private void Search_Click(object sender, RoutedEventArgs e) => CmdSearch();
+    private void Connections_Click(object sender, RoutedEventArgs e) => CmdConnections();
     private void CopyPath_Click(object sender, RoutedEventArgs e) => CmdCopyText(CopyTextKind.CurrentDir);
     private void CopyFullPaths_Click(object sender, RoutedEventArgs e) => CmdCopyText(CopyTextKind.FullPaths);
     private void CopyNames_Click(object sender, RoutedEventArgs e) => CmdCopyText(CopyTextKind.Names);
@@ -388,28 +390,28 @@ public partial class MainWindow : Window
         if (it == null || it.IsDirectory) return;
         var local = await MaterializeAsync(it.FullPath);
         if (local == null) return;
-        if (PathUtil.IsMtp(it.FullPath))
-            P.FlashStatus("휴대폰 파일은 임시 사본으로 열립니다. 수정한 뒤에는 F5 로 다시 복사하세요.");
+        if (PathUtil.IsVirtual(it.FullPath))
+            P.FlashStatus("원격 파일은 임시 사본으로 열립니다. 수정한 뒤에는 F5 로 다시 복사하세요.");
         StartProcess(_settings.Editor, Quote(local), Path.GetDirectoryName(local));
     }
 
-    /// <summary>휴대폰 파일이면 임시 폴더로 받아 로컬 경로를 돌려준다. 실패하면 null.</summary>
+    /// <summary>원격(휴대폰·FTP·WebDAV) 파일이면 임시 폴더로 받아 로컬 경로를 돌려준다. 실패하면 null.</summary>
     private async Task<string?> MaterializeAsync(string path)
     {
-        if (!PathUtil.IsMtp(path)) return path;
+        if (!PathUtil.IsVirtual(path)) return path;
         var p = P;
-        var dir = Path.Combine(Path.GetTempPath(), "MP-Commander", "mtp", Guid.NewGuid().ToString("N")[..8]);
+        var fs = VirtualFs.For(path);
+        var dir = Path.Combine(Path.GetTempPath(), "MP-Commander", "remote", Guid.NewGuid().ToString("N").Substring(0, 8));
         var local = Path.Combine(dir, PathUtil.LastSegment(path));
-        p.FlashStatus("휴대폰에서 가져오는 중... " + PathUtil.LastSegment(path));
+        p.FlashStatus($"{fs.DisplayName}에서 가져오는 중... " + PathUtil.LastSegment(path));
         try
         {
             await GuardedIo.RunAsync(ctx =>
             {
                 Directory.CreateDirectory(dir);
-                FmProgressCallback cb = (_, _, _) => { ctx.Report(); return ctx.IsCancelled ? 1 : 0; };
-                unsafe { Mtp.Download(path, local, true, cb, ctx.CancelFlag); }
+                fs.Download(path, local, true, (_, _) => { ctx.Report(); return ctx.IsCancelled; });
                 return true;
-            }, Mtp.IdleTimeoutMs, path, onTimeout: () => Mtp.Abandon(path));
+            }, fs.IdleTimeoutMs, path, onTimeout: () => fs.Abandon(path));
             return local;
         }
         catch (Exception ex)
@@ -520,8 +522,11 @@ public partial class MainWindow : Window
         var dst = PathUtil.Combine(it.DirectoryPath, name);
         try
         {
-            if (PathUtil.IsMtp(src))
-                await GuardedIo.RunAsync(_ => { Mtp.Rename(src, name); return true; }, Mtp.IdleTimeoutMs, src, onTimeout: () => Mtp.Abandon(src));
+            if (PathUtil.IsVirtual(src))
+            {
+                var fs = VirtualFs.For(src);
+                await GuardedIo.RunAsync(_ => { fs.Rename(src, name); return true; }, fs.IdleTimeoutMs, src, onTimeout: () => fs.Abandon(src));
+            }
             else
             await GuardedIo.RunAsync(_ =>
             {
@@ -551,8 +556,11 @@ public partial class MainWindow : Window
         var full = PathUtil.Combine(p.CurrentPath, name.Trim());
         try
         {
-            if (PathUtil.IsMtp(full))
-                await GuardedIo.RunAsync(_ => Mtp.EnsureFolder(full), Mtp.IdleTimeoutMs, full, onTimeout: () => Mtp.Abandon(full));
+            if (PathUtil.IsVirtual(full))
+            {
+                var fs = VirtualFs.For(full);
+                await GuardedIo.RunAsync(_ => { fs.EnsureFolder(full); return true; }, fs.IdleTimeoutMs, full, onTimeout: () => fs.Abandon(full));
+            }
             else
                 await GuardedIo.RunAsync(_ => Directory.CreateDirectory(full), 5000, full);
         }
@@ -571,9 +579,9 @@ public partial class MainWindow : Window
         if (items.Count == 0 || p.CurrentPath == null) return;
 
         string what = items.Count == 1 ? $"'{items[0].Name}'" : $"{items.Count}개 항목";
-        if (PathUtil.IsMtp(p.CurrentPath))
+        if (PathUtil.IsVirtual(p.CurrentPath))
         {
-            await DeleteOnPhoneAsync(p, items, what);
+            await DeleteRemoteAsync(p, items, what);
             return;
         }
         string msg = permanent
@@ -607,11 +615,12 @@ public partial class MainWindow : Window
         p.FocusList();
     }
 
-    /// <summary>휴대폰에는 휴지통이 없으므로 항상 영구 삭제</summary>
-    private async Task DeleteOnPhoneAsync(FilePanel p, List<FileItem> items, string what)
+    /// <summary>원격(휴대폰·FTP·WebDAV)에는 휴지통이 없으므로 항상 영구 삭제</summary>
+    private async Task DeleteRemoteAsync(FilePanel p, List<FileItem> items, string what)
     {
-        if (MessageBox.Show(this, $"{what}을(를) 휴대폰에서 영구 삭제합니다. 휴지통이 없어 복구할 수 없습니다.\n계속할까요?",
-                "휴대폰에서 삭제", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
+        var fs = VirtualFs.For(p.CurrentPath!);
+        if (MessageBox.Show(this, $"{what}을(를) {fs.DisplayName}에서 영구 삭제합니다. 휴지통이 없어 복구할 수 없습니다.\n계속할까요?",
+                $"{fs.DisplayName}에서 삭제", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
         {
             p.FocusList();
             return;
@@ -625,11 +634,11 @@ public partial class MainWindow : Window
                 foreach (var path in paths)
                 {
                     if (ctx.IsCancelled) break;
-                    Mtp.Delete(path, recursive: true);
+                    fs.Delete(path, recursive: true);
                     ctx.Report();
                 }
                 return true;
-            }, 30000, p.CurrentPath, onTimeout: () => Mtp.Abandon(paths[0]));
+            }, 30000, p.CurrentPath, onTimeout: () => fs.Abandon(paths[0]));
         }
         catch (Exception ex)
         {
@@ -644,7 +653,7 @@ public partial class MainWindow : Window
     {
         var dir = P.CurrentPath;
         if (dir == null) return;
-        if (PathUtil.IsMtp(dir)) { P.FlashStatus("휴대폰 폴더에서는 터미널을 열 수 없습니다."); return; }
+        if (PathUtil.IsVirtual(dir)) { P.FlashStatus("원격(휴대폰·FTP·WebDAV) 폴더에서는 터미널을 열 수 없습니다."); return; }
         var term = _settings.Terminal;
         bool unc = dir.StartsWith(@"\\");
 
@@ -669,7 +678,7 @@ public partial class MainWindow : Window
     public void CmdSearch()
     {
         var root = P.CurrentPath ?? "C:\\";
-        if (PathUtil.IsMtp(root)) root = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);   // 찾기는 PC 경로만
+        if (PathUtil.IsVirtual(root)) root = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);   // 찾기는 PC 경로만
         if (_searchWindow == null)
         {
             _searchWindow = new SearchWindow(this, root) { Owner = this };
@@ -681,6 +690,21 @@ public partial class MainWindow : Window
             _searchWindow.SetRoot(root);
             _searchWindow.Activate();
         }
+    }
+
+    /// <summary>Ctrl+F: 원격 연결 관리 (FTP / WebDAV 등록·편집·삭제·연결)</summary>
+    public void CmdConnections()
+    {
+        new ConnectionsWindow(this) { Owner = this }.ShowDialog();
+        P.FocusList();
+    }
+
+    /// <summary>활성 패널에서 경로 열기 (연결 관리의 '연결')</summary>
+    public async void OpenPathInActivePanel(string path)
+    {
+        var p = P;
+        await p.NavigateAsync(path);
+        p.FocusList();
     }
 
     public enum CopyTextKind { CurrentDir, FullPaths, Names }

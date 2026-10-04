@@ -36,7 +36,7 @@ public partial class MainWindow
             ? new List<FileItem>()
             : clicked.IsMarked ? panel.GetSelectedOrCurrent() : new List<FileItem> { clicked };
 
-        bool mtp = PathUtil.IsMtp(dir);
+        bool mtp = PathUtil.IsVirtual(dir);   // 원격(휴대폰·FTP·WebDAV): 셸 메뉴 없음
         // 셸 확장은 네트워크 경로에서 오래 걸릴 수 있다 → 서버가 응답할 때만 셸 메뉴를 붙인다
         bool shell = !mtp && (await NetworkHealth.CheckPathAsync(dir)).Ok;
         bool extended = (Keyboard.Modifiers & ModifierKeys.Shift) != 0;
@@ -171,7 +171,7 @@ public partial class MainWindow
         var p = P;
         var items = p.GetSelectedOrCurrent();
         if (items.Count == 0 || p.CurrentPath == null) return;
-        if (PathUtil.IsMtp(p.CurrentPath)) { p.FlashStatus("휴대폰 파일은 PC 로 복사한 뒤 압축하세요."); return; }
+        if (PathUtil.IsVirtual(p.CurrentPath)) { p.FlashStatus("원격 파일은 PC 로 복사한 뒤 압축하세요."); return; }
 
         string baseName = items.Count == 1
             ? (items[0].IsDirectory ? items[0].Name : items[0].DisplayName)
@@ -215,7 +215,7 @@ public partial class MainWindow
             p.FlashStatus("내장 압축 풀기는 ZIP 만 지원합니다. 다른 형식은 오른쪽 버튼 메뉴의 압축 프로그램을 쓰세요.");
             return;
         }
-        if (PathUtil.IsMtp(p.CurrentPath)) { p.FlashStatus("휴대폰 파일은 PC 로 복사한 뒤 압축을 푸세요."); return; }
+        if (PathUtil.IsVirtual(p.CurrentPath)) { p.FlashStatus("원격 파일은 PC 로 복사한 뒤 압축을 푸세요."); return; }
 
         var defaultDest = PathUtil.WithSlash(Path.Combine(p.CurrentPath, it.DisplayName));
         var input = InputDialog.Show(this, "압축 풀기", $"'{it.Name}' 의 압축을 풀 폴더:", defaultDest);

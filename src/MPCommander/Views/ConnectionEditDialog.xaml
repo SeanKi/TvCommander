@@ -1,0 +1,74 @@
+<Window x:Class="MPCommander.Views.ConnectionEditDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="연결 설정" Width="560" SizeToContent="Height" ResizeMode="NoResize" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner" FontFamily="Segoe UI" FontSize="12">
+    <StackPanel Margin="14">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="90"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.Resources>
+                <Style TargetType="TextBlock">
+                    <Setter Property="VerticalAlignment" Value="Center"/>
+                </Style>
+                <Style TargetType="TextBox">
+                    <Setter Property="Margin" Value="0,3"/>
+                    <Setter Property="Padding" Value="3,2"/>
+                </Style>
+            </Grid.Resources>
+
+            <TextBlock Text="이름"/>
+            <TextBox x:Name="NameBox" Grid.Column="1" ToolTip="경로에 쓰입니다: ftp://이름/..., dav://이름/..."/>
+
+            <TextBlock Grid.Row="1" Text="종류"/>
+            <ComboBox x:Name="KindBox" Grid.Row="1" Grid.Column="1" Margin="0,3" SelectionChanged="KindBox_SelectionChanged">
+                <ComboBoxItem Content="FTP" Tag="Ftp"/>
+                <ComboBoxItem Content="FTPS (명시적 TLS)" Tag="Ftps"/>
+                <ComboBoxItem Content="WebDAV (http / https)" Tag="WebDav"/>
+            </ComboBox>
+
+            <TextBlock x:Name="AddressLabel" Grid.Row="2" Text="서버"/>
+            <TextBox x:Name="AddressBox" Grid.Row="2" Grid.Column="1"/>
+            <TextBlock x:Name="AddressHint" Grid.Row="3" Grid.Column="1" Foreground="Gray" Margin="2,0,0,4" TextWrapping="Wrap"/>
+
+            <TextBlock x:Name="PortLabel" Grid.Row="4" Text="포트"/>
+            <TextBox x:Name="PortBox" Grid.Row="4" Grid.Column="1" Width="80" HorizontalAlignment="Left" ToolTip="비우면 21"/>
+
+            <TextBlock x:Name="StartLabel" Grid.Row="5" Text="시작 폴더"/>
+            <TextBox x:Name="StartBox" Grid.Row="5" Grid.Column="1" ToolTip="로그인 폴더 기준 하위 경로 (예: pub/files). 비우면 로그인 폴더"/>
+
+            <TextBlock Grid.Row="6" Text="사용자"/>
+            <TextBox x:Name="UserBox" Grid.Row="6" Grid.Column="1" ToolTip="FTP 에서 비우면 anonymous"/>
+
+            <TextBlock Grid.Row="7" Text="비밀번호"/>
+            <PasswordBox x:Name="PassBox" Grid.Row="7" Grid.Column="1" Margin="0,3" Padding="3,2"/>
+
+            <StackPanel Grid.Row="8" Grid.Column="1" Margin="0,6,0,0">
+                <TextBlock x:Name="PassHint" Foreground="Gray" Text="비워 두면 저장된 비밀번호를 그대로 씁니다." Visibility="Collapsed" Margin="2,0,0,4"/>
+                <CheckBox x:Name="PassiveCheck" Content="패시브 모드 (공유기·방화벽 뒤에서는 켜 두세요)" IsChecked="True" Margin="0,2"/>
+                <CheckBox x:Name="IgnoreCertCheck" Content="인증서 오류 무시 (자체 서명 인증서를 쓰는 NAS 등)" Margin="0,2"/>
+            </StackPanel>
+        </Grid>
+
+        <TextBlock x:Name="ResultText" Margin="0,10,0,0" TextWrapping="Wrap"/>
+
+        <DockPanel Margin="0,12,0,0" LastChildFill="False">
+            <Button x:Name="TestButton" DockPanel.Dock="Left" Content="연결 시험" Style="{StaticResource DialogButton}" Margin="0" Click="Test_Click"/>
+            <Button DockPanel.Dock="Right" Content="취소" IsCancel="True" Style="{StaticResource DialogButton}"/>
+            <Button DockPanel.Dock="Right" Content="저장" IsDefault="True" Style="{StaticResource DialogButton}" Click="Save_Click"/>
+        </DockPanel>
+    </StackPanel>
+</Window>

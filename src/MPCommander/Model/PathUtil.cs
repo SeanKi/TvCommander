@@ -1,30 +1,45 @@
-﻿namespace MPCommander.Model;
+using System.Text.RegularExpressions;
+
+namespace MPCommander.Model;
 
 /// <summary>
-/// 경로 도우미. 일반 Windows 경로와 휴대폰 경로("mtp://기기/저장소/폴더", 구분자 '/') 를 함께 다룬다.
+/// 경로 도우미. 일반 Windows 경로와 원격 경로를 함께 다룬다.
+/// 원격 경로는 "scheme://이름/폴더/파일" 형식이고 구분자는 '/':
+///   mtp://기기/저장소/...   (안드로이드폰 등)
+///   ftp://연결이름/...      (FTP / FTPS)
+///   dav://연결이름/...      (WebDAV)
+/// "scheme://이름" 까지가 루트다.
 /// </summary>
 public static class PathUtil
 {
     public const string MtpPrefix = "mtp://";
+    private static readonly Regex VirtualRegex = new(@"^(mtp|ftp|dav)://", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-    public static bool IsMtp(string? p) => p != null && p.StartsWith(MtpPrefix, StringComparison.OrdinalIgnoreCase);
+    /// <summary>원격(휴대폰·FTP·WebDAV) 경로인가</summary>
+    public static bool IsVirtual(string? p) => p != null && VirtualRegex.IsMatch(p);
+
+    /// <summary>"ftp://..." → "ftp"</summary>
+    public static string Scheme(string p) => p.Substring(0, p.IndexOf("://", StringComparison.Ordinal)).ToLowerInvariant();
+
+    private static int PrefixLength(string p) => p.IndexOf("://", StringComparison.Ordinal) + 3;
 
     /// <summary>입력 경로를 정규화한다. 상대 경로는 baseDir 기준.</summary>
     public static string Normalize(string path, string? baseDir = null)
     {
         var p = Environment.ExpandEnvironmentVariables(path.Trim().Trim('"'));
-        if (IsMtp(p)) return NormalizeMtp(p);
-        if (IsMtp(baseDir) && !Path.IsPathRooted(p)) return NormalizeMtp(baseDir + "/" + p);
+        if (IsVirtual(p)) return NormalizeVirtual(p);
+        if (IsVirtual(baseDir) && !Path.IsPathRooted(p)) return NormalizeVirtual(baseDir + "/" + p);
 
         if (p.Length == 2 && p[1] == ':') p += "\\";
         if (!Path.IsPathRooted(p) && baseDir != null) p = Path.Combine(baseDir, p);
         return TrimEnd(Path.GetFullPath(p));
     }
 
-    private static string NormalizeMtp(string p)
+    private static string NormalizeVirtual(string p)
     {
+        int n = PrefixLength(p);
         var segs = new List<string>();
-        foreach (var s in p[MtpPrefix.Length..].Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries))
+        foreach (var s in p.Substring(n).Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries))
         {
             if (s == ".") continue;
             if (s == "..")
@@ -34,12 +49,12 @@ public static class PathUtil
             }
             segs.Add(s);
         }
-        return MtpPrefix + string.Join("/", segs);
+        return Scheme(p) + "://" + string.Join("/", segs);
     }
 
     /// <summary>끝의 구분자 제거 (루트 "C:\" 는 유지)</summary>
     public static string TrimEnd(string p)
-        => IsMtp(p) ? (p.Length > MtpPrefix.Length ? p.TrimEnd('/') : p) : TrimLocal(p);
+        => IsVirtual(p) ? (p.Length > PrefixLength(p) ? p.TrimEnd('/') : p) : TrimLocal(p);
 
     /// <summary>끝의 구분자 제거. "C:\" 같은 드라이브 루트는 유지한다 (Path.TrimEndingDirectorySeparator 대체).</summary>
     private static string TrimLocal(string p)
@@ -50,43 +65,55 @@ public static class PathUtil
         return t.Length == 2 && t[1] == ':' ? t + "\\" : t;
     }
 
+    /// <summary>같은 경로인가. FTP 는 서버가 대소문자를 구분할 수 있지만 표시·비교 편의상 구분하지 않는다.</summary>
     public static bool Same(string? a, string? b)
         => a != null && b != null && string.Equals(TrimEnd(a), TrimEnd(b), StringComparison.OrdinalIgnoreCase);
 
     public static string? Parent(string p)
     {
-        if (!IsMtp(p)) return Path.GetDirectoryName(TrimEnd(p));
+        if (!IsVirtual(p)) return Path.GetDirectoryName(TrimEnd(p));
         var t = TrimEnd(p);
         int idx = t.LastIndexOf('/');
-        return idx < MtpPrefix.Length ? null : t[..idx];
+        return idx < PrefixLength(t) ? null : t.Substring(0, idx);
     }
 
     public static bool IsRoot(string p) => Parent(p) == null;
 
     public static string LastSegment(string p)
     {
-        if (!IsMtp(p)) return Path.GetFileName(TrimEnd(p));
+        if (!IsVirtual(p)) return Path.GetFileName(TrimEnd(p));
         var t = TrimEnd(p);
-        return t[(t.LastIndexOf('/') + 1)..];
+        return t.Substring(t.LastIndexOf('/') + 1);
     }
 
     public static string WithSlash(string p)
     {
-        char sep = IsMtp(p) ? '/' : '\\';
+        char sep = IsVirtual(p) ? '/' : '\\';
         return p.EndsWith(sep) ? p : p + sep;
     }
 
-    /// <summary>"C:\a" → "C:\", "\\srv\share\a" → "\\srv\share", "mtp://폰/저장소/a" → "mtp://폰"</summary>
+    /// <summary>"C:\a" → "C:\", "\\srv\share\a" → "\\srv\share", "ftp://서버/a" → "ftp://서버"</summary>
     public static string Root(string p)
     {
-        if (!IsMtp(p)) return Path.GetPathRoot(p) ?? p;
+        if (!IsVirtual(p)) return Path.GetPathRoot(p) ?? p;
         var t = TrimEnd(p);
-        int idx = t.IndexOf('/', MtpPrefix.Length);
-        return idx < 0 ? t : t[..idx];
+        int idx = t.IndexOf('/', PrefixLength(t));
+        return idx < 0 ? t : t.Substring(0, idx);
+    }
+
+    /// <summary>원격 경로에서 "scheme://" 다음의 이름(기기·연결 이름)</summary>
+    public static string RootName(string p) => Root(p).Substring(PrefixLength(p));
+
+    /// <summary>원격 경로에서 루트 아래의 세그먼트들</summary>
+    public static string[] RemoteSegments(string p)
+    {
+        var t = TrimEnd(p);
+        var rest = t.Substring(PrefixLength(t));
+        return rest.Split('/', StringSplitOptions.RemoveEmptyEntries).Skip(1).ToArray();
     }
 
     public static string Combine(string dir, string name)
-        => IsMtp(dir) ? TrimEnd(dir) + "/" + name.Replace('\\', '/').Trim('/') : Path.Combine(dir, name);
+        => IsVirtual(dir) ? TrimEnd(dir) + "/" + name.Replace('\\', '/').Trim('/') : Path.Combine(dir, name);
 
     public static bool IsUnder(string child, string parent)
         => child.StartsWith(WithSlash(TrimEnd(parent)), StringComparison.OrdinalIgnoreCase);
@@ -98,7 +125,7 @@ public static class PathUtil
     public static bool IsServerOnly(string p)
     {
         if (!p.StartsWith(@"\\") || p.StartsWith(@"\\?\")) return false;
-        return TrimEnd(p)[2..].IndexOf('\\') < 0;
+        return TrimEnd(p).Substring(2).IndexOf('\\') < 0;
     }
 
     public static string FormatSize(long bytes)

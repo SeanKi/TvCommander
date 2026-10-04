@@ -102,7 +102,7 @@ public static class GuardedIo
                 bool userCancel = ct.IsCancellationRequested;
                 if (!userCancel && now - lastChange < idleTimeoutMs) continue;
 
-                tcs.TrySetException(userCancel ? new OperationCanceledException(ct) : new IoTimeoutException(target, idleTimeoutMs));
+                // 먼저 막힌 작업을 끊고(다음 시도가 이 정리와 겹치지 않게) 결과를 확정한다
                 ctx.Cancel();
                 lock (sync)
                 {
@@ -110,6 +110,7 @@ public static class GuardedIo
                         NativeMethods.FmCancelThreadIo(handle);
                 }
                 try { onTimeout?.Invoke(); } catch { }
+                tcs.TrySetException(userCancel ? new OperationCanceledException(ct) : new IoTimeoutException(target, idleTimeoutMs));
                 return;
             }
         }

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <!-- 먹통 방지 / 열거 성능 / 휴대폰 / ZIP 점검용 콘솔. 앱의 IO·Model·Native 소스를 그대로 컴파일한다. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -16,6 +16,8 @@
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\MPCommander\GlobalUsings.cs" />

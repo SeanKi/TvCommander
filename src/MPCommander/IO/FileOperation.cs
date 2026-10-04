@@ -44,7 +44,7 @@ public sealed class FileOperation : ProgressOperation
     public override void Cancel()
     {
         base.Cancel();
-        if (_sources.Any(PathUtil.IsMtp) || PathUtil.IsMtp(_destination)) Mtp.CancelAll();
+        if (_sources.Any(PathUtil.IsVirtual) || PathUtil.IsVirtual(_destination)) VirtualFs.CancelAll();
     }
 
     private int OnProgress(ulong transferred, ulong total, IntPtr user)
@@ -212,16 +212,23 @@ public sealed class FileOperation : ProgressOperation
         return overwrite;
     }
 
-    // ───────────────────────── 경로 종류별 기본 동작 ─────────────────────────
+    // ───────────────────────── 경로 종류별 기본 동작 (PC / 휴대폰·FTP·WebDAV) ─────────────────────────
 
     private static bool IsLocalSameVolume(string a, string b)
-        => !PathUtil.IsMtp(a) && !PathUtil.IsMtp(b) && PathUtil.SameVolume(a, b);
+        => !PathUtil.IsVirtual(a) && !PathUtil.IsVirtual(b) && PathUtil.SameVolume(a, b);
+
+    /// <summary>원격 전송 진행 보고 (true = 취소)</summary>
+    private bool RemoteProgress(long done, long total)
+    {
+        OnProgress((ulong)Math.Max(0, done), (ulong)Math.Max(0, total), IntPtr.Zero);
+        return IsCancelled;
+    }
 
     private static Info GetInfo(string path)
     {
-        if (PathUtil.IsMtp(path))
+        if (PathUtil.IsVirtual(path))
         {
-            var e = Mtp.GetEntry(path);
+            var e = VirtualFs.For(path).GetEntry(path);
             if (e == null) return default;
             var time = e.LastWrite > 0 ? DateTime.FromFileTimeUtc(e.LastWrite).ToLocalTime() : DateTime.MinValue;
             return new Info(true, e.IsFolder, e.Size, time);
@@ -234,10 +241,13 @@ public sealed class FileOperation : ProgressOperation
     private unsafe List<(string Name, long Size, bool IsDir, bool IsLink)> ListDir(string dir)
     {
         var result = new List<(string, long, bool, bool)>();
-        if (PathUtil.IsMtp(dir))
+        if (PathUtil.IsVirtual(dir))
         {
-            foreach (var e in Mtp.ListChildren(dir, CancelPtr))
+            foreach (var e in VirtualFs.For(dir).List(dir, null))
+            {
+                ThrowIfCancelled();
                 result.Add((e.Name, e.Size, e.IsFolder, false));
+            }
             Touch();
             return result;
         }
@@ -261,7 +271,7 @@ public sealed class FileOperation : ProgressOperation
 
     private static void CreateDir(string path)
     {
-        if (PathUtil.IsMtp(path)) Mtp.EnsureFolder(path);
+        if (PathUtil.IsVirtual(path)) VirtualFs.For(path).EnsureFolder(path);
         else Directory.CreateDirectory(path);
     }
 
@@ -277,9 +287,9 @@ public sealed class FileOperation : ProgressOperation
 
     private unsafe void CopyFile(string src, string dst, bool overwrite)
     {
-        bool srcMtp = PathUtil.IsMtp(src), dstMtp = PathUtil.IsMtp(dst);
+        bool srcRemote = PathUtil.IsVirtual(src), dstRemote = PathUtil.IsVirtual(dst);
 
-        if (!srcMtp && !dstMtp)
+        if (!srcRemote && !dstRemote)
         {
             int rc = NativeMethods.FmCopyFile(src, dst, overwrite ? 1 : 0, _progressCb, IntPtr.Zero, CancelPtr);
             if (rc != 0)
@@ -290,28 +300,26 @@ public sealed class FileOperation : ProgressOperation
             return;
         }
 
-        if (srcMtp && !dstMtp)
+        if (srcRemote && !dstRemote)
         {
             if (overwrite) ClearReadOnly(dst);
-            Mtp.Download(src, dst, overwrite, _progressCb, CancelPtr);
+            VirtualFs.For(src).Download(src, dst, overwrite, RemoteProgress);
             return;
         }
 
-        if (!srcMtp && dstMtp)
+        if (!srcRemote && dstRemote)
         {
-            if (overwrite) Mtp.Delete(dst, recursive: false);   // MTP 는 덮어쓰기가 없다 → 지우고 올린다
-            Mtp.Upload(src, dst, _progressCb, CancelPtr);
+            VirtualFs.For(dst).Upload(src, dst, overwrite, RemoteProgress);
             return;
         }
 
-        // 휴대폰 → 휴대폰: 임시 파일 경유
-        var temp = Path.Combine(Path.GetTempPath(), "MP-Commander", "mtp-" + Guid.NewGuid().ToString("N"));
+        // 원격 → 원격 (폰↔폰, 폰↔FTP, FTP↔WebDAV ...): PC 임시 파일 경유
+        var temp = Path.Combine(Path.GetTempPath(), "MP-Commander", "xfer-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Path.GetDirectoryName(temp)!);
         try
         {
-            Mtp.Download(src, temp, true, _progressCb, CancelPtr);
-            if (overwrite) Mtp.Delete(dst, recursive: false);
-            Mtp.Upload(temp, dst, _progressCb, CancelPtr);
+            VirtualFs.For(src).Download(src, temp, true, RemoteProgress);
+            VirtualFs.For(dst).Upload(temp, dst, overwrite, RemoteProgress);
         }
         finally
         {
@@ -328,20 +336,21 @@ public sealed class FileOperation : ProgressOperation
 
     private static void DeleteFile(string path)
     {
-        if (PathUtil.IsMtp(path))
+        if (PathUtil.IsVirtual(path))
         {
-            Mtp.Delete(path, recursive: false);
+            VirtualFs.For(path).Delete(path, recursive: false);
             return;
         }
         ClearReadOnly(path);
         File.Delete(path);
     }
 
-    private static unsafe void DeleteEmptyDir(string path)
+    private static void DeleteEmptyDir(string path)
     {
-        if (PathUtil.IsMtp(path))
+        if (PathUtil.IsVirtual(path))
         {
-            if (Mtp.ListChildren(path).Count == 0) Mtp.Delete(path, recursive: false);
+            var fs = VirtualFs.For(path);
+            if (fs.List(path, null).Count == 0) fs.Delete(path, recursive: false);
             return;
         }
         Directory.Delete(path, false);
@@ -356,7 +365,9 @@ public sealed class FileOperation : ProgressOperation
         bool endsWithSlash = raw.EndsWith('\\') || raw.EndsWith('/');
         var input = PathUtil.Normalize(raw, PathUtil.Parent(PathUtil.TrimEnd(_sources[0])));
 
-        bool isDir = PathUtil.IsMtp(input) ? (PathUtil.IsRoot(input) || Mtp.IsFolder(input)) : Directory.Exists(input);
+        bool isDir = PathUtil.IsVirtual(input)
+            ? PathUtil.IsRoot(input) || VirtualFs.For(input).GetEntry(input)?.IsFolder == true
+            : Directory.Exists(input);
         if (endsWithSlash || isDir)
             return (input, null);
         if (_sources.Count == 1)

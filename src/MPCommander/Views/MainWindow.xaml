@@ -54,6 +54,7 @@
                 <Button Click="Refresh_Click" ToolTip="새로고침 (Ctrl+R)"><TextBlock Style="{StaticResource Icon}" Text="&#xE72C;"/></Button>
                 <Separator/>
                 <Button Click="Search_Click" ToolTip="파일 찾기 (Alt+F7)"><TextBlock Style="{StaticResource Icon}" Text="&#xE721;"/></Button>
+                <Button Click="Connections_Click" ToolTip="원격 연결 관리 — FTP / FTPS / WebDAV 등록·연결 (Ctrl+F)"><TextBlock Style="{StaticResource Icon}" Text="&#xE774;"/></Button>
                 <Separator/>
                 <Button Click="CopyPath_Click" ToolTip="현재 폴더 경로 복사"><TextBlock Style="{StaticResource Icon}" Text="&#xE8C8;"/></Button>
                 <Button Click="CopyFullPaths_Click" ToolTip="선택 항목 전체 경로 복사 (Ctrl+Shift+C)"><TextBlock Style="{StaticResource Icon}" Text="&#xE71B;"/></Button>

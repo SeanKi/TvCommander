@@ -99,9 +99,9 @@ public partial class MainWindow
         }
 
         if (dir == null) return;
-        if (PathUtil.IsMtp(dir))
+        if (PathUtil.IsVirtual(dir))
         {
-            panel.FlashStatus("휴대폰 폴더에서는 명령을 실행할 수 없습니다.");
+            panel.FlashStatus("원격(휴대폰·FTP·WebDAV) 폴더에서는 명령을 실행할 수 없습니다.");
             return;
         }
         var (ok, host) = await NetworkHealth.CheckPathAsync(dir);

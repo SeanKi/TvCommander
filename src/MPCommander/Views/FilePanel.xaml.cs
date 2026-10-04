@@ -62,6 +62,7 @@ public partial class FilePanel : UserControl
 
         UpdateHeaders();
         PopulateDrives();
+        RemoteConnections.Changed += () => Dispatcher.BeginInvoke(PopulateDrives);
     }
 
     public event Action<FilePanel>? Activated;
@@ -523,9 +524,10 @@ public partial class FilePanel : UserControl
         if (path == null) return;
         try
         {
-            if (PathUtil.IsMtp(path))
+            if (PathUtil.IsVirtual(path))
             {
-                var info = await GuardedIo.RunAsync(_ => Mtp.StorageInfo(path), Mtp.IdleTimeoutMs, path);
+                var fs = VirtualFs.For(path);
+                var info = await GuardedIo.RunAsync(_ => fs.SpaceInfo(path), fs.IdleTimeoutMs, path);
                 if (path == CurrentPath)
                     _freeText = info is { } i ? $"{PathUtil.FormatSize((long)i.Free)} / {PathUtil.FormatSize((long)i.Total)}" : "";
                 UpdateStatus();
@@ -576,7 +578,7 @@ public partial class FilePanel : UserControl
         _watcher?.Dispose();
         _watcher = null;
         var path = CurrentPath;
-        if (path == null || path.StartsWith(@"\\") || PathUtil.IsMtp(path)) return;
+        if (path == null || path.StartsWith(@"\\") || PathUtil.IsVirtual(path)) return;
         try
         {
             var type = new DriveInfo(PathUtil.Root(path)).DriveType;
@@ -671,6 +673,9 @@ public partial class FilePanel : UserControl
                 var name = d.Name.TrimEnd('\\');
                 _drives.Add(new DriveEntry(name, kind.Length > 0 ? $"{name}  {kind}" : name));
             }
+            // 등록된 FTP / WebDAV 연결 (연결 관리: Ctrl+F)
+            foreach (var c in RemoteConnections.All)
+                _drives.Add(new DriveEntry(c.RootPath, $"🌐 {c.Name}  {c.KindText}"));
             if (DriveCombo.ItemsSource == null) DriveCombo.ItemsSource = _drives;
             UpdateDriveSelection();
         }
@@ -748,7 +753,7 @@ public partial class FilePanel : UserControl
     {
         if (DriveCombo.SelectedItem is not DriveEntry d) return;
         if (CurrentPath != null && string.Equals(DriveKey(CurrentPath), d.Root, StringComparison.OrdinalIgnoreCase)) return;
-        var path = _driveLastPath.TryGetValue(d.Root, out var last) ? last : PathUtil.IsMtp(d.Root) ? d.Root : d.Root + "\\";
+        var path = _driveLastPath.TryGetValue(d.Root, out var last) ? last : PathUtil.IsVirtual(d.Root) ? d.Root : d.Root + "\\";
         _ = NavigateAsync(path);
     }
 
@@ -942,7 +947,7 @@ public partial class FilePanel : UserControl
         var paths = items.Select(i => i.FullPath).ToArray();
         var data = new DataObject();
         data.SetData(PathsFormat, paths);
-        if (!paths.Any(PathUtil.IsMtp)) data.SetData(DataFormats.FileDrop, paths);
+        if (!paths.Any(PathUtil.IsVirtual)) data.SetData(DataFormats.FileDrop, paths);
         data.SetData(DragFormat, Index.ToString());
         var effect = DragDrop.DoDragDrop(FileList, data, DragDropEffects.Copy | DragDropEffects.Move);
         if (effect != DragDropEffects.None) _ = RefreshAsync();   // 탐색기 등 외부로 이동된 경우

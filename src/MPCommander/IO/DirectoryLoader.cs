@@ -13,14 +13,16 @@ public static class DirectoryLoader
 
     public static async Task<List<FileItem>> LoadAsync(string path, bool showHidden, IProgress<int>? progress, CancellationToken ct)
     {
-        if (PathUtil.IsMtp(path))
+        if (PathUtil.IsVirtual(path))
         {
+            // 휴대폰·FTP·WebDAV: 서버/기기 확인과 요청 중단은 각 구현이 맡는다
+            var fs = VirtualFs.For(path);
             return await GuardedIo.RunAsync(ctx =>
             {
-                var items = Mtp.List(path, showHidden, ctx);
+                var items = VirtualFs.ToFileItems(path, fs.List(path, ctx));
                 progress?.Report(items.Count);
                 return items;
-            }, Mtp.IdleTimeoutMs, path, ct, onTimeout: () => Mtp.Abandon(path));
+            }, fs.IdleTimeoutMs, path, ct, onTimeout: () => fs.Abandon(path));
         }
 
         var host = await NetworkHealth.GetRemoteHostAsync(path);

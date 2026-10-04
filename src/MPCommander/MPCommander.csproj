@@ -13,7 +13,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>MP-Commander</AssemblyName>
     <RootNamespace>MPCommander</RootNamespace>
-    <Version>0.5.0</Version>
+    <Version>0.6.0</Version>
     <Product>Multi-Pane Commander</Product>
     <AssemblyTitle>MP-Commander</AssemblyTitle>
     <Description>Multi-Pane Commander - multi-panel file manager for Windows</Description>
@@ -27,6 +27,8 @@
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
 
   <!-- git 커밋/수정 여부를 어셈블리 메타데이터로 넣는다 (창 제목 표시용) -->
