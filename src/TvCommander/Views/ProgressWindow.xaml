@@ -1,0 +1,16 @@
+<Window x:Class="TvCommander.Views.ProgressWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="560" SizeToContent="Height" ResizeMode="NoResize" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner" FontFamily="Segoe UI" FontSize="12">
+    <StackPanel Margin="14">
+        <TextBlock x:Name="PhaseText" FontWeight="SemiBold"/>
+        <TextBlock x:Name="FileText" TextTrimming="CharacterEllipsis" Margin="0,8,0,3"/>
+        <ProgressBar x:Name="FileBar" Height="14" Maximum="1"/>
+        <TextBlock x:Name="TotalText" Margin="0,10,0,3"/>
+        <ProgressBar x:Name="TotalBar" Height="14" Maximum="1"/>
+        <TextBlock x:Name="StallText" Foreground="Firebrick" Margin="0,8,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+        <Button x:Name="CancelButton" Content="취소" Style="{StaticResource DialogButton}" HorizontalAlignment="Right"
+                Margin="0,12,0,0" Click="Cancel_Click"/>
+    </StackPanel>
+</Window>

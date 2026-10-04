@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>x64</PlatformTarget>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>TvCommander</AssemblyName>
+    <RootNamespace>TvCommander</RootNamespace>
+    <Version>0.1.0</Version>
+    <Product>TvCommander</Product>
+  </PropertyGroup>
+
+  <!-- C++ FmCore.dll 을 출력/배포 폴더에 복사 (build.ps1 또는 솔루션 빌드가 먼저 만든다) -->
+  <PropertyGroup>
+    <NativeDll>$(MSBuildThisFileDirectory)..\..\build\$(Configuration)\FmCore.dll</NativeDll>
+  </PropertyGroup>
+  <Target Name="CopyNativeDll" AfterTargets="Build">
+    <Error Condition="!Exists('$(NativeDll)')" Text="FmCore.dll not found: $(NativeDll). Run build.ps1 to build the C++ module first." />
+    <Copy SourceFiles="$(NativeDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
+  <Target Name="PublishNativeDll" AfterTargets="Publish">
+    <Copy SourceFiles="$(NativeDll)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>
