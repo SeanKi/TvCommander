@@ -19,6 +19,12 @@
                         ToolTip="폴더 히스토리 (Alt+↓)" Click="History_Click">
                     <TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center"/>
                 </Button>
+                <!-- 별표: 현재 폴더를 '자주 머문 폴더'에 올리기/내리기 (Ctrl+D). 목록에 있으면 노란 별 -->
+                <Button x:Name="StarButton" DockPanel.Dock="Right" Width="24" Focusable="False" Margin="2,0,2,0"
+                        Click="Star_Click">
+                    <TextBlock x:Name="StarGlyph" Text="&#xE734;" FontFamily="Segoe MDL2 Assets" FontSize="13"
+                               VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </Button>
                 <Button DockPanel.Dock="Right" Content=".." Width="22" Focusable="False" ToolTip="상위 폴더" Click="Up_Click"/>
                 <TextBox x:Name="PathBox" Margin="3,0" Padding="2,1" VerticalContentAlignment="Center" IsTabStop="False"
                          KeyDown="PathBox_KeyDown"/>

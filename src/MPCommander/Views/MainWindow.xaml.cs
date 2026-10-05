@@ -63,8 +63,13 @@ public partial class MainWindow : Window
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
+        // 명령줄 경로: MP-Commander.exe [패널1 경로] [패널2 경로] ... (저장된 경로 대신 연다)
+        var args = Environment.GetCommandLineArgs().Skip(1).Where(a => a.Length > 0).Take(MaxPanels).ToList();
+        for (int i = 0; i < args.Count; i++) _panels[i].SetStartPath(args[i]);
+
         // SetLayout 이 보이는 패널들의 초기 탐색을 시작한다
-        SetLayout(_settings.PanelCount);
+        SetLayout(Math.Max(_settings.PanelCount, args.Count <= 2 ? 2 : args.Count <= 3 ? 3 : args.Count <= 4 ? 4 : args.Count <= 6 ? 6 : 8));
+        if (args.Count > 0) _settings.ActivePanel = 0;
         var first = _panels[Compat.Clamp(_settings.ActivePanel, 0, _panelCount - 1)];
         ActivatePanel(first);
         while (first.IsLoading) await Task.Delay(50);
@@ -300,6 +305,7 @@ public partial class MainWindow : Window
             case (Key.U, Ctrl): CmdSwap(); break;
             case (Key.E, Ctrl): FocusCommandLine(); break;
             case (Key.F, Ctrl): CmdConnections(); break;
+            case (Key.D, Ctrl): P.ToggleStar(); break;
             case (Key.Enter, Ctrl):
                 if (P.CursorItem is { IsParent: false } ce) AppendToCommandLine(ce.Name);
                 break;

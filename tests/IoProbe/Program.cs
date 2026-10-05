@@ -4,6 +4,8 @@ using MPCommander.IO;
 
 // 사용법: IoProbe <경로>...   각 경로를 DirectoryLoader 로 열어 결과와 걸린 시간을 출력한다.
 //        IoProbe --hang      응답 없는 동기 I/O(파이프 읽기)를 GuardedIo 가 끊어내는지 확인한다.
+if (args is [var mode, var remote] && (mode == "--mtp-put" || mode == "--mtp-del")) { MtpPutTest.Run(mode, remote); return; }
+if (args is ["--star"]) { StarTest.Run(); return; }
 if (args is ["--stall"]) { await StallTest.Run(); return; }
 if (args is ["--remote"]) { await RemoteTests.Run(); return; }
 

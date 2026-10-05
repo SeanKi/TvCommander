@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using MPCommander.IO;
 using MPCommander.Model;
 
@@ -139,5 +139,55 @@ internal static class StallTest
         sw.Restart();
         try { fs.List(c.RootPath, null); }
         catch (Exception ex) { Console.WriteLine($"retry right after (marked down): {sw.ElapsedMilliseconds} ms  {ex.GetType().Name}"); }
+    }
+}
+
+internal static class StarTest
+{
+    /// <summary>IoProbe --star: 별표(자주 머문 폴더 올리기/내리기) 동작</summary>
+    public static void Run()
+    {
+        var ini = Path.Combine(Path.GetTempPath(), "mpc-star-test.ini");
+        File.Delete(ini);
+        var h = DirectoryHistory.Load(ini);
+        for (int i = 0; i < 3; i++) h.RecordVisit(@"C:\auto");          // 자동 순위 후보 (3회)
+        h.RecordVisit(@"C:\once");                                       // 1회 → 후보 아님
+        Show(h, "start");
+        Console.WriteLine($"  toggle once -> added={h.ToggleSmart(@"C:\once")}");     // 올리기(고정)
+        Console.WriteLine($"  toggle auto -> added={h.ToggleSmart(@"C:\auto")}");     // 자동 순위에서 내리기
+        for (int i = 0; i < 5; i++) h.RecordVisit(@"C:\auto");          // 더 와도 다시 안 올라와야 함
+        Show(h, "after toggles + 5 more visits to auto");
+        h.Save();
+        var r = DirectoryHistory.Load(ini);
+        Show(r, "reloaded");
+        Console.WriteLine($"  toggle auto again -> added={r.ToggleSmart(@"C:\auto")}");  // 다시 올리기
+        Console.WriteLine($"  toggle once again -> added={r.ToggleSmart(@"C:\once")}");  // 내리기
+        Show(r, "final");
+        File.Delete(ini);
+    }
+
+    private static void Show(DirectoryHistory h, string label)
+        => Console.WriteLine($"{label}: [{string.Join(", ", h.GetSmart().Select(e => e.Path + (e.Pinned ? " (pinned)" : "")))}]" +
+                             $"  IsSmart auto={h.IsSmart(@"C:\auto")} once={h.IsSmart(@"C:\once")}");
+}
+
+internal static class MtpPutTest
+{
+    /// <summary>IoProbe --mtp-put remotePath / --mtp-del remotePath : 다른 프로세스에서 폰 파일 만들기/지우기 (자동 새로고침 시험용)</summary>
+    public static void Run(string mode, string remote)
+    {
+        var fs = VirtualFs.For(remote);
+        if (mode == "--mtp-put")
+        {
+            var tmp = Path.GetTempFileName();
+            File.WriteAllText(tmp, "auto refresh test");
+            fs.Upload(tmp, remote, overwrite: true, null);
+            File.Delete(tmp);
+        }
+        else
+        {
+            fs.Delete(remote, recursive: false);
+        }
+        Console.WriteLine($"{mode} {remote}: ok");
     }
 }

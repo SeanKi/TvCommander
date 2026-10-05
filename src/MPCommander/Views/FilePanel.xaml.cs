@@ -25,7 +25,7 @@ public partial class FilePanel : UserControl
     private readonly Stack<string> _back = new(), _forward = new();
     private readonly Dictionary<string, string> _driveLastPath = new(StringComparer.OrdinalIgnoreCase);
     private readonly System.Collections.ObjectModel.ObservableCollection<DriveEntry> _drives = new();
-    private readonly DispatcherTimer _loadingDelay, _watchDebounce, _flashTimer;
+    private readonly DispatcherTimer _loadingDelay, _watchDebounce, _flashTimer, _pollTimer;
 
     private List<FileItem> _items = new();
     private CancellationTokenSource? _loadCts;
@@ -52,7 +52,15 @@ public partial class FilePanel : UserControl
         _loadingDelay = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
         _loadingDelay.Tick += (_, _) => { _loadingDelay.Stop(); LoadingOverlay.Visibility = Visibility.Visible; };
         _watchDebounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
-        _watchDebounce.Tick += (_, _) => { _watchDebounce.Stop(); _watchFirstEvent = 0; if (!IsLoading) _ = RefreshAsync(); };
+        _watchDebounce.Tick += (_, _) =>
+        {
+            _watchDebounce.Stop();
+            if (IsLoading) { _watchDebounce.Start(); return; }   // 읽는 중이면 끝난 뒤 다시
+            _watchFirstEvent = 0;
+            _ = RefreshAsync();
+        };
+        _pollTimer = new DispatcherTimer();
+        _pollTimer.Tick += async (_, _) => await PollAsync();
         _flashTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
         _flashTimer.Tick += (_, _) => { _flashTimer.Stop(); UpdateStatus(); };
 
@@ -63,6 +71,8 @@ public partial class FilePanel : UserControl
         UpdateHeaders();
         PopulateDrives();
         RemoteConnections.Changed += () => Dispatcher.BeginInvoke(PopulateDrives);
+        _host.History.Changed += UpdateStar;   // 다른 패널에서 올리고 내려도 별표가 따라온다
+        UpdateStar();
     }
 
     public event Action<FilePanel>? Activated;
@@ -84,6 +94,9 @@ public partial class FilePanel : UserControl
         _comparer.Descending = s.Descending;
         UpdateHeaders();
     }
+
+    /// <summary>명령줄로 받은 시작 경로 (저장된 경로보다 우선)</summary>
+    public void SetStartPath(string path) => _initialPath = path;
 
     public PanelState GetState() => new()
     {
@@ -169,6 +182,7 @@ public partial class FilePanel : UserControl
             HideError();
             PathBox.Text = full;
             PathChanged?.Invoke(this);
+            UpdateStar();
             UpdateDriveSelection();
             SetupWatcher();
             _ = UpdateFreeSpaceAsync();
@@ -269,7 +283,8 @@ public partial class FilePanel : UserControl
 
         int idx = focusName != null ? items.FindIndex(i => string.Equals(i.Name, focusName, StringComparison.OrdinalIgnoreCase)) : -1;
         if (idx < 0) idx = Compat.Clamp(fallbackIndex, 0, Math.Max(0, items.Count - 1));
-        SetCursor(idx, _host.ActivePanel == this);
+        bool typing = Keyboard.FocusedElement is TextBox or ComboBox or ComboBoxItem;   // 경로 입력·명령줄 입력 중
+        SetCursor(idx, _host.ActivePanel == this && !typing);
         UpdateStatus();
     }
 
@@ -322,6 +337,37 @@ public partial class FilePanel : UserControl
 
     private void History_Click(object sender, RoutedEventArgs e) => ShowHistoryMenu();
 
+    // ───────────────────────── 별표 (자주 머문 폴더 올리기/내리기) ─────────────────────────
+
+    private static readonly Brush StarOnBrush = new SolidColorBrush(Color.FromRgb(0xF2, 0xB0, 0x05));
+
+    private void Star_Click(object sender, RoutedEventArgs e)
+    {
+        ToggleStar();
+        FocusList();
+    }
+
+    /// <summary>Ctrl+D / 별표 버튼: 현재 폴더를 자주 머문 폴더에 올리거나 내린다.</summary>
+    public void ToggleStar()
+    {
+        if (CurrentPath == null) return;
+        FlushDwell();
+        bool added = _host.History.ToggleSmart(CurrentPath);   // Changed → 모든 패널 UpdateStar
+        _host.History.Save();
+        FlashStatus(added ? "★ 자주 머문 폴더에 올렸습니다 (Alt+↓ 에서 맨 위)" : "☆ 자주 머문 폴더에서 내렸습니다");
+    }
+
+    /// <summary>현재 폴더가 자주 머문 폴더 목록에 있으면 노란 별(채움), 아니면 빈 별</summary>
+    private void UpdateStar()
+    {
+        bool on = CurrentPath != null && _host.History.IsSmart(CurrentPath);
+        StarGlyph.Text = on ? "" : "";   // FavoriteStarFill / FavoriteStar
+        StarGlyph.Foreground = on ? StarOnBrush : SystemColors.ControlTextBrush;
+        StarButton.ToolTip = on
+            ? "자주 머문 폴더에 있음 — 누르면 내립니다 (Ctrl+D)"
+            : "자주 머문 폴더에 올리기 (Ctrl+D)";
+    }
+
     /// <summary>히스토리 메뉴: 자주 머문 폴더(스마트) → 최근 폴더</summary>
     public void ShowHistoryMenu()
     {
@@ -367,7 +413,10 @@ public partial class FilePanel : UserControl
         if (smart.Count > 0)
         {
             menu.Items.Add(Title("★ 자주 머문 폴더"));
-            foreach (var s in smart) menu.Items.Add(Entry(s.Path, $"{s.Visits}회 · {FormatDwell(s.DwellSeconds)}"));
+            foreach (var s in smart)
+                menu.Items.Add(Entry(s.Path, s.Pinned
+                    ? (s.Visits > 0 ? $"★ 고정 · {s.Visits}회" : "★ 고정")
+                    : $"{s.Visits}회 · {FormatDwell(s.DwellSeconds)}"));
             menu.Items.Add(new Separator());
         }
 
@@ -571,34 +620,53 @@ public partial class FilePanel : UserControl
         FocusList();
     }
 
-    // ───────────────────────── 자동 새로고침 (로컬 드라이브만) ─────────────────────────
+    // ───────────────────────── 자동 새로고침 ─────────────────────────
+    //  로컬 드라이브: Windows 변경 알림(FileSystemWatcher)
+    //  네트워크 공유(SMB): 변경 알림(백그라운드에서 3초 제한으로 생성) + 주기 확인
+    //  WebDAV 드라이브·FTP·WebDAV·휴대폰: 알림이 없으므로 주기 확인
+    //  주기 확인은 목록을 다시 읽어 실제로 달라졌을 때만 화면을 바꾼다.
+
+    private const int NetworkPollMs = 5000;
+    private const int RemotePollMs = 8000;
+    private const int MaxPollMs = 60000;
+    private int _pollBaseMs;
+    private bool _polling;
 
     private void SetupWatcher()
     {
         _watcher?.Dispose();
         _watcher = null;
+        _pollTimer.Stop();
         var path = CurrentPath;
-        if (path == null || path.StartsWith(@"\\") || PathUtil.IsVirtual(path)) return;
+        if (path == null) return;
+
+        if (PathUtil.IsVirtual(path))
+        {
+            StartPolling(RemotePollMs);
+            return;
+        }
+
+        bool network;
+        try
+        {
+            network = path.StartsWith(@"\\") || new DriveInfo(PathUtil.Root(path)).DriveType == DriveType.Network;
+        }
+        catch
+        {
+            return;
+        }
+
+        if (network)
+        {
+            StartPolling(NetworkPollMs);
+            _ = TryNetworkWatcherAsync(path);
+            return;
+        }
+
         try
         {
             var type = new DriveInfo(PathUtil.Root(path)).DriveType;
-            if (type is not (DriveType.Fixed or DriveType.Removable)) return;
-
-            var w = new FileSystemWatcher(path)
-            {
-                IncludeSubdirectories = false,
-                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.Size
-                             | NotifyFilters.LastWrite | NotifyFilters.Attributes,
-                InternalBufferSize = 64 * 1024,
-            };
-            FileSystemEventHandler h = (_, _) => Dispatcher.BeginInvoke(OnWatcherEvent);
-            w.Created += h;
-            w.Deleted += h;
-            w.Changed += h;
-            w.Renamed += (_, _) => Dispatcher.BeginInvoke(OnWatcherEvent);
-            w.Error += (_, _) => Dispatcher.BeginInvoke(OnWatcherEvent);
-            w.EnableRaisingEvents = true;
-            _watcher = w;
+            if (type is DriveType.Fixed or DriveType.Removable) _watcher = CreateWatcher(path);
         }
         catch
         {
@@ -606,16 +674,101 @@ public partial class FilePanel : UserControl
         }
     }
 
+    private FileSystemWatcher CreateWatcher(string path)
+    {
+        var w = new FileSystemWatcher(path)
+        {
+            IncludeSubdirectories = false,
+            NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.Size
+                         | NotifyFilters.LastWrite | NotifyFilters.Attributes,
+            InternalBufferSize = 64 * 1024,
+        };
+        FileSystemEventHandler h = (_, _) => Dispatcher.BeginInvoke(OnWatcherEvent);
+        w.Created += h;
+        w.Deleted += h;
+        w.Changed += h;
+        w.Renamed += (_, _) => Dispatcher.BeginInvoke(OnWatcherEvent);
+        w.Error += (_, _) => Dispatcher.BeginInvoke(OnWatcherEvent);
+        w.EnableRaisingEvents = true;   // 네트워크에서는 여기서 멈출 수 있다 → 작업 스레드에서만
+        return w;
+    }
+
+    /// <summary>SMB 공유는 변경 알림을 지원한다. 서버가 응답할 때만, 작업 스레드에서 3초 제한으로 만든다.</summary>
+    private async Task TryNetworkWatcherAsync(string path)
+    {
+        try
+        {
+            var (ok, _) = await NetworkHealth.CheckPathAsync(path);
+            if (!ok) return;
+            var w = await GuardedIo.RunAsync(_ => CreateWatcher(path), 3000, path);
+            if (PathUtil.Same(CurrentPath, path) && _watcher == null) _watcher = w;
+            else w.Dispose();
+        }
+        catch
+        {
+            /* 알림을 못 쓰면 주기 확인만 */
+        }
+    }
+
+    private void StartPolling(int baseMs)
+    {
+        _pollBaseMs = baseMs;
+        _pollTimer.Interval = TimeSpan.FromMilliseconds(baseMs);
+        _pollTimer.Start();
+    }
+
+    /// <summary>목록을 다시 읽어 달라졌으면 반영한다. 실패는 조용히 넘기고 다음 주기에 다시 본다.</summary>
+    private async Task PollAsync()
+    {
+        var path = CurrentPath;
+        if (_polling || path == null || IsLoading || !_shownInLayout) return;
+        if (Window.GetWindow(this) is { WindowState: WindowState.Minimized }) return;
+
+        _polling = true;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            var items = await DirectoryLoader.LoadAsync(path, _host.ShowHidden, null, CancellationToken.None);
+            // 큰 폴더·느린 서버는 확인 간격을 늘린다 (읽는 시간의 4배, 최대 1분)
+            int next = Compat.Clamp((int)Math.Max(_pollBaseMs, sw.ElapsedMilliseconds * 4), _pollBaseMs, MaxPollMs);
+            _pollTimer.Interval = TimeSpan.FromMilliseconds(next);
+
+            if (!PathUtil.Same(path, CurrentPath) || IsLoading) return;
+            if (Signature(items) == Signature(_items)) return;
+            ApplyRefreshed(items);
+        }
+        catch
+        {
+            /* 네트워크 문제 등: 오류 표시 없이 다음 주기에 */
+        }
+        finally
+        {
+            _polling = false;
+        }
+    }
+
+    /// <summary>새로 읽은 목록을 표시 (커서·선택 표시 유지)</summary>
+    private void ApplyRefreshed(List<FileItem> items)
+    {
+        var marks = _items.Where(i => i.IsMarked).Select(i => i.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        ApplyItems(items, CursorItem?.Name, marks, FileList.SelectedIndex);
+    }
+
+    private static string Signature(IEnumerable<FileItem> items)
+        => string.Join("\n", items.Where(i => !i.IsParent)
+            .Select(i => $"{i.Name}|{i.Size}|{i.LastWriteRaw}|{(i.IsDirectory ? 1 : 0)}")
+            .OrderBy(s => s, StringComparer.Ordinal));
+
     private void OnWatcherEvent()
     {
         long now = Compat.TickCount64;
         if (_watchFirstEvent == 0) _watchFirstEvent = now;
         _watchDebounce.Stop();
         // 계속 바뀌는 중(대용량 복사 등)이라도 2초마다는 갱신
-        if (now - _watchFirstEvent > 2000)
+        if (now - _watchFirstEvent > 2000 && !IsLoading)
         {
             _watchFirstEvent = 0;
-            if (!IsLoading) _ = RefreshAsync();
+            _ = RefreshAsync();
             return;
         }
         _watchDebounce.Start();
