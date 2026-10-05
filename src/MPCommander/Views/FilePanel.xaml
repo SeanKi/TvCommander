@@ -14,7 +14,7 @@
                         Margin="3,0,0,0" Padding="5,0" Visibility="Collapsed" VerticalAlignment="Stretch">
                     <TextBlock Text="대상" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
                 </Border>
-                <Button DockPanel.Dock="Right" Content="\" Width="22" Focusable="False" ToolTip="루트" Click="Root_Click"/>
+                <Button DockPanel.Dock="Right" Content="\" Width="22" Focusable="False" ToolTip="루트 (Ctrl+\)" Click="Root_Click"/>
                 <Button x:Name="HistoryButton" DockPanel.Dock="Right" Width="24" Focusable="False" Margin="0,0,2,0"
                         ToolTip="폴더 히스토리 (Alt+↓)" Click="History_Click">
                     <TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center"/>
@@ -61,6 +61,17 @@
                           DragOver="FileList_DragOver"
                           DragLeave="FileList_DragLeave"
                           Drop="FileList_Drop">
+                    <ListView.Resources>
+                        <!-- 표시(선택) 색은 칸의 글자에 직접 준다: 커서 줄의 선택 강조가 덮어쓰지 못하게 -->
+                        <Style x:Key="CellText" TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsMarked}" Value="True">
+                                    <Setter Property="Foreground" Value="#FFD01818"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListView.Resources>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -68,10 +79,6 @@
                             <Setter Property="Margin" Value="0"/>
                             <EventSetter Event="MouseDoubleClick" Handler="Item_DoubleClick"/>
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsMarked}" Value="True">
-                                    <Setter Property="Foreground" Value="#FFD01818"/>
-                                    <Setter Property="FontWeight" Value="SemiBold"/>
-                                </DataTrigger>
                                 <DataTrigger Binding="{Binding IsHidden}" Value="True">
                                     <Setter Property="Opacity" Value="0.6"/>
                                 </DataTrigger>
@@ -85,21 +92,54 @@
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal">
                                             <Image Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,4,0"/>
-                                            <TextBlock Text="{Binding DisplayName}"/>
+                                            <TextBlock Text="{Binding DisplayName}" Style="{StaticResource CellText}"/>
+                                            <!-- 인터넷에서 받은 파일(차단됨) 표시 -->
+                                            <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="11" Foreground="#FFD9822B"
+                                                       Margin="5,0,0,0" VerticalAlignment="Center"
+                                                       ToolTip="인터넷에서 받은 파일 (차단됨) — Ctrl+Shift+U 로 차단 해제">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsBlocked}" Value="True">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
                                         </StackPanel>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn x:Name="ExtColumn" Header="확장자" Width="56" DisplayMemberBinding="{Binding Extension}"/>
-                            <GridViewColumn x:Name="SizeColumn" Header="크기" Width="96">
+                            <GridViewColumn x:Name="ExtColumn" Header="확장자" Width="56">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding SizeText}" TextAlignment="Right" HorizontalAlignment="Stretch"/>
+                                        <TextBlock Text="{Binding Extension}" Style="{StaticResource CellText}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn x:Name="DateColumn" Header="날짜" Width="112" DisplayMemberBinding="{Binding DateText}"/>
-                            <GridViewColumn x:Name="AttrColumn" Header="속성" Width="44" DisplayMemberBinding="{Binding AttrText}"/>
+                            <GridViewColumn x:Name="SizeColumn" Header="크기" Width="96">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding SizeText}" TextAlignment="Right" HorizontalAlignment="Stretch" Style="{StaticResource CellText}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn x:Name="DateColumn" Header="날짜" Width="112">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding DateText}" Style="{StaticResource CellText}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn x:Name="AttrColumn" Header="속성" Width="44">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding AttrText}" Style="{StaticResource CellText}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
                         </GridView>
                     </ListView.View>
                 </ListView>

@@ -14,7 +14,7 @@ public partial class MainWindow
     private enum MenuCmd
     {
         View = 1, Edit, CopyToTarget, MoveToTarget, Rename, Delete, CopyFullPath, CopyName, Pack, Unpack, Properties,
-        NewFolder = 20, Refresh, CopyDirPath, Terminal,
+        NewFolder = 20, Refresh, CopyDirPath, Terminal, Unblock, Paste,
     }
 
     private sealed record MenuSpec(MenuCmd Id, string Text, bool Enabled = true)
@@ -83,6 +83,7 @@ public partial class MainWindow
         {
             list.Add(MenuSpec.Separator);
             list.Add(new(MenuCmd.Pack, "ZIP으로 압축...\tAlt+F5"));
+            list.Add(new(MenuCmd.Unblock, "차단 해제...\tCtrl+Shift+U"));
             if (zip) list.Add(new(MenuCmd.Unpack, "압축 풀기...\tAlt+F9"));
         }
         if (!shell && !mtp) list.Add(new(MenuCmd.Properties, "속성"));
@@ -97,7 +98,9 @@ public partial class MainWindow
             new(MenuCmd.Refresh, "새로고침\tCtrl+R"),
             new(MenuCmd.CopyDirPath, "현재 경로 복사"),
         };
+        list.Insert(0, new(MenuCmd.Paste, "붙여넣기\tCtrl+V"));
         if (!mtp) list.Add(new(MenuCmd.Terminal, "여기서 터미널 열기\tF9"));
+        if (!mtp) list.Add(new(MenuCmd.Unblock, "이 폴더 차단 해제...\tCtrl+Shift+U"));
         return list;
     }
 
@@ -149,6 +152,8 @@ public partial class MainWindow
             case MenuCmd.Refresh: _ = P.RefreshAsync(); break;
             case MenuCmd.CopyDirPath: CmdCopyText(CopyTextKind.CurrentDir); break;
             case MenuCmd.Terminal: CmdTerminal(); break;
+            case MenuCmd.Unblock: CmdUnblock(); break;
+            case MenuCmd.Paste: CmdPaste(); break;
         }
     }
 

@@ -40,6 +40,8 @@ public partial class FilePanel : UserControl
     private int _fileCount, _dirCount, _markedFiles, _markedDirs;
     private long _totalSize, _markedSize;
     private string _freeText = "";
+    private int _blockedCount;
+    private int _zoneGeneration;
     private long _dwellStart;          // 현재 폴더에 들어온 시각 (0 = 측정 안 함: 패널이 숨겨짐)
     private bool _shownInLayout = true;
 
@@ -66,7 +68,11 @@ public partial class FilePanel : UserControl
 
         FileList.AddHandler(GridViewColumnHeader.ClickEvent, new RoutedEventHandler(Header_Click));
         GotKeyboardFocus += (_, _) => Activated?.Invoke(this);
-        PreviewMouseDown += (_, _) => Activated?.Invoke(this);
+        PreviewMouseDown += (_, e) =>
+        {
+            if (e.ChangedButton is MouseButton.XButton1 or MouseButton.XButton2) return;   // 뒤로/앞으로 버튼은 활성 패널 기준
+            Activated?.Invoke(this);
+        };
 
         UpdateHeaders();
         PopulateDrives();
@@ -179,6 +185,7 @@ public partial class FilePanel : UserControl
             CurrentPath = full;
             _driveLastPath[DriveKey(full)] = full;
             ApplyItems(items, focusName, marks, keepState ? oldIndex : 0);
+            _ = CheckBlockedAsync();
             HideError();
             PathBox.Text = full;
             PathChanged?.Invoke(this);
@@ -300,6 +307,7 @@ public partial class FilePanel : UserControl
     /// <summary>폴더가 바뀌면 떠난 폴더를 최근 목록에 넣고, 체류 시간과 방문을 기록한다.</summary>
     private void OnFolderChanged(string? oldPath, string newPath)
     {
+        _quick = "";   // 이전 폴더에서 치던 빠른 검색은 이어지지 않는다
         var history = _host.History;
         if (oldPath != null)
         {
@@ -556,6 +564,7 @@ public partial class FilePanel : UserControl
     {
         if (_flashTimer.IsEnabled) return;
         var s = $"{PathUtil.FormatSize(_markedSize)} / {PathUtil.FormatSize(_totalSize)},  파일 {_markedFiles:N0}/{_fileCount:N0},  폴더 {_markedDirs:N0}/{_dirCount:N0}";
+        if (_blockedCount > 0) s += $"   │   차단 {_blockedCount:N0}";
         if (_freeText.Length > 0) s += $"   │   여유 {_freeText}";
         StatusText.Text = s;
     }
@@ -748,10 +757,49 @@ public partial class FilePanel : UserControl
     }
 
     /// <summary>새로 읽은 목록을 표시 (커서·선택 표시 유지)</summary>
+    /// <summary>
+    /// 목록을 읽은 뒤 '인터넷에서 받은 파일' 표시가 있는 파일을 백그라운드에서 찾아 자물쇠로 표시한다.
+    /// 로컬은 모든 파일, 네트워크 공유는 처음 5,000개까지 (목록 표시는 기다리지 않는다).
+    /// </summary>
+    private async Task CheckBlockedAsync()
+    {
+        var path = CurrentPath;
+        int gen = ++_zoneGeneration;
+        _blockedCount = 0;
+        if (path == null || PathUtil.IsVirtual(path)) { UpdateStatus(); return; }
+
+        var files = _items.Where(i => !i.IsDirectory).ToList();
+        if (files.Count == 0) { UpdateStatus(); return; }
+        bool network;
+        try { network = path.StartsWith(@"\\") || new DriveInfo(PathUtil.Root(path)).DriveType == DriveType.Network; }
+        catch { return; }
+        if (network && files.Count > 5000) files = files.Take(5000).ToList();
+
+        try
+        {
+            var names = files.Select(f => f.Name).ToList();
+            var flags = await GuardedIo.RunAsync(ctx => ZoneCheck.Check(path, names, ctx), 5000, path);
+            if (gen != _zoneGeneration || !PathUtil.Same(path, CurrentPath)) return;
+            int n = 0;
+            for (int i = 0; i < files.Count; i++)
+            {
+                files[i].IsBlocked = flags[i];
+                if (flags[i]) n++;
+            }
+            _blockedCount = n;
+            UpdateStatus();
+        }
+        catch
+        {
+            /* 확인 실패는 표시만 안 한다 */
+        }
+    }
+
     private void ApplyRefreshed(List<FileItem> items)
     {
         var marks = _items.Where(i => i.IsMarked).Select(i => i.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
         ApplyItems(items, CursorItem?.Name, marks, FileList.SelectedIndex);
+        _ = CheckBlockedAsync();
     }
 
     private static string Signature(IEnumerable<FileItem> items)
@@ -931,8 +979,15 @@ public partial class FilePanel : UserControl
 
     private void Root_Click(object sender, RoutedEventArgs e)
     {
-        if (CurrentPath != null) _ = NavigateAsync(PathUtil.Root(CurrentPath));
+        _ = GoRootAsync();
         FocusList();
+    }
+
+    /// <summary>Ctrl+\ / '\' 버튼: 드라이브(공유·연결·기기) 루트로</summary>
+    public Task GoRootAsync()
+    {
+        if (CurrentPath == null || PathUtil.IsRoot(CurrentPath)) return Task.CompletedTask;
+        return NavigateAsync(PathUtil.Root(CurrentPath));
     }
 
     // ───────────────────────── 키보드 ─────────────────────────
@@ -949,7 +1004,14 @@ public partial class FilePanel : UserControl
                 if (CursorItem is { } it) OpenItem(it);
                 break;
             case Key.Back when mods == ModifierKeys.None:
-                if (_quick.Length > 0) { _quick = _quick[..^1]; QuickSearch(); }
+                // 빠른 검색을 막 입력하는 중(1.5초 안)일 때만 글자를 지우고, 아니면 상위 폴더로
+                ResetQuickIfStale(force: false);
+                if (_quick.Length > 0)
+                {
+                    _quick = _quick[..^1];
+                    _quickTick = Compat.TickCount64;
+                    QuickSearch();
+                }
                 else _ = GoUpAsync();
                 break;
             case Key.PageUp when mods == ModifierKeys.Control:

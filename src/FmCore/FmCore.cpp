@@ -185,6 +185,25 @@ FM_API int FM_CALL FmEnumDirectory(const wchar_t* path, FmEntryBatchCallback cb,
     return result;
 }
 
+// ───────────────────────── 차단 표시 확인 ─────────────────────────
+
+FM_API int FM_CALL FmCheckZone(const wchar_t* dir, const wchar_t* namesDoubleNull, uint8_t* results, int count,
+                               volatile long* cancelFlag, volatile long* progress)
+{
+    if (!dir || !namesDoubleNull || !results) return ERROR_INVALID_PARAMETER;
+    std::wstring base = dir;
+    if (!base.empty() && base.back() != L'\\') base += L'\\';
+
+    int i = 0;
+    for (const wchar_t* n = namesDoubleNull; *n && i < count; n += wcslen(n) + 1, ++i) {
+        if (cancelFlag && *cancelFlag) return ERROR_CANCELLED;
+        std::wstring stream = ExtendedPath(base + n) + L":Zone.Identifier";
+        results[i] = GetFileAttributesW(stream.c_str()) != INVALID_FILE_ATTRIBUTES ? 1 : 0;
+        if (progress) InterlockedIncrement(progress);
+    }
+    return 0;
+}
+
 // ───────────────────────── 파일 작업 ─────────────────────────
 
 FM_API int FM_CALL FmCopyFile(const wchar_t* src, const wchar_t* dst, int overwrite,

@@ -32,6 +32,13 @@ public sealed class AppSettings
     /// <summary>명령줄 이전 명령 (최근 것이 앞)</summary>
     public List<string> CommandHistory { get; set; } = new();
 
+    /// <summary>차단 해제: 폴더를 고르면 하위 폴더까지</summary>
+    public bool UnblockRecursive { get; set; } = true;
+    /// <summary>차단 해제: 폴더 안에서 대상으로 할 확장자 (; 구분, 점 없이)</summary>
+    public string UnblockTypes { get; set; } = "exe;dll";
+    /// <summary>차단 해제: 폴더 안의 모든 파일 (UnblockTypes 무시)</summary>
+    public bool UnblockAllFiles { get; set; }
+
     public double WindowLeft { get; set; } = double.NaN;
     public double WindowTop { get; set; } = double.NaN;
     public double WindowWidth { get; set; } = 1280;
@@ -77,6 +84,11 @@ public sealed class AppSettings
             Put("WindowHeight", WindowHeight.ToString("R", Inv));
             Put("Maximized", Maximized);
 
+            var u = ini.Section("Unblock");
+            u.Add(new("Recursive", UnblockRecursive.ToString(Inv)));
+            u.Add(new("Types", UnblockTypes));
+            u.Add(new("AllFiles", UnblockAllFiles.ToString(Inv)));
+
             for (int i = 0; i < Panels.Count; i++)
             {
                 var p = ini.Section($"Panel{i + 1}");
@@ -112,6 +124,9 @@ public sealed class AppSettings
         a.WindowWidth = Dbl("WindowWidth", a.WindowWidth);
         a.WindowHeight = Dbl("WindowHeight", a.WindowHeight);
         a.Maximized = Bool("Maximized");
+        a.UnblockRecursive = !bool.TryParse(ini.Get("Unblock", "Recursive"), out var ur) || ur;
+        a.UnblockTypes = ini.Get("Unblock", "Types") ?? a.UnblockTypes;
+        a.UnblockAllFiles = bool.TryParse(ini.Get("Unblock", "AllFiles"), out var ua) && ua;
 
         for (int i = 1; i <= 8; i++)
         {

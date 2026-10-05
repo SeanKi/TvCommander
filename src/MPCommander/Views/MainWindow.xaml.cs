@@ -50,6 +50,15 @@ public partial class MainWindow : Window
         Loaded += OnLoaded;
         Closing += OnClosing;
         PreviewKeyDown += OnPreviewKeyDown;
+
+        // 마우스 옆 버튼·키보드의 '뒤로/앞으로' 는 마우스 아래 패널이 아니라 항상 활성(파란 테두리) 패널에
+        PreviewMouseDown += (_, e) =>
+        {
+            if (e.ChangedButton == MouseButton.XButton1) { _ = P.GoBackAsync(); e.Handled = true; }
+            else if (e.ChangedButton == MouseButton.XButton2) { _ = P.GoForwardAsync(); e.Handled = true; }
+        };
+        CommandBindings.Add(new CommandBinding(NavigationCommands.BrowseBack, (_, _) => _ = P.GoBackAsync()));
+        CommandBindings.Add(new CommandBinding(NavigationCommands.BrowseForward, (_, _) => _ = P.GoForwardAsync()));
     }
 
     public bool ShowHidden => _settings.ShowHidden;
@@ -78,6 +87,15 @@ public partial class MainWindow : Window
 
     private void OnClosing(object? sender, CancelEventArgs e)
     {
+        SaveSettings();
+        foreach (var p in _panels) p.FlushDwell();
+        _history.Save();
+        _searchWindow?.Close();
+    }
+
+    /// <summary>현재 화면 상태(패널 수·경로·창 위치 등)를 설정에 담아 저장한다.</summary>
+    public void SaveSettings()
+    {
         _settings.PanelCount = _panelCount;
         _settings.ActivePanel = _active?.Index ?? 0;
         _settings.Panels = _panels.Select(p => p.GetState()).ToList();
@@ -88,9 +106,6 @@ public partial class MainWindow : Window
         _settings.WindowWidth = b.Width;
         _settings.WindowHeight = b.Height;
         _settings.Save();
-        foreach (var p in _panels) p.FlushDwell();
-        _history.Save();
-        _searchWindow?.Close();
     }
 
     private void RestoreWindowBounds()
@@ -306,6 +321,11 @@ public partial class MainWindow : Window
             case (Key.E, Ctrl): FocusCommandLine(); break;
             case (Key.F, Ctrl): CmdConnections(); break;
             case (Key.D, Ctrl): P.ToggleStar(); break;
+            case (Key.Oem5 or Key.OemBackslash, Ctrl): _ = P.GoRootAsync(); break;   // Ctrl+\ : 루트로
+            case (Key.C, Ctrl): CmdClipboardCopy(cut: false); break;
+            case (Key.X, Ctrl): CmdClipboardCopy(cut: true); break;
+            case (Key.V, Ctrl): CmdPaste(); break;
+            case (Key.U, Ctrl | Shift): CmdUnblock(); break;
             case (Key.Enter, Ctrl):
                 if (P.CursorItem is { IsParent: false } ce) AppendToCommandLine(ce.Name);
                 break;
@@ -364,6 +384,7 @@ public partial class MainWindow : Window
     private void Refresh_Click(object sender, RoutedEventArgs e) { NetworkHealth.InvalidateAll(); _ = P.RefreshAsync(); P.FocusList(); }
     private void Search_Click(object sender, RoutedEventArgs e) => CmdSearch();
     private void Connections_Click(object sender, RoutedEventArgs e) => CmdConnections();
+    private void Unblock_Click(object sender, RoutedEventArgs e) => CmdUnblock();
     private void CopyPath_Click(object sender, RoutedEventArgs e) => CmdCopyText(CopyTextKind.CurrentDir);
     private void CopyFullPaths_Click(object sender, RoutedEventArgs e) => CmdCopyText(CopyTextKind.FullPaths);
     private void CopyNames_Click(object sender, RoutedEventArgs e) => CmdCopyText(CopyTextKind.Names);
@@ -446,7 +467,8 @@ public partial class MainWindow : Window
     public void StartDropOperation(OpKind kind, IReadOnlyList<string> paths, string targetDir, FilePanel? source)
         => _ = RunFileOperationAsync(kind, paths, PathUtil.WithSlash(targetDir), source);
 
-    private async Task RunFileOperationAsync(OpKind kind, IReadOnlyList<string> sources, string destination, FilePanel? sourcePanel)
+    private async Task RunFileOperationAsync(OpKind kind, IReadOnlyList<string> sources, string destination, FilePanel? sourcePanel,
+                                             bool renameCopiesInSameFolder = false)
     {
         // 네트워크 사전 체크 (먹통 방지)
         foreach (var path in new[] { sources[0], destination })
@@ -456,7 +478,7 @@ public partial class MainWindow : Window
             if (!ok) { ShowError(new HostUnreachableException(host!).Message); return; }
         }
 
-        var op = new FileOperation(kind, sources, destination);
+        var op = new FileOperation(kind, sources, destination) { RenameCopiesInSameFolder = renameCopiesInSameFolder };
         await RunWithProgressAsync(op);
 
         if (!op.IsCancelled) sourcePanel?.ClearMarks();

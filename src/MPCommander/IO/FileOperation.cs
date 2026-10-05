@@ -41,6 +41,23 @@ public sealed class FileOperation : ProgressOperation
     public override string Title => Kind == OpKind.Copy ? "복사" : "이동";
     public string? TargetDirectory { get; private set; }
 
+    /// <summary>원본과 같은 폴더로 복사하면 오류 대신 "이름 - 복사본" 을 만든다 (붙여넣기용)</summary>
+    public bool RenameCopiesInSameFolder { get; set; }
+
+    /// <summary>"보고서.txt" → "보고서 - 복사본.txt", 있으면 "보고서 - 복사본 (2).txt" ...</summary>
+    private static string UniqueCopyName(string dir, string name)
+    {
+        bool isDir = GetInfo(PathUtil.Combine(dir, name)).IsDir;
+        int dot = isDir ? -1 : name.LastIndexOf('.');
+        string stem = dot > 0 ? name.Substring(0, dot) : name;
+        string ext = dot > 0 ? name.Substring(dot) : "";
+        for (int n = 1; ; n++)
+        {
+            var candidate = PathUtil.Combine(dir, $"{stem} - 복사본{(n == 1 ? "" : $" ({n})")}{ext}");
+            if (!GetInfo(candidate).Exists) return candidate;
+        }
+    }
+
     public override void Cancel()
     {
         base.Cancel();
@@ -73,7 +90,12 @@ public sealed class FileOperation : ProgressOperation
             if (Compat.IsEmpty(name) || PathUtil.IsRoot(src)) { ReportError(src, "드라이브나 기기 루트는 복사/이동할 수 없습니다."); continue; }
 
             var dst = PathUtil.Combine(targetDir, name);
-            if (PathUtil.Same(src, dst)) { ReportError(src, "원본과 대상이 같습니다."); continue; }
+            if (PathUtil.Same(src, dst))
+            {
+                // 같은 폴더에 붙여넣기(복사): 탐색기처럼 "이름 - 복사본" 으로
+                if (Kind == OpKind.Copy && RenameCopiesInSameFolder && newName == null) dst = UniqueCopyName(targetDir, name);
+                else { ReportError(src, "원본과 대상이 같습니다."); continue; }
+            }
 
             Info info = default;
             if (!Attempt(src, () => info = GetInfo(src))) continue;

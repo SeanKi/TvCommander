@@ -83,6 +83,9 @@ internal static unsafe class NativeMethods
     public static extern int FmEnumDirectory(string path, FmEntryBatchCallback cb, IntPtr user, int* cancelFlag, int* progress);
 
     [DllImport(Dll, CharSet = CharSet.Unicode)]
+    public static extern int FmCheckZone(string dir, char* namesDoubleNull, byte* results, int count, int* cancelFlag, int* progress);
+
+    [DllImport(Dll, CharSet = CharSet.Unicode)]
     public static extern int FmCopyFile(string src, string dst, int overwrite, FmProgressCallback? cb, IntPtr user, int* cancelFlag);
 
     [DllImport(Dll, CharSet = CharSet.Unicode)]

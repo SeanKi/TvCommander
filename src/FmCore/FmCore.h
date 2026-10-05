@@ -56,6 +56,10 @@ FM_API int   FM_CALL FmCompareNatural(const wchar_t* a, const wchar_t* b);
 FM_API int FM_CALL FmEnumDirectory(const wchar_t* path, FmEntryBatchCallback cb, void* user,
                                    volatile long* cancelFlag, volatile long* progress);
 
+// 인터넷에서 받은 파일 표시(Zone.Identifier 스트림)가 있는지 이름마다 확인. results[i] = 1 이면 차단됨.
+FM_API int FM_CALL FmCheckZone(const wchar_t* dir, const wchar_t* namesDoubleNull, uint8_t* results, int count,
+                               volatile long* cancelFlag, volatile long* progress);
+
 // 파일 작업
 FM_API int FM_CALL FmCopyFile(const wchar_t* src, const wchar_t* dst, int overwrite,
                               FmProgressCallback cb, void* user, volatile long* cancelFlag);

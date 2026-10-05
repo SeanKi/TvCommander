@@ -6,6 +6,20 @@ namespace MPCommander.Model;
 public sealed class FileItem : INotifyPropertyChanged
 {
     private static readonly PropertyChangedEventArgs MarkedArgs = new(nameof(IsMarked));
+    private static readonly PropertyChangedEventArgs BlockedArgs = new(nameof(IsBlocked));
+    private bool _blocked;
+
+    /// <summary>인터넷에서 받은 파일 표시(차단)가 있음. 목록을 읽은 뒤 백그라운드에서 채워진다.</summary>
+    public bool IsBlocked
+    {
+        get => _blocked;
+        set
+        {
+            if (_blocked == value) return;
+            _blocked = value;
+            PropertyChanged?.Invoke(this, BlockedArgs);
+        }
+    }
 
     private bool _marked;
     private string? _sizeText, _dateText;
