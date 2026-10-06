@@ -385,6 +385,7 @@ public partial class MainWindow : Window
     private void Search_Click(object sender, RoutedEventArgs e) => CmdSearch();
     private void Connections_Click(object sender, RoutedEventArgs e) => CmdConnections();
     private void Unblock_Click(object sender, RoutedEventArgs e) => CmdUnblock();
+    private void Pack_Click(object sender, RoutedEventArgs e) => CmdPack();
     private void CopyPath_Click(object sender, RoutedEventArgs e) => CmdCopyText(CopyTextKind.CurrentDir);
     private void CopyFullPaths_Click(object sender, RoutedEventArgs e) => CmdCopyText(CopyTextKind.FullPaths);
     private void CopyNames_Click(object sender, RoutedEventArgs e) => CmdCopyText(CopyTextKind.Names);

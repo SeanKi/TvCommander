@@ -39,6 +39,13 @@ public sealed class AppSettings
     /// <summary>차단 해제: 폴더 안의 모든 파일 (UnblockTypes 무시)</summary>
     public bool UnblockAllFiles { get; set; }
 
+    /// <summary>압축 형식: "7z" 또는 "zip"</summary>
+    public string PackFormat { get; set; } = "7z";
+    /// <summary>압축 수준: 0 저장, 1 빠르게, 2 보통, 3 최고</summary>
+    public int PackLevel { get; set; } = 2;
+    /// <summary>폴더 하나를 압축할 때 폴더는 빼고 안의 내용만</summary>
+    public bool PackContentsOnly { get; set; }
+
     public double WindowLeft { get; set; } = double.NaN;
     public double WindowTop { get; set; } = double.NaN;
     public double WindowWidth { get; set; } = 1280;
@@ -89,6 +96,11 @@ public sealed class AppSettings
             u.Add(new("Types", UnblockTypes));
             u.Add(new("AllFiles", UnblockAllFiles.ToString(Inv)));
 
+            var pk = ini.Section("Pack");
+            pk.Add(new("Format", PackFormat));
+            pk.Add(new("Level", PackLevel.ToString(Inv)));
+            pk.Add(new("ContentsOnly", PackContentsOnly.ToString(Inv)));
+
             for (int i = 0; i < Panels.Count; i++)
             {
                 var p = ini.Section($"Panel{i + 1}");
@@ -127,6 +139,9 @@ public sealed class AppSettings
         a.UnblockRecursive = !bool.TryParse(ini.Get("Unblock", "Recursive"), out var ur) || ur;
         a.UnblockTypes = ini.Get("Unblock", "Types") ?? a.UnblockTypes;
         a.UnblockAllFiles = bool.TryParse(ini.Get("Unblock", "AllFiles"), out var ua) && ua;
+        a.PackFormat = ini.Get("Pack", "Format") is "zip" ? "zip" : "7z";
+        a.PackLevel = int.TryParse(ini.Get("Pack", "Level"), NumberStyles.Integer, Inv, out var pl) ? pl : a.PackLevel;
+        a.PackContentsOnly = bool.TryParse(ini.Get("Pack", "ContentsOnly"), out var pc) && pc;
 
         for (int i = 1; i <= 8; i++)
         {

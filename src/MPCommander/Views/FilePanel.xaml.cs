@@ -1119,6 +1119,8 @@ public partial class FilePanel : UserControl
 
         if (mods == ModifierKeys.Control)
         {
+            // Double Commander 처럼: 아직 표시한 것이 없을 때 다른 항목을 Ctrl+클릭하면 커서 항목도 함께 표시
+            if (CursorItem is { } cur && cur != item && !_items.Any(i => i.IsMarked)) SetMark(cur, true);
             SetMark(item, !item.IsMarked);
             UpdateStatus();
             SetCursor(_items.IndexOf(item), true);

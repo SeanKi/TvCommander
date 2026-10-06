@@ -15,7 +15,7 @@
     <ApplicationIcon>Assets\MP-Commander.ico</ApplicationIcon>
     <AssemblyName>MP-Commander</AssemblyName>
     <RootNamespace>MPCommander</RootNamespace>
-    <Version>0.6.2</Version>
+    <Version>0.6.3</Version>
     <Product>Multi-Pane Commander</Product>
     <AssemblyTitle>MP-Commander</AssemblyTitle>
     <Description>Multi-Pane Commander - multi-panel file manager for Windows</Description>

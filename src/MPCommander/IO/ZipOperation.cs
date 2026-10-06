@@ -17,16 +17,20 @@ public sealed class ZipOperation : ProgressOperation
     private readonly bool _pack;
     private readonly IReadOnlyList<string> _sources;
     private readonly string _target;
+    private readonly CompressionLevel _level;
     private ConflictChoice? _conflictAll;
 
-    private ZipOperation(bool pack, IReadOnlyList<string> sources, string target)
+    private ZipOperation(bool pack, IReadOnlyList<string> sources, string target, CompressionLevel level = CompressionLevel.Optimal)
     {
         _pack = pack;
         _sources = sources;
         _target = target;
+        _level = level;
     }
 
-    public static ZipOperation Pack(IReadOnlyList<string> sources, string zipPath) => new(true, sources, zipPath);
+    /// <summary>level: 0 저장, 1 빠르게, 2·3 보통 (내장 ZIP 은 '최고' 단계가 따로 없다)</summary>
+    public static ZipOperation Pack(IReadOnlyList<string> sources, string zipPath, int level = 2)
+        => new(true, sources, zipPath, level switch { 0 => CompressionLevel.NoCompression, 1 => CompressionLevel.Fastest, _ => CompressionLevel.Optimal });
     public static ZipOperation Extract(string zipPath, string destDir) => new(false, new[] { zipPath }, destDir);
 
     public override string Title => _pack ? "압축" : "압축 풀기";
@@ -91,7 +95,7 @@ public sealed class ZipOperation : ProgressOperation
                     bool ok = Attempt(e.FullPath, () =>
                     {
                         using var input = new FileStream(e.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, BufferSize, FileOptions.SequentialScan);
-                        var entry = zip.CreateEntry(e.EntryName, CompressionLevel.Optimal);
+                        var entry = zip.CreateEntry(e.EntryName, _level);
                         entry.LastWriteTime = File.GetLastWriteTime(e.FullPath);
                         using var output = entry.Open();
                         Pump(input, output, done);

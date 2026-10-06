@@ -6,6 +6,7 @@ using MPCommander.IO;
 //        IoProbe --hang      응답 없는 동기 I/O(파이프 읽기)를 GuardedIo 가 끊어내는지 확인한다.
 if (args is [var mode, var remote] && (mode == "--mtp-put" || mode == "--mtp-del")) { MtpPutTest.Run(mode, remote); return; }
 if (args is ["--unblock"]) { await UnblockTests.Run(); return; }
+if (args is ["--7z"]) { await SevenZipTests.Run(); return; }
 if (args is ["--star"]) { StarTest.Run(); return; }
 if (args is ["--stall"]) { await StallTest.Run(); return; }
 if (args is ["--remote"]) { await RemoteTests.Run(); return; }
