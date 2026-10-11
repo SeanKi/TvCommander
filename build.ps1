@@ -32,6 +32,10 @@ if ($Publish) {
     New-Item -ItemType Directory -Force $out | Out-Null
     $bin = "$root\src\MPCommander\bin\$Configuration\net472"
     Copy-Item "$bin\MP-Commander.exe", "$bin\MP-Commander.exe.config", "$bin\FmCore.dll" $out
+    # 사용 설명서 (F1 / 툴바 ? 버튼으로 연다): manual\MANUAL.md + images
+    New-Item -ItemType Directory -Force "$out\manual\images" | Out-Null
+    Copy-Item "$root\docs\manual\MANUAL.md" "$out\manual\"
+    Copy-Item "$root\docs\manual\images\*.png" "$out\manual\images\"
 
     # 릴리스용 zip: MP-Commander-<version>-win-x64.zip
     $version = (Get-Item "$out\MP-Commander.exe").VersionInfo.ProductVersion -replace '\+.*$', ''

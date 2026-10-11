@@ -78,6 +78,7 @@
                 <Button Click="Swap_Click" ToolTip="활성·대상 패널 경로 교체 (Ctrl+U)"><TextBlock Style="{StaticResource Icon}" Text="&#xE8AB;"/></Button>
                 <ToggleButton x:Name="HiddenToggle" Click="Hidden_Click" ToolTip="숨김 파일 보기 (Ctrl+H)"><TextBlock Style="{StaticResource Icon}" Text="&#xE890;"/></ToggleButton>
                 <Button x:Name="FontButton" Click="Font_Click" ToolTip="목록 글씨 크기 (Ctrl+= / Ctrl+-)"><TextBlock Style="{StaticResource Icon}" Text="&#xE8D2;"/></Button>
+                <Button Click="Manual_Click" ToolTip="사용 설명서 (F1) — 같은 폴더에 MDNotePad+.exe 가 있으면 그것으로, 없으면 .md 에 연결된 프로그램으로 엽니다"><TextBlock Style="{StaticResource Icon}" Text="&#xE897;"/></Button>
                 <Button Click="Settings_Click" ToolTip="설정 — 백업 복사, 압축, 차단 해제, 편집기·터미널"><TextBlock Style="{StaticResource Icon}" Text="&#xE713;"/></Button>
             </ToolBar>
         </ToolBarTray>

@@ -17,13 +17,15 @@
                 <Button DockPanel.Dock="Right" Content="다음 ▼" Padding="8,1" Margin="4,0,0,0" Focusable="False" Click="Next_Click" ToolTip="다음 (F3 / Enter)"/>
                 <Button DockPanel.Dock="Right" Content="이전 ▲" Padding="8,1" Margin="4,0,0,0" Focusable="False" Click="Prev_Click" ToolTip="이전 (Shift+F3)"/>
                 <CheckBox x:Name="RegexCheck" DockPanel.Dock="Right" Content="정규식" VerticalAlignment="Center" Margin="10,0,4,0"
-                          Focusable="False" Checked="Case_Changed" Unchecked="Case_Changed"
+                          Focusable="False" Checked="Option_Changed" Unchecked="Option_Changed"
                           ToolTip="정규 표현식(.NET)으로 찾기. ^ $ 는 줄 단위. 예: ERROR|WARN,  \d{4}-\d{2}-\d{2},  ^\s*#"/>
                 <CheckBox x:Name="CaseCheck" DockPanel.Dock="Right" Content="대소문자 구분" VerticalAlignment="Center" Margin="10,0,4,0"
-                          Focusable="False" Checked="Case_Changed" Unchecked="Case_Changed"/>
-                <TextBlock x:Name="FindCount" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="Gray"/>
+                          Focusable="False" Checked="Option_Changed" Unchecked="Option_Changed"/>
+                <!-- 폭을 고정해 숫자가 바뀌어도 찾기 칸이 흔들리지 않게 -->
+                <TextBlock x:Name="FindCount" DockPanel.Dock="Right" Width="260" TextAlignment="Right" VerticalAlignment="Center"
+                           Margin="10,0,0,0" Foreground="Gray" TextTrimming="CharacterEllipsis"/>
                 <TextBox x:Name="FindBox" Padding="3,1" TextChanged="FindBox_TextChanged" PreviewKeyDown="FindBox_PreviewKeyDown"
-                         ToolTip="찾을 문자열. Enter / F3 다음, Shift+F3 이전. 찾은 줄은 아래 목록에 모두 나옵니다."/>
+                         ToolTip="찾을 문자열. Enter / F3 다음, Shift+F3 이전. 파일 전체에서 찾고, 찾은 줄은 아래 목록에 모두 나옵니다."/>
             </DockPanel>
         </Border>
 
@@ -34,23 +36,29 @@
                 <RowDefinition x:Name="HitsRow" Height="0"/>
             </Grid.RowDefinitions>
 
-            <Grid>
-                <TextBox x:Name="TextView" IsReadOnly="True" IsUndoEnabled="False" BorderThickness="0"
-                         FontFamily="Consolas, D2Coding, Malgun Gothic" FontSize="13"
-                         HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
-                         IsInactiveSelectionHighlightEnabled="True" SelectionBrush="#FFFFA500"
-                         Visibility="Collapsed"/>
-                <!-- 찾은 말 표시: 본문 선택은 포커스가 없으면 안 보일 수 있어 위에 상자를 겹친다 -->
-                <Canvas x:Name="MarkLayer" IsHitTestVisible="False" ClipToBounds="True">
-                    <Rectangle x:Name="MarkRect" Fill="#66FFA500" Stroke="#FFFF8C00" StrokeThickness="1" Visibility="Collapsed"/>
-                </Canvas>
-                <ScrollViewer x:Name="ImageScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
-                              Visibility="Collapsed" Background="#FF303030">
-                    <Image x:Name="ImageView" Stretch="Uniform" StretchDirection="DownOnly"/>
-                </ScrollViewer>
-                <TextBlock x:Name="StateText" Text="불러오는 중..." HorizontalAlignment="Center" VerticalAlignment="Center"
-                           TextWrapping="Wrap" Margin="20"/>
+            <!-- 본문: 보이는 줄만 그리는 텍스트 보기 + 스크롤 막대 -->
+            <Grid x:Name="TextArea" Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <local:VirtualTextView x:Name="TextView"/>
+                <ScrollBar x:Name="VBar" Grid.Column="1" Orientation="Vertical" ValueChanged="VBar_ValueChanged"/>
+                <ScrollBar x:Name="HBar" Grid.Row="1" Orientation="Horizontal" ValueChanged="HBar_ValueChanged"/>
             </Grid>
+            <TextBox x:Name="HexBox" IsReadOnly="True" IsUndoEnabled="False" BorderThickness="0" Visibility="Collapsed"
+                     FontFamily="Consolas, D2Coding, Malgun Gothic" FontSize="13"
+                     HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+            <ScrollViewer x:Name="ImageScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                          Visibility="Collapsed" Background="#FF303030">
+                <Image x:Name="ImageView" Stretch="Uniform" StretchDirection="DownOnly"/>
+            </ScrollViewer>
+            <TextBlock x:Name="StateText" Text="불러오는 중..." HorizontalAlignment="Center" VerticalAlignment="Center"
+                       TextWrapping="Wrap" Margin="20"/>
 
             <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" ResizeDirection="Rows" ShowsPreview="False"
                           Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"/>
@@ -62,29 +70,14 @@
                     <RowDefinition Height="5"/>
                     <RowDefinition Height="90" MinHeight="30"/>
                 </Grid.RowDefinitions>
-                <ListView x:Name="HitList" BorderThickness="0,1,0,0" FontFamily="Consolas, D2Coding, Malgun Gothic" FontSize="12"
-                          SelectionMode="Single" SelectionChanged="HitList_SelectionChanged" VirtualizingPanel.IsVirtualizing="True"
-                          VirtualizingPanel.VirtualizationMode="Recycling" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                    <ListView.View>
-                        <GridView>
-                            <GridViewColumn Header="줄" Width="70">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding LineNumber}" Foreground="Gray" HorizontalAlignment="Right"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn Header="개" Width="36" DisplayMemberBinding="{Binding CountText}"/>
-                            <GridViewColumn x:Name="HitTextColumn" Header="내용" Width="860">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock local:ViewerHighlight.Segments="{Binding Segments}" TextTrimming="CharacterEllipsis"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                        </GridView>
-                    </ListView.View>
-                </ListView>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <local:HitListView x:Name="HitList"/>
+                    <ScrollBar x:Name="HitBar" Grid.Column="1" Orientation="Vertical" ValueChanged="HitBar_ValueChanged"/>
+                </Grid>
                 <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" ResizeDirection="Rows" ShowsPreview="False"
                               Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"/>
                 <RichTextBox x:Name="LineDetail" Grid.Row="2" IsReadOnly="True" BorderThickness="0" IsDocumentEnabled="False"

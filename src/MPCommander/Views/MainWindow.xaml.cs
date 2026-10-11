@@ -317,6 +317,7 @@ public partial class MainWindow : Window
             case (Key.Left, Alt): _ = P.GoBackAsync(); break;
             case (Key.Right, Alt): _ = P.GoForwardAsync(); break;
             case (Key.F1, Alt): DrivePanelFor(0).OpenDriveMenu(); break;
+            case (Key.F1, None): CmdManual(); break;
             case (Key.F2, Alt): DrivePanelFor(1).OpenDriveMenu(); break;
             case (Key.Down, Alt): P.ShowHistoryMenu(); break;
 
@@ -391,6 +392,48 @@ public partial class MainWindow : Window
     private void Unblock_Click(object sender, RoutedEventArgs e) => CmdUnblock();
     private void Pack_Click(object sender, RoutedEventArgs e) => CmdPack();
     private void BackupCopy_Click(object sender, RoutedEventArgs e) => CmdBackupCopy();
+
+    private void Manual_Click(object sender, RoutedEventArgs e) => CmdManual();
+
+    private const string ManualUrl = "https://github.com/SeanKi/TvCommander/blob/main/docs/manual/MANUAL.md";
+
+    /// <summary>
+    /// F1 / 툴바 ?: 사용 설명서(프로그램 폴더의 manual\MANUAL.md).
+    /// 같은 폴더에 MDNotePad+.exe 가 있으면 그것으로, 없으면 .md 에 연결된 프로그램으로, 연결이 없으면 '연결 프로그램' 창.
+    /// 설명서 파일이 없으면 GitHub 의 설명서를 브라우저로 연다.
+    /// </summary>
+    private void CmdManual()
+    {
+        var dir = AppDomain.CurrentDomain.BaseDirectory;
+        var manual = Path.Combine(dir, "manual", "MANUAL.md");
+        try
+        {
+            if (!File.Exists(manual))
+            {
+                Process.Start(new ProcessStartInfo(ManualUrl) { UseShellExecute = true });
+                return;
+            }
+            var mdNotePad = Path.Combine(dir, "MDNotePad+.exe");
+            if (File.Exists(mdNotePad))
+            {
+                Process.Start(new ProcessStartInfo(mdNotePad, $"\"{manual}\"") { UseShellExecute = true, WorkingDirectory = dir });
+                return;
+            }
+            try
+            {
+                Process.Start(new ProcessStartInfo(manual) { UseShellExecute = true });
+            }
+            catch (System.ComponentModel.Win32Exception)
+            {
+                // .md 에 연결된 프로그램이 없음 → Windows '연결 프로그램' 선택 창
+                Process.Start(new ProcessStartInfo("rundll32.exe", $"shell32.dll,OpenAs_RunDLL {manual}") { UseShellExecute = false });
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowError("사용 설명서를 열 수 없습니다: " + ex.Message);
+        }
+    }
 
     private void Settings_Click(object sender, RoutedEventArgs e)
     {

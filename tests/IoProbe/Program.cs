@@ -9,6 +9,8 @@ if (args is ["--unblock"]) { await UnblockTests.Run(); return; }
 if (args is ["--7z"]) { await SevenZipTests.Run(); return; }
 if (args is ["--backup-copy"]) { await BackupCopyTests.Run(); return; }
 if (args is ["--regex-search"]) { await RegexSearchTests.Run(); return; }
+if (args is ["--large-search"]) { await LargeSearchTests.Run(); return; }
+if (args is ["--text-source"]) { await TextSourceTests.Run(); return; }
 if (args is ["--star"]) { StarTest.Run(); return; }
 if (args is ["--stall"]) { await StallTest.Run(); return; }
 if (args is ["--remote"]) { await RemoteTests.Run(); return; }

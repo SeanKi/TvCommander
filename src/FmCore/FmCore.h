@@ -134,3 +134,34 @@ FM_API void* FM_CALL FmSearchStart(const FmSearchParams* params, FmEntryBatchCal
 FM_API void  FM_CALL FmSearchCancel(void* handle);
 FM_API int   FM_CALL FmSearchGetStatus(void* handle, FmSearchStatus* status, wchar_t* currentDir, int currentDirLength);
 FM_API void  FM_CALL FmSearchFree(void* handle);
+
+// ───────── 큰 텍스트 파일 (뷰어): 줄 색인 · 임의 위치 읽기 · 빠른 찾기 ─────────
+// 파일은 읽기·쓰기·삭제 공유로 연다 (다른 프로그램이 계속 써도 됨).
+// unit: 1 (UTF-8 / ANSI) 또는 2 (UTF-16), bigEndian: UTF-16 BE, dataStart: BOM 다음 바이트 위치.
+typedef struct FmTextStatus {
+    int64_t lineCount;      // 지금까지 끝까지 확인된 줄 수
+    int64_t indexedBytes;   // 색인한 바이트
+    int64_t fileSize;
+    int32_t done;           // 색인 끝
+    int32_t error;          // Win32 오류 (0 = 없음)
+} FmTextStatus;
+
+FM_API void*   FM_CALL FmTextOpen(const wchar_t* path, int unit, int bigEndian, int64_t dataStart);
+FM_API void    FM_CALL FmTextClose(void* text);
+FM_API int     FM_CALL FmTextGetStatus(void* text, FmTextStatus* status);
+// first 줄부터 최대 count 줄의 시작 위치와, 마지막 줄의 끝(다음 줄 시작)을 offsets[0..n] 에 채운다. 반환: n (줄 수)
+FM_API int     FM_CALL FmTextLineOffsets(void* text, int64_t first, int count, int64_t* offsets);
+// 바이트 위치가 속한 줄 번호 (0부터, 색인된 범위 안에서)
+FM_API int64_t FM_CALL FmTextLineOfOffset(void* text, int64_t offset);
+// 임의 위치 읽기. 반환: 읽은 바이트 수, 실패하면 -Win32오류
+FM_API int     FM_CALL FmTextRead(void* text, int64_t offset, int length, uint8_t* buffer);
+
+// 찾기: pattern = 파일 인코딩으로 바꾼 바이트. caseInsensitive 는 ASCII 만 (UTF-16 은 상위 바이트가 0 인 글자만).
+// 찾은 줄(0부터)과 그 줄의 일치 수를 묶어서 콜백 (0 을 반환하면 중단). doneBytes 는 진행.
+typedef int (FM_CALL* FmTextHitCallback)(const int64_t* lines, const int32_t* counts, int n, int64_t doneBytes, void* user);
+FM_API void*   FM_CALL FmTextSearchStart(void* text, const uint8_t* pattern, int patternLength, int caseInsensitive,
+                                         FmTextHitCallback cb, void* user);
+// 진행: doneBytes, 끝났으면 done=1. 반환: 0
+FM_API int     FM_CALL FmTextSearchGetStatus(void* search, int64_t* doneBytes, int* done);
+// 취소하고 놓는다 (기다리지 않는다 — 남은 스레드는 스스로 끝난다. 이후 콜백은 부르지 않는다)
+FM_API void    FM_CALL FmTextSearchFree(void* search);

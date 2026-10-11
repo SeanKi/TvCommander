@@ -79,6 +79,7 @@
     <ClCompile Include="FmCore.cpp" />
     <ClCompile Include="FmMtp.cpp" />
     <ClCompile Include="FmShellMenu.cpp" />
+    <ClCompile Include="FmText.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

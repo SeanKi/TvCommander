@@ -27,6 +27,20 @@ internal struct FmSearchParams
     public IntPtr TextMatchUser;
 }
 
+[StructLayout(LayoutKind.Sequential)]
+internal struct FmTextStatus
+{
+    public long LineCount;
+    public long IndexedBytes;
+    public long FileSize;
+    public int Done;
+    public int Error;
+}
+
+/// <summary>큰 텍스트 찾기 콜백: 찾은 줄(0부터)과 그 줄의 일치 수. 0 을 반환하면 중단</summary>
+[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+internal unsafe delegate int FmTextHitCallback(long* lines, int* counts, int n, long doneBytes, IntPtr user);
+
 /// <summary>내용 판정 콜백: 파일에서 읽은 UTF-16 텍스트(줄 단위 조각). 1 = 일치</summary>
 [UnmanagedFunctionPointer(CallingConvention.StdCall)]
 internal unsafe delegate int FmTextMatchCallback(char* text, int length, IntPtr user);
@@ -114,6 +128,17 @@ internal static unsafe class NativeMethods
     [DllImport(Dll)] public static extern void FmSearchCancel(IntPtr handle);
     [DllImport(Dll)] public static extern int FmSearchGetStatus(IntPtr handle, out FmSearchStatus status, char* currentDir, int length);
     [DllImport(Dll)] public static extern void FmSearchFree(IntPtr handle);
+
+    // ── 큰 텍스트 파일 (뷰어) ──
+    [DllImport(Dll, CharSet = CharSet.Unicode)] public static extern IntPtr FmTextOpen(string path, int unit, int bigEndian, long dataStart);
+    [DllImport(Dll)] public static extern void FmTextClose(IntPtr text);
+    [DllImport(Dll)] public static extern int FmTextGetStatus(IntPtr text, out FmTextStatus status);
+    [DllImport(Dll)] public static extern int FmTextLineOffsets(IntPtr text, long first, int count, long* offsets);
+    [DllImport(Dll)] public static extern long FmTextLineOfOffset(IntPtr text, long offset);
+    [DllImport(Dll)] public static extern int FmTextRead(IntPtr text, long offset, int length, byte* buffer);
+    [DllImport(Dll)] public static extern IntPtr FmTextSearchStart(IntPtr text, byte* pattern, int patternLength, int caseInsensitive, FmTextHitCallback cb, IntPtr user);
+    [DllImport(Dll)] public static extern int FmTextSearchGetStatus(IntPtr search, out long doneBytes, out int done);
+    [DllImport(Dll)] public static extern void FmTextSearchFree(IntPtr search);
 
     public const int FM_MENU_RENAME = -2;
 
