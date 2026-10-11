@@ -41,7 +41,7 @@ public partial class ProgressWindow : Window
 
         // 진행이 멈추면 경고 (네트워크 지연 등). 취소 버튼은 막힌 I/O 도 끊는다.
         long idle = Compat.TickCount64 - Interlocked.Read(ref _op.LastProgressTick);
-        if (idle > StallWarningMs && !_op.IsCancelled)
+        if (idle > StallWarningMs && !_op.IsCancelled && !_op.WaitingForUser)
         {
             StallText.Text = $"{idle / 1000}초째 응답이 없습니다. 네트워크나 디스크가 지연되고 있을 수 있습니다. [취소]를 누르면 중단합니다.";
             StallText.Visibility = Visibility.Visible;

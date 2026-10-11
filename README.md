@@ -4,6 +4,8 @@
 
 Double Commander 스타일의 멀티 패널(2·3·4·6·8창) 파일 매니저. WPF(.NET Framework 4.7.2) + C++ 네이티브 모듈(FmCore.dll).
 
+📖 **[사용자 설명서](docs/manual/MANUAL.md)** (기능 설명 + 목적별 활용, 화면 캡처 포함) · 📝 [변경 내역](CHANGELOG.md)
+
 ## 빌드 / 배포
 
 ```powershell

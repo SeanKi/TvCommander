@@ -512,10 +512,10 @@ public partial class MainWindow : Window
             if (!win.IsVisible) { showTimer.Stop(); win.Show(); }
             return win;
         }
-        op.AskConflict = info => Dispatcher.Invoke(() => OverwriteDialog.Ask(DialogOwner(), info));
-        op.AskError = (path, msg) => Dispatcher.Invoke(() => AskError(DialogOwner(), path, msg));
+        op.AskConflict = info => op.AskingUser(() => Dispatcher.Invoke(() => OverwriteDialog.Ask(DialogOwner(), info)));
+        op.AskError = (path, msg) => op.AskingUser(() => Dispatcher.Invoke(() => AskError(DialogOwner(), path, msg)));
         if (op is BackupCopyOperation bc)
-            bc.AskLocked = (file, users) => Dispatcher.Invoke(() => LockedFileDialog.Ask(DialogOwner(), file, users));
+            bc.AskLocked = (file, users) => op.AskingUser(() => Dispatcher.Invoke(() => LockedFileDialog.Ask(DialogOwner(), file, users)));
 
         try
         {

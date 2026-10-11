@@ -20,6 +20,20 @@ public abstract class ProgressOperation
     public long TotalBytes, DoneBytes, CurrentSize, CurrentDone;
     public int TotalFiles, DoneFiles, Skipped, Errors;
     public long LastProgressTick = Compat.TickCount64;
+    /// <summary>사용자 답을 기다리는 중(덮어쓰기·오류·사용 중 파일 창) — 이 동안은 '응답 없음' 경고를 띄우지 않는다</summary>
+    public volatile bool WaitingForUser;
+
+    /// <summary>사용자에게 묻는 동안은 멈춤으로 치지 않고, 답한 뒤에는 시계를 새로 시작한다</summary>
+    public T AskingUser<T>(Func<T> ask)
+    {
+        WaitingForUser = true;
+        try { return ask(); }
+        finally
+        {
+            WaitingForUser = false;
+            Touch();
+        }
+    }
 
     public abstract string Title { get; }
     public bool IsCancelled => Volatile.Read(ref _cancel[0]) != 0;
