@@ -13,7 +13,7 @@ public partial class MainWindow
 {
     private enum MenuCmd
     {
-        View = 1, Edit, CopyToTarget, MoveToTarget, Rename, Delete, CopyFullPath, CopyName, Pack, Unpack, Properties,
+        View = 1, Edit, CopyToTarget, MoveToTarget, Rename, Delete, CopyFullPath, CopyName, Pack, Unpack, Properties, BackupCopy,
         NewFolder = 20, Refresh, CopyDirPath, Terminal, Unblock, Paste,
     }
 
@@ -63,7 +63,7 @@ public partial class MainWindow
     {
         bool single = items.Count == 1;
         bool file = single && !items[0].IsDirectory;
-        bool archive = file && (items[0].Extension.Equals("zip", StringComparison.OrdinalIgnoreCase) || SevenZip.CanExtract(items[0].Extension));
+        bool archive = items.Any(IsArchive);
         string target = _target?.CurrentPath is { } t ? $" → {PathUtil.LastSegment(t)}" : "";
 
         var list = new List<MenuSpec>
@@ -73,6 +73,7 @@ public partial class MainWindow
             MenuSpec.Separator,
             new(MenuCmd.CopyToTarget, $"대상 패널로 복사{target}\tF5"),
             new(MenuCmd.MoveToTarget, $"대상 패널로 이동{target}\tF6"),
+            new(MenuCmd.BackupCopy, $"백업 후 복사{target}...\tCtrl+B", !mtp),
             new(MenuCmd.Rename, "이름 바꾸기\tShift+F6", single),
         };
         if (!shell) list.Add(new(MenuCmd.Delete, mtp ? "삭제 (영구)\tF8" : "삭제\tF8"));
@@ -84,7 +85,7 @@ public partial class MainWindow
             list.Add(MenuSpec.Separator);
             list.Add(new(MenuCmd.Pack, $"압축 (7z / ZIP){target}...\tAlt+F5"));
             list.Add(new(MenuCmd.Unblock, "차단 해제...\tCtrl+Shift+U"));
-            if (archive) list.Add(new(MenuCmd.Unpack, "압축 풀기...\tAlt+F9"));
+            if (archive) list.Add(new(MenuCmd.Unpack, $"압축 풀기{target}...\tAlt+F9"));
         }
         if (!shell && !mtp) list.Add(new(MenuCmd.Properties, "속성"));
         return list;
@@ -145,6 +146,7 @@ public partial class MainWindow
             case MenuCmd.CopyName: CmdCopyText(CopyTextKind.Names); break;
             case MenuCmd.Pack: CmdPack(); break;
             case MenuCmd.Unpack: CmdUnpack(); break;
+            case MenuCmd.BackupCopy: CmdBackupCopy(); break;
             case MenuCmd.Properties:
                 if (P.CursorItem is { IsParent: false } it) ShowProperties(it.FullPath);
                 break;
@@ -230,56 +232,64 @@ public partial class MainWindow
         p.FocusList();
     }
 
-    /// <summary>Alt+F9: 커서의 압축 파일 풀기. ZIP 은 내장, 7z·RAR·TAR 등은 7-Zip 으로.</summary>
+    private static bool IsArchive(FileItem i)
+        => !i.IsDirectory && (i.Extension.Equals("zip", StringComparison.OrdinalIgnoreCase) || SevenZip.CanExtract(i.Extension));
+
+    /// <summary>
+    /// Alt+F9: 표시한 압축 파일들(없으면 커서의 압축 파일)을 풀기. 기본 위치는 대상 패널 폴더,
+    /// 기본으로 압축 파일마다 그 이름의 폴더를 만든다. ZIP 은 내장, 7z·RAR·TAR 등은 7-Zip 으로.
+    /// </summary>
     public async void CmdUnpack()
     {
         var p = P;
-        var it = p.CursorItem;
-        if (it == null || it.IsDirectory || p.CurrentPath == null) return;
-        bool zip = it.Extension.Equals("zip", StringComparison.OrdinalIgnoreCase);
-        if (!zip && !SevenZip.CanExtract(it.Extension))
+        if (p.CurrentPath == null) return;
+        var archives = p.GetSelectedOrCurrent().Where(IsArchive).Select(i => i.FullPath).ToList();
+        if (archives.Count == 0)
         {
-            p.FlashStatus("압축 파일(ZIP, 7z, RAR, TAR 등)이 아닙니다.");
-            return;
-        }
-        if (!zip && SevenZip.Exe == null)
-        {
-            p.FlashStatus("ZIP 외의 형식은 7-Zip 이 있어야 풀 수 있습니다. 7-Zip 을 설치하거나 7za.exe 를 MP-Commander 폴더에 두세요.");
+            p.FlashStatus("압축 파일(ZIP, 7z, RAR, TAR 등)을 고르세요.");
             return;
         }
         if (PathUtil.IsVirtual(p.CurrentPath)) { p.FlashStatus("원격 파일은 PC 로 복사한 뒤 압축을 푸세요."); return; }
+        if (SevenZip.Exe == null && archives.Any(a => !a.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)))
+        {
+            if (archives.All(a => !a.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)))
+            {
+                p.FlashStatus("ZIP 외의 형식은 7-Zip 이 있어야 풀 수 있습니다. 7-Zip 을 설치하거나 7za.exe 를 MP-Commander 폴더에 두세요.");
+                return;
+            }
+            archives = archives.Where(a => a.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)).ToList();
+            p.FlashStatus("7-Zip 이 없어 ZIP 만 풉니다.");
+        }
 
-        var defaultDest = PathUtil.WithSlash(Path.Combine(p.CurrentPath, it.DisplayName));
-        var input = InputDialog.Show(this, "압축 풀기", $"'{it.Name}' 의 압축을 풀 폴더:", defaultDest);
-        if (Compat.IsBlank(input)) { p.FocusList(); return; }
+        var targetDir = _target?.CurrentPath is { } t && !PathUtil.IsVirtual(t) ? t : p.CurrentPath;
+        var dlg = UnpackDialog.Show(this, _settings, archives, p.CurrentPath, targetDir);
+        if (dlg == null) { p.FocusList(); return; }
+        SaveSettings();
 
-        string dest;
-        try { dest = PathUtil.Normalize(input, p.CurrentPath); }
-        catch (Exception ex) { ShowError(ex.Message); return; }
-        var (ok, host) = await NetworkHealth.CheckPathAsync(dest);
+        var (ok, host) = await NetworkHealth.CheckPathAsync(dlg.Destination);
         if (!ok) { ShowError(new HostUnreachableException(host!).Message); return; }
 
-        ProgressOperation op;
-        if (zip)
+        int done = 0;
+        string? lastDest = null;
+        foreach (var archive in archives)
         {
-            op = ZipOperation.Extract(it.FullPath, dest);
+            var dest = dlg.TargetFor(archive);
+            ProgressOperation op = archive.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
+                ? ZipOperation.Extract(archive, dest, dlg.Overwrite)
+                : SevenZipOperation.Extract(archive, dest, dlg.Overwrite);
+            await RunWithProgressAsync(op);
+            if (op.IsCancelled) break;
+            done++;
+            lastDest = dest;
         }
-        else
-        {
-            // 7-Zip 은 파일마다 묻지 못하므로, 이미 있는 폴더에 풀 때만 한 번 묻는다
-            bool overwrite = true;
-            if (Directory.Exists(dest) && Directory.EnumerateFileSystemEntries(dest).Any())
-            {
-                var answer = MessageBox.Show(this, $"{dest}\n\n폴더에 이미 파일이 있습니다. 같은 이름의 파일을 덮어쓸까요?\n\n예: 덮어쓰기   아니요: 있는 파일은 건너뛰기",
-                    "압축 풀기", MessageBoxButton.YesNoCancel, MessageBoxImage.Question, MessageBoxResult.No);
-                if (answer == MessageBoxResult.Cancel) { p.FocusList(); return; }
-                overwrite = answer == MessageBoxResult.Yes;
-            }
-            op = SevenZipOperation.Extract(it.FullPath, dest, overwrite);
-        }
-        await RunWithProgressAsync(op);
-        await RefreshPanelsShowingAsync(dest, PathUtil.Parent(dest));
-        if (PathUtil.Same(p.CurrentPath, PathUtil.Parent(dest))) await p.RefreshAsync(PathUtil.LastSegment(dest));
+        if (done > 0) p.ClearMarks();
+
+        await RefreshPanelsShowingAsync(dlg.Destination);
+        // 풀린 위치를 보여 주는 패널(대상 패널 우선)에서 커서를 만든 폴더에 둔다
+        if (dlg.PerArchiveFolder && lastDest != null)
+            foreach (var panel in new[] { _target, p })
+                if (panel?.CurrentPath != null && PathUtil.Same(panel.CurrentPath, dlg.Destination)) await panel.RefreshAsync(PathUtil.LastSegment(lastDest));
+        p.FlashStatus($"압축 풀기: {done}/{archives.Count}개 → {dlg.Destination}");
         p.FocusList();
     }
 }

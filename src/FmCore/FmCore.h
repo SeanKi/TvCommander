@@ -25,6 +25,10 @@ typedef int (FM_CALL* FmEntryBatchCallback)(const FmEntry* entries, int count, v
 // 0 이 아닌 값을 반환하면 복사를 취소한다.
 typedef int (FM_CALL* FmProgressCallback)(uint64_t transferred, uint64_t total, void* user);
 
+// 내용 검색을 호출자가 판정할 때(정규식 등): 파일을 읽어 UTF-16 으로 바꾼 텍스트를 줄 단위로 끊어 넘긴다.
+// 1 을 반환하면 일치(그 파일은 더 읽지 않음), 0 이면 계속.
+typedef int (FM_CALL* FmTextMatchCallback)(const wchar_t* text, int length, void* user);
+
 typedef struct FmSearchParams {
     const wchar_t* root;
     const wchar_t* mask;      // "*.txt;*.log" (PathMatchSpecEx, ; 구분)
@@ -34,6 +38,8 @@ typedef struct FmSearchParams {
     int includeHidden;
     int threadCount;
     int ioTimeoutMs;          // 단일 I/O 호출이 이 시간을 넘으면 CancelSynchronousIo
+    FmTextMatchCallback textMatch;   // NULL 이 아니면 text 대신 이것으로 내용 판정 (인코딩: BOM / UTF-8 / ANSI / UTF-16LE 자동)
+    void* textMatchUser;
 } FmSearchParams;
 
 typedef struct FmSearchStatus {

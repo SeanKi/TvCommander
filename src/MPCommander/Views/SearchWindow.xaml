@@ -32,6 +32,8 @@
         <WrapPanel DockPanel.Dock="Top" Margin="0,6,0,6">
             <CheckBox x:Name="RecursiveCheck" Content="하위 폴더 포함" IsChecked="True" Margin="0,0,16,0"/>
             <CheckBox x:Name="CaseCheck" Content="대소문자 구분 (내용)" Margin="0,0,16,0"/>
+            <CheckBox x:Name="RegexCheck" Content="정규식 (내용)" Margin="0,0,16,0"
+                      ToolTip="포함 텍스트를 정규 표현식(.NET)으로 찾습니다. ^ $ 는 줄 단위. 예: ERROR|WARN,  \d{4}-\d{2}-\d{2},  ^\s*#"/>
             <CheckBox x:Name="HiddenCheck" Content="숨김 파일 포함" Margin="0,0,16,0"/>
         </WrapPanel>
 
@@ -55,6 +57,20 @@
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Header="날짜" Width="120" DisplayMemberBinding="{Binding DateText}"/>
+                    <GridViewColumn Header="찾은 말" Width="70">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding CountText}" TextAlignment="Right" ToolTip="포함 텍스트가 나온 횟수 (… 세는 중, - 셀 수 없음: 64 MB 초과·읽기 실패)"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="줄" Width="60">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding LinesText}" TextAlignment="Right" ToolTip="포함 텍스트가 있는 줄 수"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
                 </GridView>
             </ListView.View>
             <ListView.ItemContainerStyle>

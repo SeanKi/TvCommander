@@ -302,6 +302,8 @@ struct Worker {
 struct State {
     std::wstring root, mask, text;
     bool caseSensitive = false, recursive = true, includeHidden = false;
+    FmTextMatchCallback textMatch = nullptr;
+    void* textMatchUser = nullptr;
     int threadCount = 4;
     ULONGLONG ioTimeout = 5000;
 
@@ -432,6 +434,125 @@ bool FileContains(State& s, Worker& w, const std::wstring& path)
     return hit;
 }
 
+// 0 UTF-8, 1 ANSI(CP949 등), 2 UTF-16LE
+int DetectEncoding(std::string& head, bool eof)
+{
+    if (head.size() >= 2 && uint8_t(head[0]) == 0xFF && uint8_t(head[1]) == 0xFE) { head.erase(0, 2); return 2; }
+    if (head.size() >= 3 && uint8_t(head[0]) == 0xEF && uint8_t(head[1]) == 0xBB && uint8_t(head[2]) == 0xBF) { head.erase(0, 3); return 0; }
+
+    // BOM 없는 UTF-16LE: 앞부분 홀수 자리에 0 이 많다
+    size_t probe = std::min<size_t>(head.size(), 4096), oddZeros = 0;
+    for (size_t i = 1; i < probe; i += 2)
+        if (head[i] == 0)
+            oddZeros++;
+    if (probe >= 16 && oddZeros * 100 / (probe / 2) >= 30)
+        return 2;
+
+    // 올바른 UTF-8 인지 (끝의 잘린 문자는 빼고)
+    size_t n = std::min<size_t>(head.size(), 1 << 20);
+    if (!eof) {
+        size_t back = 0;
+        while (back < 4 && n > back && (uint8_t(head[n - 1 - back]) & 0xC0) == 0x80)
+            back++;
+        if (n > back && uint8_t(head[n - 1 - back]) >= 0xC0)
+            n -= back + 1;
+    }
+    if (n == 0)
+        return 0;
+    return MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, head.data(), int(n), nullptr, 0) > 0 ? 0 : 1;
+}
+
+// 한 줄이 아주 길 때 강제로 끊을 위치 (문자 중간을 피한다)
+size_t SafeCut(const std::string& b, size_t cut, int enc)
+{
+    if (enc == 2)
+        return cut & ~size_t(1);
+    if (enc == 0) {
+        while (cut > 0 && (uint8_t(b[cut]) & 0xC0) == 0x80)
+            cut--;
+        return cut;
+    }
+    while (cut > 0 && uint8_t(b[cut - 1]) >= 0x80)   // ANSI 2바이트 문자: ASCII 바로 뒤에서 끊는다
+        cut--;
+    return cut > 0 ? cut : b.size();
+}
+
+// 호출자의 판정 함수(정규식 등)로 내용 검색: 줄 단위로 끊어 UTF-16 텍스트를 넘긴다
+bool FileMatchesCallback(State& s, Worker& w, const std::wstring& path)
+{
+    HANDLE f;
+    {
+        IoScope io(w);
+        f = CreateFileW(ExtendedPath(path).c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                        nullptr, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, nullptr);
+    }
+    if (f == INVALID_HANDLE_VALUE) {
+        s.errors++;
+        return false;
+    }
+
+    const size_t chunk = size_t(1) << 20;
+    const size_t maxPending = size_t(4) << 20;   // 줄 바꿈 없이 이만큼 쌓이면 강제로 끊는다
+    std::vector<char> tmp(chunk);
+    std::string pending;
+    std::wstring wide;
+    int enc = -1;
+    bool hit = false;
+
+    while (!s.cancel && !hit) {
+        DWORD read = 0;
+        BOOL ok;
+        {
+            IoScope io(w);
+            ok = ReadFile(f, tmp.data(), DWORD(chunk), &read, nullptr);
+        }
+        if (!ok) {
+            s.errors++;
+            break;
+        }
+        const bool eof = read == 0;
+        pending.append(tmp.data(), read);
+        if (enc < 0) {
+            if (pending.empty())
+                break;
+            enc = DetectEncoding(pending, eof);
+        }
+
+        size_t cut = 0;
+        if (eof) {
+            cut = pending.size();
+        } else if (enc == 2) {
+            for (size_t i = pending.size() & ~size_t(1); i >= 2; i -= 2)
+                if (pending[i - 2] == '\n' && pending[i - 1] == 0) { cut = i; break; }
+        } else {
+            size_t nl = pending.rfind('\n');
+            if (nl != std::string::npos)
+                cut = nl + 1;
+        }
+        if (cut == 0 && pending.size() >= maxPending)
+            cut = SafeCut(pending, pending.size() - 1, enc);
+
+        if (cut > 0) {
+            if (enc == 2) {
+                wide.assign(reinterpret_cast<const wchar_t*>(pending.data()), cut / 2);
+            } else {
+                UINT cp = enc == 0 ? CP_UTF8 : CP_ACP;
+                int n = MultiByteToWideChar(cp, 0, pending.data(), int(cut), nullptr, 0);
+                wide.resize(size_t(std::max(n, 0)));
+                if (n > 0)
+                    MultiByteToWideChar(cp, 0, pending.data(), int(cut), wide.data(), n);
+            }
+            pending.erase(0, cut);
+            if (!wide.empty() && !s.cancel && s.textMatch(wide.c_str(), int(wide.size()), s.textMatchUser))
+                hit = true;
+        }
+        if (eof)
+            break;
+    }
+    CloseHandle(f);
+    return hit;
+}
+
 void Emit(State& s, std::vector<FmEntry>& meta, std::vector<std::wstring>& paths)
 {
     for (size_t i = 0; i < meta.size(); ++i)
@@ -482,7 +603,7 @@ void ProcessDirectory(State& s, Worker& w, const std::wstring& dir)
 
                 bool match = PathMatchSpecExW(fd.cFileName, s.mask.c_str(), PMSF_MULTIPLE) == S_OK;
                 if (match && !s.text.empty())
-                    match = !isDir && FileContains(s, w, full);
+                    match = !isDir && (s.textMatch ? FileMatchesCallback(s, w, full) : FileContains(s, w, full));
                 if (match) {
                     hitMeta.push_back(MakeEntry(fd));
                     hitPaths.push_back(std::move(full));
@@ -595,7 +716,10 @@ FM_API void* FM_CALL FmSearchStart(const FmSearchParams* p, FmEntryBatchCallback
     s->ioTimeout = ULONGLONG(p->ioTimeoutMs > 0 ? p->ioTimeoutMs : 5000);
     s->cb = cb;
     s->user = user;
-    search::BuildPatterns(*s);
+    s->textMatch = p->textMatch;
+    s->textMatchUser = p->textMatchUser;
+    if (!s->textMatch)
+        search::BuildPatterns(*s);
 
     s->dirs.push_back(s->root);
     for (int i = 0; i < s->threadCount; ++i)

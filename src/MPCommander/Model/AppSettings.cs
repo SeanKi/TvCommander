@@ -45,6 +45,17 @@ public sealed class AppSettings
     public int PackLevel { get; set; } = 2;
     /// <summary>폴더 하나를 압축할 때 폴더는 빼고 안의 내용만</summary>
     public bool PackContentsOnly { get; set; }
+    /// <summary>압축 풀기: 압축 파일마다 그 이름의 폴더를 만들어 풀기</summary>
+    public bool UnpackToSubfolder { get; set; } = true;
+    /// <summary>압축 풀기: 같은 이름의 파일 덮어쓰기 (false 면 건너뛰기)</summary>
+    public bool UnpackOverwrite { get; set; } = true;
+
+    /// <summary>백업 복사: 백업을 둘 폴더. 상대 경로면 대상 폴더 아래 (기본 backup)</summary>
+    public string BackupRoot { get; set; } = "backup";
+    /// <summary>백업 복사: 시각 폴더 이름 앞에 붙일 말 (예: "v2_" → v2_20261009_0947)</summary>
+    public string BackupPrefix { get; set; } = "";
+    /// <summary>백업 복사: 끝나면 닫았던 프로그램 다시 실행</summary>
+    public bool BackupRestart { get; set; } = true;
 
     public double WindowLeft { get; set; } = double.NaN;
     public double WindowTop { get; set; } = double.NaN;
@@ -100,6 +111,13 @@ public sealed class AppSettings
             pk.Add(new("Format", PackFormat));
             pk.Add(new("Level", PackLevel.ToString(Inv)));
             pk.Add(new("ContentsOnly", PackContentsOnly.ToString(Inv)));
+            pk.Add(new("UnpackToSubfolder", UnpackToSubfolder.ToString(Inv)));
+            pk.Add(new("UnpackOverwrite", UnpackOverwrite.ToString(Inv)));
+
+            var bc = ini.Section("BackupCopy");
+            bc.Add(new("Root", BackupRoot));
+            bc.Add(new("Prefix", BackupPrefix));
+            bc.Add(new("Restart", BackupRestart.ToString(Inv)));
 
             for (int i = 0; i < Panels.Count; i++)
             {
@@ -142,6 +160,11 @@ public sealed class AppSettings
         a.PackFormat = ini.Get("Pack", "Format") is "zip" ? "zip" : "7z";
         a.PackLevel = int.TryParse(ini.Get("Pack", "Level"), NumberStyles.Integer, Inv, out var pl) ? pl : a.PackLevel;
         a.PackContentsOnly = bool.TryParse(ini.Get("Pack", "ContentsOnly"), out var pc) && pc;
+        a.UnpackToSubfolder = !bool.TryParse(ini.Get("Pack", "UnpackToSubfolder"), out var us) || us;
+        a.UnpackOverwrite = !bool.TryParse(ini.Get("Pack", "UnpackOverwrite"), out var uo) || uo;
+        a.BackupRoot = ini.Get("BackupCopy", "Root") is { Length: > 0 } br ? br : a.BackupRoot;
+        a.BackupPrefix = ini.Get("BackupCopy", "Prefix") ?? "";
+        a.BackupRestart = !bool.TryParse(ini.Get("BackupCopy", "Restart"), out var bre) || bre;
 
         for (int i = 1; i <= 8; i++)
         {

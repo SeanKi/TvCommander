@@ -153,15 +153,55 @@ public sealed class SevenZipOperation : ProgressOperation
         }
     }
 
+    private static readonly string[] TarWrappers = [".tar.gz", ".tgz", ".tar.bz2", ".tbz2", ".tbz", ".tar.xz", ".txz", ".tar.zst", ".tar.lzma"];
+
     private void DoExtract(string exe)
     {
         var archive = _sources[0];
         TotalBytes = new FileInfo(archive).Length;
         Directory.CreateDirectory(_target);
         Phase = "압축 푸는 중";
-        // -spe 없이 -o: 대상 폴더 아래로 푼다. 7-Zip 은 폴더 밖을 가리키는 항목(../)을 스스로 막는다
-        int code = Run(exe, $"x -y {(_overwrite ? "-aoa" : "-aos")} -bsp1 -bso0 -bse2 -sccUTF-8 \"-o{PathUtil.TrimEnd(_target)}\" \"{archive}\"",
-            PathUtil.Parent(archive) ?? _target);
+        var workDir = PathUtil.Parent(archive) ?? _target;
+
+        // x.tar.gz 등: 7-Zip 은 한 겹(.tar)만 벗기므로, 임시 폴더에 .tar 를 꺼낸 뒤 그것을 다시 푼다
+        if (TarWrappers.Any(w => archive.EndsWith(w, StringComparison.OrdinalIgnoreCase)))
+        {
+            var temp = Path.Combine(_target, $".tvc-tmp-{Guid.NewGuid():N}");
+            try
+            {
+                Directory.CreateDirectory(temp);
+                try { File.SetAttributes(temp, FileAttributes.Directory | FileAttributes.Hidden); } catch { }
+                int c1 = Run(exe, $"x -y -bsp1 -bso0 -bse2 -sccUTF-8 \"-o{temp}\" \"{archive}\"", workDir);
+                ThrowIfCancelled();
+                CheckExitCode(c1, archive);
+                var tar = Directory.EnumerateFiles(temp).FirstOrDefault(f => f.EndsWith(".tar", StringComparison.OrdinalIgnoreCase));
+                if (tar != null)
+                {
+                    archive = tar;
+                    TotalBytes = new FileInfo(tar).Length;
+                    DoneBytes = 0;
+                    Phase = "압축 푸는 중 (tar)";
+                    ExtractOne(exe, tar, temp);
+                    return;
+                }
+                // .tar 가 아니면 꺼낸 것을 그대로 옮긴다
+                foreach (var f in Directory.EnumerateFiles(temp))
+                    Compat.MoveReplace(f, Path.Combine(_target, Path.GetFileName(f)));
+                DoneBytes = TotalBytes;
+                return;
+            }
+            finally
+            {
+                try { if (Directory.Exists(temp)) Directory.Delete(temp, true); } catch { }
+            }
+        }
+        ExtractOne(exe, archive, workDir);
+    }
+
+    private void ExtractOne(string exe, string archive, string workDir)
+    {
+        // 7-Zip 은 폴더 밖을 가리키는 항목(../)을 스스로 막는다
+        int code = Run(exe, $"x -y {(_overwrite ? "-aoa" : "-aos")} -bsp1 -bso0 -bse2 -sccUTF-8 \"-o{PathUtil.TrimEnd(_target)}\" \"{archive}\"", workDir);
         ThrowIfCancelled();
         CheckExitCode(code, archive);
         DoneBytes = TotalBytes;

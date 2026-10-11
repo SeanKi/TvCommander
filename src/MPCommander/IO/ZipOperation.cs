@@ -31,7 +31,9 @@ public sealed class ZipOperation : ProgressOperation
     /// <summary>level: 0 저장, 1 빠르게, 2·3 보통 (내장 ZIP 은 '최고' 단계가 따로 없다)</summary>
     public static ZipOperation Pack(IReadOnlyList<string> sources, string zipPath, int level = 2)
         => new(true, sources, zipPath, level switch { 0 => CompressionLevel.NoCompression, 1 => CompressionLevel.Fastest, _ => CompressionLevel.Optimal });
-    public static ZipOperation Extract(string zipPath, string destDir) => new(false, new[] { zipPath }, destDir);
+    /// <summary>overwrite: null 이면 같은 이름마다 묻고, true/false 면 모두 덮어쓰기/건너뛰기</summary>
+    public static ZipOperation Extract(string zipPath, string destDir, bool? overwrite = null)
+        => new(false, new[] { zipPath }, destDir) { _conflictAll = overwrite switch { true => ConflictChoice.OverwriteAll, false => ConflictChoice.SkipAll, _ => null } };
 
     public override string Title => _pack ? "압축" : "압축 풀기";
     /// <summary>결과물이 생긴 폴더 (패널 새로고침용)</summary>

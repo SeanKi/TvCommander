@@ -240,6 +240,22 @@ public partial class FilePanel : UserControl
         return parent == null ? Task.CompletedTask : NavigateAsync(parent, PathUtil.LastSegment(CurrentPath));
     }
 
+    /// <summary>
+    /// Backspace: 빠른 검색을 막 입력하는 중(1.5초 안)이면 글자를 지우고, 아니면 상위 폴더로.
+    /// 포커스가 목록 밖이어도 MainWindow 가 이것을 불러 늘 같은 동작을 한다.
+    /// </summary>
+    public void Backspace()
+    {
+        ResetQuickIfStale(force: false);
+        if (_quick.Length > 0)
+        {
+            _quick = _quick[..^1];
+            _quickTick = Compat.TickCount64;
+            QuickSearch();
+        }
+        else _ = GoUpAsync();
+    }
+
     public async Task GoBackAsync()
     {
         if (_back.Count == 0) return;
@@ -1004,15 +1020,7 @@ public partial class FilePanel : UserControl
                 if (CursorItem is { } it) OpenItem(it);
                 break;
             case Key.Back when mods == ModifierKeys.None:
-                // 빠른 검색을 막 입력하는 중(1.5초 안)일 때만 글자를 지우고, 아니면 상위 폴더로
-                ResetQuickIfStale(force: false);
-                if (_quick.Length > 0)
-                {
-                    _quick = _quick[..^1];
-                    _quickTick = Compat.TickCount64;
-                    QuickSearch();
-                }
-                else _ = GoUpAsync();
+                Backspace();
                 break;
             case Key.PageUp when mods == ModifierKeys.Control:
                 _ = GoUpAsync();

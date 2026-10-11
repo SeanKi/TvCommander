@@ -1,0 +1,27 @@
+<Window x:Class="MPCommander.Views.LockedFileDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="파일이 사용 중입니다" Width="620" SizeToContent="Height" ResizeMode="NoResize" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner" FontFamily="Segoe UI" FontSize="12">
+    <StackPanel Margin="14">
+        <TextBlock Text="다음 파일을 덮어쓸 수 없습니다 (다른 프로그램이 쓰는 중):" TextWrapping="Wrap"/>
+        <TextBlock x:Name="FileText" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4,0,8"/>
+        <TextBlock x:Name="ProcessText" TextWrapping="Wrap"/>
+        <TextBlock Foreground="Gray" TextWrapping="Wrap" Margin="0,8,0,0"
+                   Text="'이름 바꿔 교체': 옛 파일을 이름.old-시각 으로 비켜 두고 새 파일을 놓습니다. 실행 중인 프로그램에도 되며, 그 프로그램을 다시 시작하면 새 파일이 쓰입니다."/>
+        <WrapPanel HorizontalAlignment="Right" Margin="0,14,0,0">
+            <WrapPanel.Resources>
+                <Style TargetType="Button">
+                    <Setter Property="Padding" Value="10,3"/>
+                    <Setter Property="Margin" Value="6,0,0,6"/>
+                </Style>
+            </WrapPanel.Resources>
+            <Button x:Name="CloseButton" Content="프로그램 닫고 다시 시도" IsDefault="True" Click="Choice_Click" Tag="CloseAndRetry"/>
+            <Button x:Name="KillButton" Content="강제 종료 후 다시 시도" Click="Choice_Click" Tag="KillAndRetry"/>
+            <Button Content="다시 시도" Click="Choice_Click" Tag="Retry"/>
+            <Button Content="이름 바꿔 교체" Click="Choice_Click" Tag="RenameAndReplace"/>
+            <Button Content="건너뛰기" Click="Choice_Click" Tag="Skip"/>
+            <Button Content="중단" IsCancel="True" Click="Choice_Click" Tag="Cancel"/>
+        </WrapPanel>
+    </StackPanel>
+</Window>

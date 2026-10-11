@@ -15,7 +15,7 @@
     <ApplicationIcon>Assets\MP-Commander.ico</ApplicationIcon>
     <AssemblyName>MP-Commander</AssemblyName>
     <RootNamespace>MPCommander</RootNamespace>
-    <Version>0.6.3</Version>
+    <Version>1.7.0</Version>
     <Product>Multi-Pane Commander</Product>
     <AssemblyTitle>MP-Commander</AssemblyTitle>
     <Description>Multi-Pane Commander - multi-panel file manager for Windows</Description>
@@ -30,6 +30,7 @@
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Management" />
     <Reference Include="System.Security" />
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>

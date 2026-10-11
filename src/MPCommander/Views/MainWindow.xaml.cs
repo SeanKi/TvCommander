@@ -311,6 +311,9 @@ public partial class MainWindow : Window
             case (Key.Tab, Shift): FocusPanelByOffset(-1); break;
             case (Key.Left, Ctrl): CmdOpenInSide(-1); break;
             case (Key.Right, Ctrl): CmdOpenInSide(+1); break;
+            // WPF 의 '뒤로'(BrowseBack) 명령은 Backspace 도 기본 단축키라, 포커스가 목록 밖이면 기록 뒤로 가 버린다.
+            // 여기서 먼저 받아 어디서 누르든 활성 패널의 상위 폴더로 (기록 뒤로는 Alt+← / 마우스 뒤로 버튼)
+            case (Key.Back, None): P.Backspace(); break;
             case (Key.Left, Alt): _ = P.GoBackAsync(); break;
             case (Key.Right, Alt): _ = P.GoForwardAsync(); break;
             case (Key.F1, Alt): DrivePanelFor(0).OpenDriveMenu(); break;
@@ -326,6 +329,7 @@ public partial class MainWindow : Window
             case (Key.X, Ctrl): CmdClipboardCopy(cut: true); break;
             case (Key.V, Ctrl): CmdPaste(); break;
             case (Key.U, Ctrl | Shift): CmdUnblock(); break;
+            case (Key.B, Ctrl): CmdBackupCopy(); break;
             case (Key.Enter, Ctrl):
                 if (P.CursorItem is { IsParent: false } ce) AppendToCommandLine(ce.Name);
                 break;
@@ -386,6 +390,14 @@ public partial class MainWindow : Window
     private void Connections_Click(object sender, RoutedEventArgs e) => CmdConnections();
     private void Unblock_Click(object sender, RoutedEventArgs e) => CmdUnblock();
     private void Pack_Click(object sender, RoutedEventArgs e) => CmdPack();
+    private void BackupCopy_Click(object sender, RoutedEventArgs e) => CmdBackupCopy();
+
+    private void Settings_Click(object sender, RoutedEventArgs e)
+    {
+        if (SettingsWindow.Show(this, _settings)) SaveSettings();
+        P.FocusList();
+    }
+    private void Unpack_Click(object sender, RoutedEventArgs e) => CmdUnpack();
     private void CopyPath_Click(object sender, RoutedEventArgs e) => CmdCopyText(CopyTextKind.CurrentDir);
     private void CopyFullPaths_Click(object sender, RoutedEventArgs e) => CmdCopyText(CopyTextKind.FullPaths);
     private void CopyNames_Click(object sender, RoutedEventArgs e) => CmdCopyText(CopyTextKind.Names);
@@ -502,6 +514,8 @@ public partial class MainWindow : Window
         }
         op.AskConflict = info => Dispatcher.Invoke(() => OverwriteDialog.Ask(DialogOwner(), info));
         op.AskError = (path, msg) => Dispatcher.Invoke(() => AskError(DialogOwner(), path, msg));
+        if (op is BackupCopyOperation bc)
+            bc.AskLocked = (file, users) => Dispatcher.Invoke(() => LockedFileDialog.Ask(DialogOwner(), file, users));
 
         try
         {

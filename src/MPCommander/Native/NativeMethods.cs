@@ -23,7 +23,13 @@ internal struct FmSearchParams
     public int IncludeHidden;
     public int ThreadCount;
     public int IoTimeoutMs;
+    public IntPtr TextMatch;       // FmTextMatchCallback (정규식 등 호출자 판정), 없으면 IntPtr.Zero
+    public IntPtr TextMatchUser;
 }
+
+/// <summary>내용 판정 콜백: 파일에서 읽은 UTF-16 텍스트(줄 단위 조각). 1 = 일치</summary>
+[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+internal unsafe delegate int FmTextMatchCallback(char* text, int length, IntPtr user);
 
 [StructLayout(LayoutKind.Sequential)]
 internal struct FmSearchStatus
