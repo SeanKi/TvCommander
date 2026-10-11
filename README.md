@@ -4,7 +4,7 @@
 
 Double Commander 스타일의 멀티 패널(2·3·4·6·8창) 파일 매니저. WPF(.NET Framework 4.7.2) + C++ 네이티브 모듈(FmCore.dll).
 
-📖 **[사용자 설명서](docs/manual/MANUAL.md)** (기능 설명 + 목적별 활용, 화면 캡처 포함) · 📝 [변경 내역](CHANGELOG.md)
+📖 **[사용자 설명서](docs/manual/MANUAL.md)** · **[User manual (English)](docs/manual/MANUAL.en.md)** (기능 설명 + 목적별 활용, 화면 캡처 포함) · 📝 [변경 내역](CHANGELOG.md)
 
 ## 빌드 / 배포
 
@@ -57,7 +57,7 @@ tests/IoProbe/         타임아웃·열거 성능 점검용 콘솔
 
 | 키 | 동작 |
 |---|---|
-| F1 | 사용 설명서 (`manual\MANUAL.md` — 같은 폴더의 MDNotePad+.exe, 없으면 .md 연결 프로그램) |
+| F1 | 사용 설명서 (화면 언어의 `manual\MANUAL.md` / `MANUAL.en.md` — 같은 폴더의 MDNotePad+.exe, 없으면 .md 연결 프로그램) |
 | F3 / F4 | 보기 (텍스트·HEX·이미지, 찾기) / 편집 (설정의 외부 편집기, 기본 메모장) |
 | F5 / F6 | 복사 / 이동 (대상 패널 경로가 기본값, 단일 항목은 새 이름 입력 가능) |
 | Shift+F6, F2 | 이름 바꾸기 |

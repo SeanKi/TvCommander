@@ -1157,8 +1157,8 @@ FTP 에서 비우면 anonymous
 목록 글씨 크기 (Ctrl+= / Ctrl+-)
 => List font size (Ctrl+= / Ctrl+-)
 
-사용 설명서 (F1) — 같은 폴더에 MDNotePad+.exe 가 있으면 그것으로, 없으면 .md 에 연결된 프로그램으로 엽니다
-=> User manual (F1) — opened with MDNotePad+.exe if it is in the same folder, otherwise with the program associated with .md
+사용 설명서 (F1) — 화면 언어의 설명서를, 같은 폴더에 MDNotePad+.exe 가 있으면 그것으로, 없으면 .md 에 연결된 프로그램으로 엽니다
+=> User manual (F1) — the manual in the display language, opened with MDNotePad+.exe if it is in the same folder, otherwise with the program associated with .md
 
 설정 — 백업 복사, 압축, 차단 해제, 편집기·터미널
 => Settings — Backup-Copy, compression, unblock, editor/terminal, language

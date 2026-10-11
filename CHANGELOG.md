@@ -1,5 +1,10 @@
 # 변경 내역
 
+## 1.8.1 — English manual
+- **영어 사용 설명서** `docs/manual/MANUAL.en.md` (English screenshots in `images/en/`).
+- F1 은 화면 언어의 설명서를 연다 (`manual\MANUAL.en.md`, 없으면 한국어 `MANUAL.md`). 설명서 폴더가 없으면 GitHub 의 해당 언어 설명서.
+- 배포 zip 에 영어 설명서와 그림 포함.
+
 ## 1.8.0 — 한국어 / English
 - **다국어 지원**: 화면 언어는 운영체제 언어를 따르고(한국어 Windows → 한국어, 그 밖 → English), 설정 창의 **언어 / Language** 에서 바꾼다 (다시 시작하면 적용).
 - **언어 팩은 텍스트 파일**: 프로그램 폴더의 `lang\en.txt`, `lang\ko.txt`. 원문 한 줄 + `=> 번역` 한 줄. 파일을 복사해 번역하면 언어를 더할 수 있다.

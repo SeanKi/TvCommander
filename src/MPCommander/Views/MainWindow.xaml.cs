@@ -396,7 +396,7 @@ public partial class MainWindow : Window
 
     private void Manual_Click(object sender, RoutedEventArgs e) => CmdManual();
 
-    private const string ManualUrl = "https://github.com/SeanKi/TvCommander/blob/main/docs/manual/MANUAL.md";
+    private const string ManualUrl = "https://github.com/SeanKi/TvCommander/blob/main/docs/manual/";
 
     /// <summary>
     /// F1 / 툴바 ?: 사용 설명서(프로그램 폴더의 manual\MANUAL.md).
@@ -406,12 +406,15 @@ public partial class MainWindow : Window
     private void CmdManual()
     {
         var dir = AppDomain.CurrentDomain.BaseDirectory;
-        var manual = Path.Combine(dir, "manual", "MANUAL.md");
+        // 화면 언어의 설명서 (MANUAL.en.md 등), 없으면 한국어 MANUAL.md
+        var name = Loc.IsSource ? "MANUAL.md" : $"MANUAL.{Loc.Language}.md";
+        var manual = Path.Combine(dir, "manual", name);
+        if (!File.Exists(manual)) { name = "MANUAL.md"; manual = Path.Combine(dir, "manual", name); }
         try
         {
             if (!File.Exists(manual))
             {
-                Process.Start(new ProcessStartInfo(ManualUrl) { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo(ManualUrl + name) { UseShellExecute = true });
                 return;
             }
             var mdNotePad = Path.Combine(dir, "MDNotePad+.exe");
