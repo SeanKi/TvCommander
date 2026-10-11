@@ -49,7 +49,7 @@ public static class VirtualFs
     };
 
     public static IVirtualFs For(string path)
-        => Providers.TryGetValue(PathUtil.Scheme(path), out var fs) ? fs : throw new IOException("지원하지 않는 경로입니다: " + path);
+        => Providers.TryGetValue(PathUtil.Scheme(path), out var fs) ? fs : throw new IOException(Loc.T("지원하지 않는 경로입니다: ") + path);
 
     public static void CancelAll()
     {
@@ -79,7 +79,7 @@ public static class VirtualFs
 internal sealed class MtpFs : IVirtualFs
 {
     public string Scheme => "mtp";
-    public string DisplayName => "휴대폰";
+    public string DisplayName => Loc.T("휴대폰");
     public int IdleTimeoutMs => Mtp.IdleTimeoutMs;
 
     public unsafe List<VEntry> List(string path, IoContext? ctx)

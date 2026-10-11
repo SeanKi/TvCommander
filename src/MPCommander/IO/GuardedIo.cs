@@ -8,14 +8,14 @@ namespace MPCommander.IO;
 public sealed class IoTimeoutException : IOException
 {
     public IoTimeoutException(string? target, int timeoutMs)
-        : base($"응답 시간 초과 ({timeoutMs / 1000.0:0.#}초): {target}") { }
+        : base(Loc.F($"응답 시간 초과 ({timeoutMs / 1000.0:0.#}초): {target}")) { }
 }
 
 /// <summary>사전 통신 체크에서 서버가 응답하지 않음</summary>
 public sealed class HostUnreachableException : IOException
 {
     public HostUnreachableException(string host)
-        : base($"'{host}' 서버에 연결할 수 없습니다. ({NetworkHealth.ProbeTimeoutMs / 1000}초 안에 응답 없음)") => Host = host;
+        : base(Loc.F($"'{host}' 서버에 연결할 수 없습니다. ({NetworkHealth.ProbeTimeoutMs / 1000}초 안에 응답 없음)")) => Host = host;
     public string Host { get; }
 }
 

@@ -101,13 +101,13 @@ public partial class MainWindow
         if (dir == null) return;
         if (PathUtil.IsVirtual(dir))
         {
-            panel.FlashStatus("원격(휴대폰·FTP·WebDAV) 폴더에서는 명령을 실행할 수 없습니다.");
+            panel.FlashStatus(Loc.T("원격(휴대폰·FTP·WebDAV) 폴더에서는 명령을 실행할 수 없습니다."));
             return;
         }
         var (ok, host) = await NetworkHealth.CheckPathAsync(dir);
         if (!ok) { ShowError(new HostUnreachableException(host!).Message); return; }
 
-        panel.FlashStatus($"실행: {command}");
+        panel.FlashStatus(Loc.F($"실행: {command}"));
         panel.FocusList();
 
         // 실행 파일 찾기와 시작은 네트워크 경로에서 느릴 수 있으므로 작업 스레드에서
@@ -123,7 +123,7 @@ public partial class MainWindow
                 return ex.Message;
             }
         });
-        if (error != null) ShowError($"실행하지 못했습니다: {command}\n{error}");
+        if (error != null) ShowError(Loc.F($"실행하지 못했습니다: {command}\n{error}"));
 
         // 명령이 파일을 바꿨을 수 있다 (로컬은 감시기가, 네트워크는 여기서 새로고침)
         await Task.Delay(1500);

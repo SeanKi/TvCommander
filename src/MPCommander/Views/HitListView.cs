@@ -49,7 +49,7 @@ internal sealed class HitListView : FrameworkElement
         Focusable = true;
         FocusVisualStyle = null;
         ClipToBounds = true;
-        var ft = new FormattedText("0가", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Face, FontSz, Brushes.Black, 1.0);
+        var ft = new FormattedText(Loc.T("0가"), CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Face, FontSz, Brushes.Black, 1.0);
         _rowH = Math.Ceiling(ft.Height + 4);
     }
 
@@ -117,9 +117,9 @@ internal sealed class HitListView : FrameworkElement
         // 머리글
         dc.DrawRectangle(HeaderBrush, null, new Rect(0, 0, w, HeaderH));
         dc.DrawLine(HeaderPen, new Point(0, HeaderH - 0.5), new Point(w, HeaderH - 0.5));
-        DrawHeader(dc, "줄", 0, colLine);
-        DrawHeader(dc, "개", colLine, colCount);
-        DrawHeader(dc, "내용", colLine + colCount, w - colLine - colCount);
+        DrawHeader(dc, Loc.T("줄"), 0, colLine);
+        DrawHeader(dc, Loc.T("개"), colLine, colCount);
+        DrawHeader(dc, Loc.T("내용"), colLine + colCount, w - colLine - colCount);
 
         bool focused = IsKeyboardFocusWithin;
         double y = HeaderH;

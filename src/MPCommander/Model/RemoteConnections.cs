@@ -105,7 +105,7 @@ public static class RemoteConnections
     {
         var name = PathUtil.RootName(path);
         return Find(PathUtil.Scheme(path), name)
-               ?? throw new IOException($"'{name}' 연결이 등록되어 있지 않습니다. 연결 관리(Ctrl+F)에서 확인하세요.");
+               ?? throw new IOException(Loc.F($"'{name}' 연결이 등록되어 있지 않습니다. 연결 관리(Ctrl+F)에서 확인하세요."));
     }
 
     /// <summary>추가 또는 수정 (oldName 이 있으면 그 연결을 바꾼다)</summary>
@@ -136,11 +136,11 @@ public static class RemoteConnections
     /// <summary>이름 규칙: 비어 있지 않고, 경로 구분자·콜론이 없고, 다른 연결과 겹치지 않아야 한다.</summary>
     public static string? ValidateName(string name, string? oldName)
     {
-        if (string.IsNullOrWhiteSpace(name)) return "이름을 입력하세요.";
-        if (name.IndexOfAny(['/', '\\', ':', '|', '?', '*', '"', '<', '>']) >= 0) return "이름에 / \\ : | ? * \" < > 는 쓸 수 없습니다.";
+        if (string.IsNullOrWhiteSpace(name)) return Loc.T("이름을 입력하세요.");
+        if (name.IndexOfAny(['/', '\\', ':', '|', '?', '*', '"', '<', '>']) >= 0) return Loc.T("이름에 / \\ : | ? * \" < > 는 쓸 수 없습니다.");
         bool dup = All.Any(c => c.Name.Equals(name, StringComparison.OrdinalIgnoreCase) &&
                                 !c.Name.Equals(oldName ?? "", StringComparison.OrdinalIgnoreCase));
-        return dup ? "같은 이름의 연결이 이미 있습니다." : null;
+        return dup ? Loc.T("같은 이름의 연결이 이미 있습니다.") : null;
     }
 
     private static List<RemoteConnection> Load()
@@ -193,7 +193,7 @@ public static class RemoteConnections
             s.Add(new("IgnoreCertErrors", c.IgnoreCertErrors.ToString()));
             s.Add(new("StartPath", c.StartPath));
         }
-        ini.Save(FilePath, "MP-Commander 원격 연결 (비밀번호는 Windows 사용자 계정으로 암호화됨)");
+        ini.Save(FilePath, Loc.T("MP-Commander 원격 연결 (비밀번호는 Windows 사용자 계정으로 암호화됨)"));
     }
 
     private static string Protect(string plain)

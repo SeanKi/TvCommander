@@ -1,0 +1,1418 @@
+﻿#name=English
+# MP-Commander language pack — English.
+# Format: the Korean source text on one line, its translation on the next line starting with "=> ".
+# Escapes: \n newline, \t tab, \\ backslash. Keep placeholders like {0} or {1:N0} as they are.
+# Copy this file as xx.txt (xx = language code) and translate the "=> " lines to add a language.
+
+# ── App.xaml.cs
+MP-Commander 오류
+=> MP-Commander error
+
+FmCore.dll 을 불러올 수 없습니다. 실행 파일과 같은 폴더에 있는지 확인하세요.\n\n
+=> Cannot load FmCore.dll. Make sure it is in the same folder as the program.\n\n
+
+# ── IO\BackupCopy.cs
+백업 후 복사
+=> Backup-Copy
+
+\# MP-Commander 백업 복사  {0:yyyy-MM-dd HH:mm:ss}
+=> # MP-Commander Backup-Copy  {0:yyyy-MM-dd HH:mm:ss}
+
+대상: {0}
+=> Target: {0}
+
+원본: {0}
+=> Source: {0}
+
+백업: {0}
+=> Backup: {0}
+
+(덮어쓸 파일 없음)
+=> (no files to overwrite)
+
+백업 중
+=> Backing up
+
+백업  {0}
+=> Backed up  {0}
+
+백업하지 못해 덮어쓰지 않았습니다.
+=> Not overwritten because it could not be backed up.
+
+복사 중
+=> Copying
+
+\# 결과: 백업 {0}, 복사 {1}, 이름 바꿔 교체 {2}, 실패 {3}
+=> # Result: backed up {0}, copied {1}, renamed and replaced {2}, failed {3}
+
+ (취소됨)
+=>  (cancelled)
+
+복사  {0}
+=> Copied  {0}
+
+프로그램 닫는 중
+=> Closing programs
+
+닫음  {0} (PID {1})
+=> Closed  {0} (PID {1})
+
+이름 바꿈  {0} → {1}
+=> Renamed  {0} → {1}
+
+사용 중이라 건너뜀
+=> Skipped because the file is in use
+
+실패  {0} — {1}
+=> Failed  {0} — {1}
+
+# ── IO\FileOperation.cs
+복사
+=> Copy
+
+이동
+=> Move
+
+{0} - 복사본{1}{2}
+=> {0} - Copy{1}{2}
+
+목록 수집 중
+=> Collecting files
+
+드라이브나 기기 루트는 복사/이동할 수 없습니다.
+=> A drive or device root cannot be copied or moved.
+
+원본과 대상이 같습니다.
+=> Source and target are the same.
+
+원본이 없습니다.
+=> The source does not exist.
+
+폴더를 자기 자신의 하위 폴더로 복사/이동할 수 없습니다.
+=> A folder cannot be copied or moved into its own subfolder.
+
+이동 중
+=> Moving
+
+정리 중
+=> Cleaning up
+
+같은 이름의 폴더가 이미 있습니다.
+=> A folder with the same name already exists.
+
+# ── IO\FtpFs.cs
+파일이 이미 있습니다: 
+=> The file already exists: 
+
+연결 루트 경로가 잘못되었습니다.
+=> Invalid connection root path.
+
+연결 루트는 삭제할 수 없습니다.
+=> The connection root cannot be deleted.
+
+없는 경로입니다: 
+=> Path not found: 
+
+같은 이름의 파일이 있습니다: 
+=> A file with the same name exists: 
+
+# ── IO\GuardedIo.cs
+응답 시간 초과 ({0:0.#}초): {1}
+=> Timed out ({0:0.#} s): {1}
+
+'{0}' 서버에 연결할 수 없습니다. ({1}초 안에 응답 없음)
+=> Cannot connect to server '{0}'. (no response within {1} s)
+
+# ── IO\Mtp.cs
+MTP 기기 목록
+=> MTP devices
+
+기기 이름이 없는 경로입니다: 
+=> The path has no device name: 
+
+'{0}' 기기를 찾을 수 없습니다. USB 연결을 확인하세요.
+=> Device '{0}' not found. Check the USB connection.
+
+저장소가 보이지 않습니다. 폰의 잠금을 풀고, USB 연결 알림에서 '파일 전송'을 선택하세요.
+=> No storage is visible. Unlock the phone and choose 'File transfer' in the USB notification.
+
+휴대폰에 없는 경로입니다: 
+=> Path not found on the phone: 
+
+기기 루트에는 파일을 둘 수 없습니다. 저장소 안으로 복사하세요.
+=> Files cannot be placed at the device root. Copy into a storage.
+
+기기 루트에는 폴더를 만들 수 없습니다. 저장소 안에 만드세요.
+=> Folders cannot be created at the device root. Create them inside a storage.
+
+기기나 저장소 자체는 삭제할 수 없습니다.
+=> A device or storage itself cannot be deleted.
+
+이 기기는 이름 바꾸기를 지원하지 않을 수 있습니다.
+=> This device may not support renaming.
+
+휴대폰 작업 실패 (0x{0:X8})
+=> Phone operation failed (0x{0:X8})
+
+# ── IO\ProgressOperation.cs
+준비 중
+=> Preparing
+
+# ── IO\RemoteSupport.cs
+응답 시간 초과
+=> Timed out
+
+취소됨
+=> Cancelled
+
+서버 이름을 찾을 수 없음
+=> Server name not found
+
+서버에 연결할 수 없음
+=> Cannot connect to the server
+
+보안 연결(인증서) 오류 — 자체 서명 인증서라면 연결 설정에서 '인증서 오류 무시'를 켜세요
+=> Secure connection (certificate) error — for a self-signed certificate, turn on 'Ignore certificate errors' in the connection settings
+
+인증 실패 (사용자 이름·비밀번호 확인)
+=> Authentication failed (check user name and password)
+
+권한 없음
+=> Access denied
+
+없음
+=> Not found
+
+허용되지 않는 작업
+=> Operation not allowed
+
+상위 폴더가 없음
+=> Parent folder does not exist
+
+대상이 이미 있음
+=> The target already exists
+
+잠김
+=> Locked
+
+저장 공간 부족
+=> Not enough storage space
+
+# ── IO\RunningProcesses.cs
+{0} (이 프로그램)
+=> {0} (this program)
+
+{0} (서비스)
+=> {0} (service)
+
+{0}: 실행 파일 경로를 알 수 없습니다.
+=> {0}: executable path unknown.
+
+# ── IO\SevenZip.cs
+7z 압축
+=> 7z compression
+
+압축 풀기
+=> Extract
+
+7-Zip(7z.exe)을 찾을 수 없습니다.
+=> 7-Zip (7z.exe) not found.
+
+압축 중
+=> Compressing
+
+압축 푸는 중
+=> Extracting
+
+압축 푸는 중 (tar)
+=> Extracting (tar)
+
+일부 파일을 처리하지 못했습니다.\n
+=> Some files could not be processed.\n
+
+7-Zip 오류 (코드 {0})
+=> 7-Zip error (code {0})
+
+# ── IO\TextFileSource.cs
+파일을 열 수 없습니다: {0}
+=> Cannot open the file: {0}
+
+ …(줄이 너무 길어 잘림)
+=>  …(line too long, cut)
+
+# ── IO\UnblockOperation.cs
+차단 해제
+=> Unblock
+
+차단 해제 중
+=> Unblocking
+
+# ── IO\VirtualFs.cs
+지원하지 않는 경로입니다: 
+=> Unsupported path: 
+
+휴대폰
+=> Phone
+
+# ── IO\WebDavFs.cs
+폴더가 비어 있지 않습니다: 
+=> The folder is not empty: 
+
+# ── IO\ZipOperation.cs
+압축
+=> Compress
+
+대상 폴더 밖을 가리키는 항목이라 건너뜁니다.
+=> Skipped: the entry points outside the target folder.
+
+# ── Model\RemoteConnections.cs
+'{0}' 연결이 등록되어 있지 않습니다. 연결 관리(Ctrl+F)에서 확인하세요.
+=> Connection '{0}' is not registered. Check the connection manager (Ctrl+F).
+
+이름을 입력하세요.
+=> Enter a name.
+
+이름에 / \\ : | ? * " < > 는 쓸 수 없습니다.
+=> A name cannot contain / \\ : | ? * " < >
+
+같은 이름의 연결이 이미 있습니다.
+=> A connection with the same name already exists.
+
+MP-Commander 원격 연결 (비밀번호는 Windows 사용자 계정으로 암호화됨)
+=> MP-Commander remote connections (passwords are encrypted with your Windows account)
+
+# ── Views\BackupCopyDialog.xaml.cs
+{0:N0}개 ({1}) — 덮어쓸 파일 {2:N0}개는 먼저 백업, 새 파일 {3:N0}개
+=> {0:N0} files ({1}) — {2:N0} to overwrite are backed up first, {3:N0} new
+
+덮어쓸 파일이 없어 백업 폴더는 만들지 않습니다.
+=> No files will be overwritten, so no backup folder is created.
+
+백업 폴더: {0}\\
+=> Backup folder: {0}\\
+
+백업 위치가 올바르지 않습니다: 
+=> Invalid backup location: 
+
+대상 파일을 쓰고 있는 프로그램을 찾는 중...
+=> Looking for programs using the target files...
+
+확인이 15초 안에 끝나지 않았습니다. 그대로 계속할 수 있습니다 (사용 중인 파일은 복사 중에 묻습니다).
+=> The check did not finish within 15 s. You can continue anyway (files in use are asked about during the copy).
+
+대상 파일을 쓰고 있는 프로그램이 없습니다. [계속]을 누르면 백업 후 복사합니다.
+=> No program is using the target files. Press [Continue] to back up and copy.
+
+{0}개 프로그램이 대상 파일을 쓰고 있습니다. 프로그램을 저장·종료한 뒤(또는 [닫기 요청]) [다시 확인] 하고 [계속]을 누르세요.
+=> {0} program(s) are using the target files. Save and close them (or [Request close]), then [Check again] and press [Continue].
+
+\nMP-Commander 자신이 쓰는 파일은 복사 중에 '이름 바꿔 교체'를 고르면 바꿀 수 있습니다 (다시 시작하면 적용).
+=> \nFiles used by MP-Commander itself can be replaced during the copy with 'Rename and replace' (applied after a restart).
+
+프로그램 확인 실패: 
+=> Program check failed: 
+
+ — 그대로 계속할 수 있습니다.
+=>  — you can continue anyway.
+
+닫기를 요청하는 중... (저장 확인이 뜨면 그 프로그램에서 답하세요)
+=> Asking programs to close... (answer any save prompt in that program)
+
+\n닫히지 않은 프로그램: {0} — 직접 닫거나 [강제 종료] 하세요.
+=> \nPrograms that did not close: {0} — close them yourself or use [Force quit].
+
+다음 프로그램을 강제로 끝냅니다. 저장하지 않은 내용은 사라집니다.\n\n{0}
+=> The following programs will be forced to quit. Unsaved work will be lost.\n\n{0}
+
+강제 종료
+=> Force quit
+
+강제 종료하는 중...
+=> Forcing programs to quit...
+
+\n끝내지 못한 프로그램: {0} (관리자 권한으로 실행된 프로그램일 수 있습니다)
+=> \nPrograms that could not be ended: {0} (they may be running as administrator)
+
+백업 위치는 PC 의 폴더(로컬·네트워크 드라이브)여야 합니다.
+=> The backup location must be a folder on this PC (local or network drive).
+
+아직 실행 중인 프로그램이 있습니다:\n{0}\n\n그래도 계속할까요? 사용 중인 파일은 복사할 때 다시 묻습니다.
+=> Programs are still running:\n{0}\n\nContinue anyway? Files in use will be asked about during the copy.
+
+# ── Views\ConnectionEditDialog.xaml.cs
+연결 추가
+=> Add connection
+
+연결 편집 - {0}
+=> Edit connection - {0}
+
+서버
+=> Server
+
+전체 주소 (예: https://app.koofr.net/dav/Koofr, https://nas.local:5006/home)
+=> Full address (e.g. https://app.koofr.net/dav/Koofr, https://nas.local:5006/home)
+
+서버 이름 또는 IP (예: ftp.example.com, 192.168.0.10)
+=> Server name or IP (e.g. ftp.example.com, 192.168.0.10)
+
+URL 을 입력하세요.
+=> Enter a URL.
+
+서버 주소를 입력하세요.
+=> Enter the server address.
+
+URL 은 http:// 또는 https:// 로 시작해야 합니다.
+=> The URL must start with http:// or https://.
+
+서버에는 ftp:// 없이 이름이나 IP 만 입력하세요.
+=> Enter only the server name or IP, without ftp://.
+
+포트는 1~65535 입니다.
+=> The port must be 1 to 65535.
+
+연결하는 중...
+=> Connecting...
+
+, 여유 {0} / {1}
+=> , free {0} / {1}
+
+연결 성공: 항목 {0}개{1}
+=> Connected: {0} items{1}
+
+연결 실패: 
+=> Connection failed: 
+
+# ── Views\ConnectionsWindow.xaml.cs
+'{0}' ({1} {2}) 연결을 삭제할까요?\n서버의 파일은 지워지지 않습니다.
+=> Delete the connection '{0}' ({1} {2})?\nFiles on the server are not deleted.
+
+연결 삭제
+=> Delete connection
+
+# ── Views\FilePanel.xaml.cs
+\n→ 홈 폴더를 대신 열었습니다.
+=> \n→ Opened the home folder instead.
+
+공유 폴더 이름까지 입력하세요. (예: \\\\server\\share)
+=> Enter the share name too. (e.g. \\\\server\\share)
+
+불러오는 중... (Esc: 취소)\n{0}
+=> Loading... (Esc: cancel)\n{0}
+
+불러오는 중... {0:N0}개 (Esc: 취소)\n{1}
+=> Loading... {0:N0} items (Esc: cancel)\n{1}
+
+불러오기를 취소했습니다.
+=> Loading cancelled.
+
+★ 자주 머문 폴더에 올렸습니다 (Alt+↓ 에서 맨 위)
+=> ★ Added to frequent folders (top of Alt+↓)
+
+☆ 자주 머문 폴더에서 내렸습니다
+=> ☆ Removed from frequent folders
+
+자주 머문 폴더에 있음 — 누르면 내립니다 (Ctrl+D)
+=> In frequent folders — click to remove (Ctrl+D)
+
+자주 머문 폴더에 올리기 (Ctrl+D)
+=> Add to frequent folders (Ctrl+D)
+
+★ 자주 머문 폴더
+=> ★ Frequent folders
+
+★ 고정 · {0}회
+=> ★ Pinned · {0} visits
+
+★ 고정
+=> ★ Pinned
+
+{0}회 · {1}
+=> {0} visits · {1}
+
+최근 폴더 ({0}/{1})
+=> Recent folders ({0}/{1})
+
+(없음)
+=> (none)
+
+히스토리 지우기...
+=> Clear history...
+
+최근 폴더와 자주 머문 폴더 기록을 모두 지울까요?
+=> Clear all recent and frequent folder history?
+
+히스토리 지우기
+=> Clear history
+
+{0:0}초
+=> {0:0} s
+
+{0:0}분
+=> {0:0} min
+
+{0:0.#}시간
+=> {0:0.#} h
+
+선택
+=> Select
+
+선택 해제
+=> Deselect
+
+파일 마스크 (여러 개는 ; 로 구분):
+=> File mask (separate several with ;):
+
+{0} / {1},  파일 {2:N0}/{3:N0},  폴더 {4:N0}/{5:N0}
+=> {0} / {1},  files {2:N0}/{3:N0},  folders {4:N0}/{5:N0}
+
+   │   차단 {0:N0}
+=>    │   blocked {0:N0}
+
+   │   여유 {0}
+=>    │   free {0}
+
+이름
+=> Name
+
+확장자
+=> Ext
+
+크기
+=> Size
+
+날짜
+=> Date
+
+속성
+=> Attr
+
+네트워크
+=> Network
+
+이동식
+=> Removable
+
+빠른 검색: {0}
+=> Quick search: {0}
+
+  (없음)
+=>   (none)
+
+→ {0}   (Ctrl: 바로 복사, Shift: 바로 이동, 그냥 놓으면 메뉴)
+=> → {0}   (Ctrl: copy now, Shift: move now, plain drop: menu)
+
+여기에 복사 ({0}개)
+=> Copy here ({0})
+
+여기로 이동 ({0}개)
+=> Move here ({0})
+
+취소
+=> Cancel
+
+# ── Views\HitListView.cs
+줄
+=> Line
+
+개
+=> #
+
+내용
+=> Text
+
+# ── Views\LockedFileDialog.xaml.cs
+쓰고 있는 프로그램을 찾지 못했습니다 (다른 PC 에서 네트워크로 열었거나 권한 문제일 수 있습니다).
+=> No program using the file was found (it may be open from another PC over the network, or a permission issue).
+
+쓰고 있는 프로그램:\n
+=> Programs using the file:\n
+
+프로그램을 강제로 끝냅니다. 저장하지 않은 내용은 사라집니다. 계속할까요?
+=> The program will be forced to quit. Unsaved work will be lost. Continue?
+
+# ── Views\MainWindow.Appearance.cs
+작게
+=> Small
+
+보통
+=> Normal
+
+크게
+=> Large
+
+목록 글씨 크기: {0} (Ctrl+= / Ctrl+-)
+=> List font size: {0} (Ctrl+= / Ctrl+-)
+
+# ── Views\MainWindow.BackupCopy.cs
+백업 복사는 PC 의 파일만 됩니다. 원격 파일은 먼저 PC 로 복사하세요.
+=> Backup-Copy works only with files on this PC. Copy remote files to the PC first.
+
+백업 복사는 대상 패널(PC 폴더)로 복사합니다. 대상 패널을 PC 폴더로 여세요.
+=> Backup-Copy copies to the target pane (a PC folder). Open a PC folder in the target pane.
+
+원본과 대상 폴더가 같습니다.
+=> Source and target folders are the same.
+
+백업 복사 준비 중...
+=> Preparing Backup-Copy...
+
+복사할 파일이 없습니다 (빈 폴더).
+=> Nothing to copy (empty folder).
+
+{0}개 항목
+=> {0} items
+
+백업 복사: 복사 {0:N0}개, 백업 {1:N0}개
+=> Backup-Copy: copied {0:N0}, backed up {1:N0}
+
+, 이름 바꿔 교체 {0}개
+=> , renamed and replaced {0}
+
+, 실패 {0}개
+=> , failed {0}
+
+, 다시 실행 {0}개
+=> , restarted {0}
+
+ — 중간에 취소됨
+=>  — cancelled
+
+  │ 백업: {0}
+=>   │ backup: {0}
+
+# ── Views\MainWindow.Clipboard.cs
+클립보드를 사용할 수 없습니다. 다른 프로그램이 클립보드를 쓰고 있는지 확인하세요.
+=> The clipboard is not available. Check whether another program is using it.
+
+{0}: {1} — 붙여넣을 곳에서 Ctrl+V
+=> {0}: {1} — press Ctrl+V where you want to paste
+
+잘라내기
+=> Cut
+
+붙여넣을 파일이 클립보드에 없습니다.
+=> No files to paste on the clipboard.
+
+휴대폰·FTP·WebDAV 파일에는 차단 표시가 없습니다. PC 로 복사한 뒤 차단 해제하세요.
+=> Phone, FTP and WebDAV files carry no block mark. Copy them to the PC, then unblock.
+
+현재 폴더: {0}
+=> Current folder: {0}
+
+폴더
+=> Folder
+
+파일
+=> File
+
+{0}개 항목 — 폴더 {1}개, 파일 {2}개  ({3})
+=> {0} items — {1} folders, {2} files  ({3})
+
+차단 해제: {0:N0}개 파일 (검사 {1:N0}개, 원래 차단 없음 {2:N0}개
+=> Unblocked: {0:N0} files (checked {1:N0}, not blocked {2:N0}
+
+, 실패 {0:N0}개)
+=> , failed {0:N0})
+
+# ── Views\MainWindow.CommandLine.cs
+원격(휴대폰·FTP·WebDAV) 폴더에서는 명령을 실행할 수 없습니다.
+=> Commands cannot run in a remote (phone, FTP, WebDAV) folder.
+
+실행: {0}
+=> Run: {0}
+
+실행하지 못했습니다: {0}\n{1}
+=> Could not run: {0}\n{1}
+
+# ── Views\MainWindow.ContextMenu.cs
+보기\tF3
+=> View\tF3
+
+편집\tF4
+=> Edit\tF4
+
+대상 패널로 복사{0}\tF5
+=> Copy to target pane{0}\tF5
+
+대상 패널로 이동{0}\tF6
+=> Move to target pane{0}\tF6
+
+백업 후 복사{0}...\tCtrl+B
+=> Backup-Copy{0}...\tCtrl+B
+
+이름 바꾸기\tShift+F6
+=> Rename\tShift+F6
+
+삭제 (영구)\tF8
+=> Delete (permanent)\tF8
+
+삭제\tF8
+=> Delete\tF8
+
+전체 경로 복사\tCtrl+Shift+C
+=> Copy full path\tCtrl+Shift+C
+
+이름 복사
+=> Copy name
+
+압축 (7z / ZIP){0}...\tAlt+F5
+=> Compress (7z / ZIP){0}...\tAlt+F5
+
+차단 해제...\tCtrl+Shift+U
+=> Unblock...\tCtrl+Shift+U
+
+압축 풀기{0}...\tAlt+F9
+=> Extract{0}...\tAlt+F9
+
+새 폴더\tF7
+=> New folder\tF7
+
+새로고침\tCtrl+R
+=> Refresh\tCtrl+R
+
+현재 경로 복사
+=> Copy current path
+
+붙여넣기\tCtrl+V
+=> Paste\tCtrl+V
+
+여기서 터미널 열기\tF9
+=> Open terminal here\tF9
+
+이 폴더 차단 해제...\tCtrl+Shift+U
+=> Unblock this folder...\tCtrl+Shift+U
+
+원격 파일은 PC 로 복사한 뒤 압축하세요.
+=> Copy remote files to the PC before compressing them.
+
+{0}\n\n이미 있습니다. 덮어쓸까요?
+=> {0}\n\nalready exists. Overwrite?
+
+{0}\n\n폴더가 비어 있어 압축할 것이 없습니다.
+=> {0}\n\nThe folder is empty; nothing to compress.
+
+압축 완료: {0}  ({1})
+=> Compressed: {0}  ({1})
+
+압축 파일(ZIP, 7z, RAR, TAR 등)을 고르세요.
+=> Select archives (ZIP, 7z, RAR, TAR, ...).
+
+원격 파일은 PC 로 복사한 뒤 압축을 푸세요.
+=> Copy remote files to the PC before extracting them.
+
+ZIP 외의 형식은 7-Zip 이 있어야 풀 수 있습니다. 7-Zip 을 설치하거나 7za.exe 를 MP-Commander 폴더에 두세요.
+=> Formats other than ZIP need 7-Zip. Install 7-Zip or put 7za.exe in the MP-Commander folder.
+
+7-Zip 이 없어 ZIP 만 풉니다.
+=> 7-Zip not found; extracting ZIP files only.
+
+압축 풀기: {0}/{1}개 → {2}
+=> Extracted: {0}/{1} → {2}
+
+# ── Views\MainWindow.xaml.cs
+사용 설명서를 열 수 없습니다: 
+=> Cannot open the user manual: 
+
+원격 파일은 임시 사본으로 열립니다. 수정한 뒤에는 F5 로 다시 복사하세요.
+=> Remote files open as a temporary copy. After editing, copy it back with F5.
+
+{0}에서 가져오는 중... 
+=> Fetching from {0}... 
+
+{0}을(를) 다음 위치로 {1}:
+=> {1} {0} to:
+
+{0}\n\n{1}\n\n[예] 다시 시도    [아니요] 건너뛰기    [취소] 작업 중단
+=> {0}\n\n{1}\n\n[Yes] retry    [No] skip    [Cancel] stop
+
+오류
+=> Error
+
+이름 바꾸기
+=> Rename
+
+새 이름:
+=> New name:
+
+이름에 사용할 수 없는 문자가 있습니다.
+=> The name contains characters that are not allowed.
+
+새 폴더
+=> New folder
+
+폴더 이름 (a\\b 처럼 여러 단계도 가능):
+=> Folder name (several levels like a\\b are allowed):
+
+{0}을(를) 영구 삭제합니다. 복구할 수 없습니다.\n계속할까요?
+=> Permanently delete {0}? It cannot be recovered.\nContinue?
+
+{0}을(를) 휴지통으로 보낼까요?
+=> Move {0} to the Recycle Bin?
+
+영구 삭제
+=> Delete permanently
+
+삭제
+=> Delete
+
+삭제하지 못했습니다. (코드 0x{0:X})
+=> Could not delete. (code 0x{0:X})
+
+{0}을(를) {1}에서 영구 삭제합니다. 휴지통이 없어 복구할 수 없습니다.\n계속할까요?
+=> Permanently delete {0} from {1}? There is no Recycle Bin, so it cannot be recovered.\nContinue?
+
+{0}에서 삭제
+=> Delete from {0}
+
+원격(휴대폰·FTP·WebDAV) 폴더에서는 터미널을 열 수 없습니다.
+=> A terminal cannot be opened in a remote (phone, FTP, WebDAV) folder.
+
+클립보드에 복사: {0}
+=> Copied to clipboard: {0}
+
+클립보드에 {0}개 복사
+=> Copied {0} to the clipboard
+
+# ── Views\OverwriteDialog.xaml.cs
+{0}\n{1} ({2:N0} 바이트),  {3:yyyy-MM-dd HH:mm:ss}
+=> {0}\n{1} ({2:N0} bytes),  {3:yyyy-MM-dd HH:mm:ss}
+
+# ── Views\PackDialog.xaml.cs
+7-Zip 을 찾지 못해 7z 형식은 쓸 수 없습니다. 7-Zip 을 설치하거나 7za.exe 를 MP-Commander 폴더에 두세요.
+=> 7-Zip not found, so the 7z format is unavailable. Install 7-Zip or put 7za.exe in the MP-Commander folder.
+
+압축 파일 이름을 입력하세요.
+=> Enter an archive name.
+
+압축 파일은 PC 의 폴더(로컬·네트워크 드라이브)에만 만들 수 있습니다.
+=> Archives can only be created in a folder on this PC (local or network drive).
+
+# ── Views\ProgressWindow.xaml.cs
+파일 {0:N0} / {1:N0},   {2} / {3},   {4}/s
+=> Files {0:N0} / {1:N0},   {2} / {3},   {4}/s
+
+,   건너뜀 {0}
+=> ,   skipped {0}
+
+{0}초째 응답이 없습니다. 네트워크나 디스크가 지연되고 있을 수 있습니다. [취소]를 누르면 중단합니다.
+=> No response for {0} s. The network or disk may be slow. Press [Cancel] to stop.
+
+취소하는 중...
+=> Cancelling...
+
+# ── Views\SearchWindow.xaml.cs
+연결 확인 중...
+=> Checking the connection...
+
+정규식 오류: 
+=> Regex error: 
+
+검색을 시작하지 못했습니다.
+=> Could not start the search.
+
+중지
+=> Stop
+
+ (세는 중 {0:N0})
+=>  (counting {0:N0})
+
+   │   찾은 말 {0:N0}개 · {1:N0}줄{2}
+=>    │   matches {0:N0} · {1:N0} lines{2}
+
+완료 - 
+=> Done - 
+
+   │   폴더 {0:N0}, 파일 {1:N0}   │   오류/시간초과 {2:N0}   │   {3:0.0}초
+=>    │   folders {0:N0}, files {1:N0}   │   errors/timeouts {2:N0}   │   {3:0.0} s
+
+찾음 {0:N0}{1}
+=> Found {0:N0}{1}
+
+   │   결과가 너무 많아 중단
+=>    │   stopped: too many results
+
+찾음 {0:N0}{{COUNT}}
+=> Found {0:N0}{{COUNT}}
+
+중지하는 중...
+=> Stopping...
+
+찾기
+=> Find
+
+# ── Views\SettingsWindow.xaml.cs
+자동 (운영체제 언어)
+=> Automatic (Windows language)
+
+# ── Views\UnblockDialog.xaml.cs
+파일 형식을 하나 이상 고르거나 '모든 파일'을 켜세요.
+=> Select at least one file type or turn on 'All files'.
+
+# ── Views\UnpackDialog.xaml.cs
+ 외 {0}개
+=>  and {0} more
+
+예: {0} → {1}
+=> e.g. {0} → {1}
+
+   (모두 {0}개)
+=>    ({0} in total)
+
+압축은 PC 의 폴더(로컬·네트워크 드라이브)에만 풀 수 있습니다.
+=> Archives can only be extracted to a folder on this PC (local or network drive).
+
+# ── Views\ViewerWindow.xaml.cs
+보기 - {0}
+=> View - {0}
+
+{0}   │   {1} × {2}   │   {3}   │   Esc 닫기
+=> {0}   │   {1} × {2}   │   {3}   │   Esc close
+
+\n───── 파일이 커서 앞부분 {0}만 표시합니다 ─────
+=> \n───── The file is large; only the first {0} is shown ─────
+
+16진수 보기에서는 찾지 않음
+=> Not searched in HEX view
+
+{0}   │   {1}   │   HEX   │   H: 텍스트/HEX   Esc: 닫기
+=> {0}   │   {1}   │   HEX   │   H: text/HEX   Esc: close
+
+   │   색인 중 {0}%
+=>    │   indexing {0}%
+
+{0}   │   {1}   │   {2}   │   {3:N0}줄{4}
+=> {0}   │   {1}   │   {2}   │   {3:N0} lines{4}
+
+   │   Ctrl+F 찾기  F3 다음  Shift+F3 이전   Ctrl+C 복사   H: HEX   W: 줄 바꿈   Esc: 닫기
+=>    │   Ctrl+F find  F3 next  Shift+F3 previous   Ctrl+C copy   H: HEX   W: wrap   Esc: close
+
+찾기 실패: 
+=> Search failed: 
+
+정규식이 너무 오래 걸려 멈췄습니다
+=> The regex took too long and was stopped
+
+ · 찾는 중 {0}%
+=>  · searching {0}%
+
+ (목록 {0:N0}줄)
+=>  (list {0:N0} lines)
+
+{0}{1:N0}개 · {2:N0}줄{3}{4}
+=> {0}{1:N0} matches · {2:N0} lines{3}{4}
+
+다음 일치를 찾는 중...
+=> Looking for the next match...
+
+{0:N0}줄 ({1:N0}자) 복사함
+=> Copied {0:N0} lines ({1:N0} chars)
+
+{0:N0}자 복사함
+=> Copied {0:N0} chars
+
+# ── Views\BackupCopyDialog.xaml
+백업 후 복사 (Backup-Copy)
+=> Backup-Copy
+
+대상에 이미 있는 같은 이름의 파일을 먼저 백업 폴더에 복사해 둔 뒤, 고른 파일을 대상에 복사합니다. 실행 중인 프로그램이 대상 파일을 쓰고 있으면 먼저 닫아야 합니다.
+=> Files in the target with the same names are first copied to a backup folder, then the selected files are copied to the target. Programs using target files must be closed first.
+
+원본
+=> Source
+
+대상
+=> Target
+
+백업
+=> Backup
+
+백업 위치
+=> Backup location
+
+상대 경로면 대상 폴더 아래 (기본: backup). 절대 경로도 됩니다 (예: D:\\backup\\myapp)
+=> A relative path is placed under the target folder (default: backup). Absolute paths also work (e.g. D:\\backup\\myapp)
+
+폴더 이름 앞말
+=> Folder name prefix
+
+시각 폴더 이름 앞에 붙일 말 (선택). 예: v2_ → v2_20261009_0947
+=> Text put before the timestamp folder name (optional). e.g. v2_ → v2_20261009_0947
+
+대상 파일을 쓰고 있는 프로그램
+=> Programs using the target files
+
+프로그램
+=> Program
+
+실행 파일
+=> Executable
+
+다시 확인
+=> Check again
+
+닫기 요청
+=> Request close
+
+선택한(없으면 모든) 프로그램에 창 닫기를 요청합니다. 저장 확인이 뜨면 그 프로그램에서 답하세요.
+=> Asks the selected (or all) programs to close their windows. Answer any save prompt in that program.
+
+선택한(없으면 모든) 프로그램을 강제로 끝냅니다. 저장하지 않은 내용은 사라집니다.
+=> Forces the selected (or all) programs to quit. Unsaved work will be lost.
+
+복사가 끝나면 닫았던 프로그램을 다시 실행
+=> Restart the closed programs after copying
+
+계속 (백업 후 복사)
+=> Continue (backup and copy)
+
+# ── Views\ConnectionEditDialog.xaml
+연결 설정
+=> Connection settings
+
+경로에 쓰입니다: ftp://이름/..., dav://이름/...
+=> Used in paths: ftp://name/..., dav://name/...
+
+종류
+=> Type
+
+FTPS (명시적 TLS)
+=> FTPS (explicit TLS)
+
+포트
+=> Port
+
+비우면 21
+=> 21 if empty
+
+시작 폴더
+=> Start folder
+
+로그인 폴더 기준 하위 경로 (예: pub/files). 비우면 로그인 폴더
+=> Subpath under the login folder (e.g. pub/files). Login folder if empty
+
+사용자
+=> User
+
+FTP 에서 비우면 anonymous
+=> anonymous if empty (FTP)
+
+비밀번호
+=> Password
+
+비워 두면 저장된 비밀번호를 그대로 씁니다.
+=> Leave empty to keep the saved password.
+
+패시브 모드 (공유기·방화벽 뒤에서는 켜 두세요)
+=> Passive mode (keep on behind a router or firewall)
+
+인증서 오류 무시 (자체 서명 인증서를 쓰는 NAS 등)
+=> Ignore certificate errors (e.g. a NAS with a self-signed certificate)
+
+연결 시험
+=> Test connection
+
+저장
+=> Save
+
+# ── Views\ConnectionsWindow.xaml
+원격 연결 관리 (FTP / WebDAV)
+=> Remote connections (FTP / WebDAV)
+
+연결
+=> Connect
+
+활성 패널에서 엽니다 (Enter / 더블클릭)
+=> Opens in the active pane (Enter / double-click)
+
+추가...
+=> Add...
+
+편집...
+=> Edit...
+
+닫기
+=> Close
+
+연결은 드라이브 목록에도 🌐 로 나옵니다. 비밀번호는 Windows 사용자 계정으로 암호화해 저장합니다.
+=> Connections also appear in the drive list with 🌐. Passwords are encrypted with your Windows account.
+
+주소
+=> Address
+
+# ── Views\FilePanel.xaml
+루트 (Ctrl+\\)
+=> Root (Ctrl+\\)
+
+폴더 히스토리 (Alt+↓)
+=> Folder history (Alt+↓)
+
+상위 폴더
+=> Parent folder
+
+다시 시도
+=> Retry
+
+인터넷에서 받은 파일 (차단됨) — Ctrl+Shift+U 로 차단 해제
+=> Downloaded from the internet (blocked) — unblock with Ctrl+Shift+U
+
+불러오는 중...
+=> Loading...
+
+# ── Views\InputDialog.xaml
+확인
+=> OK
+
+# ── Views\LockedFileDialog.xaml
+파일이 사용 중입니다
+=> File in use
+
+다음 파일을 덮어쓸 수 없습니다 (다른 프로그램이 쓰는 중):
+=> This file cannot be overwritten (another program is using it):
+
+'이름 바꿔 교체': 옛 파일을 이름.old-시각 으로 비켜 두고 새 파일을 놓습니다. 실행 중인 프로그램에도 되며, 그 프로그램을 다시 시작하면 새 파일이 쓰입니다.
+=> 'Rename and replace' moves the old file aside as name.old-time and puts the new file in place. It works even for a running program; the new file is used after that program restarts.
+
+프로그램 닫고 다시 시도
+=> Close program and retry
+
+강제 종료 후 다시 시도
+=> Force quit and retry
+
+이름 바꿔 교체
+=> Rename and replace
+
+건너뛰기
+=> Skip
+
+중단
+=> Stop
+
+# ── Views\MainWindow.xaml
+2창 (Ctrl+F2)
+=> 2 panes (Ctrl+F2)
+
+3창 (Ctrl+F3)
+=> 3 panes (Ctrl+F3)
+
+4창 2×2 (Ctrl+F4)
+=> 4 panes 2×2 (Ctrl+F4)
+
+6창 2×3 (Ctrl+F6)
+=> 6 panes 2×3 (Ctrl+F6)
+
+8창 2×4 (Ctrl+F8)
+=> 8 panes 2×4 (Ctrl+F8)
+
+뒤로 (Alt+←)
+=> Back (Alt+←)
+
+앞으로 (Alt+→)
+=> Forward (Alt+→)
+
+상위 폴더 (Backspace)
+=> Parent folder (Backspace)
+
+새로고침 (Ctrl+R)
+=> Refresh (Ctrl+R)
+
+파일 찾기 (Alt+F7)
+=> Find files (Alt+F7)
+
+원격 연결 관리 — FTP / FTPS / WebDAV 등록·연결 (Ctrl+F)
+=> Remote connections — add and connect FTP / FTPS / WebDAV (Ctrl+F)
+
+현재 폴더 경로 복사
+=> Copy current folder path
+
+선택 항목 전체 경로 복사 (Ctrl+Shift+C)
+=> Copy full paths of selected items (Ctrl+Shift+C)
+
+선택 항목 이름 복사
+=> Copy names of selected items
+
+새 폴더 (F7)
+=> New folder (F7)
+
+여기서 터미널 열기 (F9)
+=> Open terminal here (F9)
+
+백업 후 복사 (Ctrl+B) — 대상의 같은 이름 파일을 backup\\날짜_시각 에 백업한 뒤 복사.\n실행 중인 프로그램 확인·닫기, 끝나면 다시 실행 (프로그램 업데이트용)
+=> Backup-Copy (Ctrl+B) — back up same-named target files to backup\\date_time, then copy.\nFinds and closes running programs, restarts them afterwards (for program updates)
+
+압축 (Alt+F5) — 표시한 항목을 대상 패널 폴더에 7z 또는 ZIP 으로
+=> Compress (Alt+F5) — selected items into the target pane folder as 7z or ZIP
+
+압축 풀기 (Alt+F9) — 고른 압축 파일(ZIP·7z·RAR 등, 여러 개 가능)을 대상 패널 폴더에.\n기본으로 압축 파일마다 그 이름의 폴더를 만든다
+=> Extract (Alt+F9) — selected archives (ZIP, 7z, RAR, ...; several at once) into the target pane folder.\nBy default a folder named after each archive is created
+
+차단 해제 — 인터넷에서 받은 파일의 차단 표시 지우기 (Ctrl+Shift+U)\n표시한 파일·폴더, 없으면 현재 폴더. 하위 폴더·파일 형식은 열리는 창에서 설정
+=> Unblock — remove the block mark from files downloaded from the internet (Ctrl+Shift+U)\nSelected files/folders, or the current folder. Subfolders and file types are set in the window that opens
+
+활성·대상 패널 경로 교체 (Ctrl+U)
+=> Swap active and target pane paths (Ctrl+U)
+
+숨김 파일 보기 (Ctrl+H)
+=> Show hidden files (Ctrl+H)
+
+목록 글씨 크기 (Ctrl+= / Ctrl+-)
+=> List font size (Ctrl+= / Ctrl+-)
+
+사용 설명서 (F1) — 같은 폴더에 MDNotePad+.exe 가 있으면 그것으로, 없으면 .md 에 연결된 프로그램으로 엽니다
+=> User manual (F1) — opened with MDNotePad+.exe if it is in the same folder, otherwise with the program associated with .md
+
+설정 — 백업 복사, 압축, 차단 해제, 편집기·터미널
+=> Settings — Backup-Copy, compression, unblock, editor/terminal, language
+
+F3 보기
+=> F3 View
+
+F4 편집
+=> F4 Edit
+
+F5 복사
+=> F5 Copy
+
+F6 이동
+=> F6 Move
+
+F7 새 폴더
+=> F7 New folder
+
+F8 삭제
+=> F8 Delete
+
+F9 터미널
+=> F9 Terminal
+
+F10 종료
+=> F10 Exit
+
+명령줄 (Ctrl+E) — Enter: 실행, Shift+Enter: 창 유지, Esc: 지우기, ↑↓: 이전 명령\ncd 경로 / 드라이브(D:) 는 패널을 이동합니다\n목록에서 Ctrl+Enter: 파일 이름, Ctrl+Shift+Enter: 전체 경로, Ctrl+P: 현재 폴더 경로 넣기
+=> Command line (Ctrl+E) — Enter: run, Shift+Enter: keep window, Esc: clear, ↑↓: previous commands\ncd path / drive (D:) moves the pane\nIn the list Ctrl+Enter: file name, Ctrl+Shift+Enter: full path, Ctrl+P: current folder path
+
+# ── Views\OverwriteDialog.xaml
+파일이 이미 있습니다
+=> File already exists
+
+대상 위치에 같은 이름의 파일이 있습니다.
+=> A file with the same name exists in the target.
+
+대상 (덮어쓸 파일)
+=> Target (file to overwrite)
+
+덮어쓰기
+=> Overwrite
+
+모두 덮어쓰기
+=> Overwrite all
+
+더 새것만 덮어쓰기
+=> Overwrite older only
+
+모두 건너뛰기
+=> Skip all
+
+# ── Views\PackDialog.xaml
+압축할 항목
+=> Items to compress
+
+압축 파일 (기본: 대상 패널 폴더)
+=> Archive (default: target pane folder)
+
+형식
+=> Format
+
+압축 수준
+=> Compression level
+
+저장 (압축 안 함)
+=> Store (no compression)
+
+빠르게
+=> Fast
+
+최고
+=> Maximum
+
+최상위 폴더 제외 — 안의 내용만 압축
+=> Exclude top folder — pack contents only
+
+고른 폴더 자체는 넣지 않고 그 안의 파일·폴더만 압축합니다. 압축을 풀면 폴더 없이 내용이 바로 나옵니다.
+=> The selected folder itself is not included, only the files and folders inside it. Extracting gives the contents directly, without the folder.
+
+# ── Views\SearchWindow.xaml
+파일 찾기
+=> Find files
+
+파일 이름
+=> File name
+
+예: *.txt;*.log   와일드카드(* ?)가 없으면 이름에 포함된 것을 찾습니다
+=> e.g. *.txt;*.log   without wildcards (* ?) names containing the text are found
+
+포함 텍스트
+=> Contains text
+
+파일 내용에서 찾을 문자열 (UTF-8 / UTF-16 / CP949)
+=> Text to find in file contents (UTF-8 / UTF-16 / CP949)
+
+하위 폴더 포함
+=> Include subfolders
+
+대소문자 구분 (내용)
+=> Match case (contents)
+
+정규식 (내용)
+=> Regex (contents)
+
+포함 텍스트를 정규 표현식(.NET)으로 찾습니다. ^ $ 는 줄 단위. 예: ERROR|WARN,  \\d{4}-\\d{2}-\\d{2},  ^\\s*#
+=> Finds 'contains text' as a regular expression (.NET). ^ $ match per line. e.g. ERROR|WARN,  \\d{4}-\\d{2}-\\d{2},  ^\\s*#
+
+숨김 파일 포함
+=> Include hidden files
+
+패널에서 보기
+=> Show in pane
+
+선택한 파일이 있는 폴더를 활성 패널에서 엽니다 (Enter / 더블클릭)
+=> Opens the folder of the selected file in the active pane (Enter / double-click)
+
+찾은 말
+=> Matches
+
+포함 텍스트가 나온 횟수 (… 세는 중, - 셀 수 없음: 64 MB 초과·읽기 실패)
+=> Number of times the text appears (… counting, - not countable: over 64 MB or read error)
+
+포함 텍스트가 있는 줄 수
+=> Number of lines containing the text
+
+# ── Views\SettingsWindow.xaml
+설정
+=> Settings
+
+언어 / Language
+=> 언어 / Language
+
+화면 언어
+=> Display language
+
+언어 팩은 프로그램 폴더의 lang\\*.txt 입니다. 바꾸면 다시 시작할 때 적용됩니다.
+=> Language packs are lang\\*.txt in the program folder. A change is applied after a restart.
+
+백업 후 복사 (Backup-Copy, Ctrl+B)
+=> Backup-Copy (Ctrl+B)
+
+상대 경로면 대상 폴더 아래 (기본: backup). 절대 경로도 됩니다
+=> A relative path is placed under the target folder (default: backup). Absolute paths also work
+
+예: v2_ → v2_20261009_0947
+=> e.g. v2_ → v2_20261009_0947
+
+압축 / 압축 풀기
+=> Compress / extract
+
+압축 형식
+=> Archive format
+
+폴더 하나를 압축할 때 최상위 폴더 제외 (안의 내용만)
+=> Exclude the top folder when compressing a single folder (contents only)
+
+압축 풀 때 압축 파일마다 그 이름의 폴더 만들기
+=> When extracting, create a folder named after each archive
+
+압축 풀 때 같은 이름의 파일 덮어쓰기 (끄면 건너뛰기)
+=> When extracting, overwrite files with the same name (off: skip)
+
+차단 해제 (Ctrl+Shift+U)
+=> Unblock (Ctrl+Shift+U)
+
+하위 폴더까지
+=> Include subfolders
+
+파일 형식
+=> File types
+
+; 로 구분, 점 없이 (예: exe;dll;msi)
+=> Separate with ;, without dots (e.g. exe;dll;msi)
+
+모든 파일 (형식 무시)
+=> All files (ignore types)
+
+편집기 (F4)
+=> Editor (F4)
+
+예: notepad.exe, code, C:\\Program Files\\Notepad++\\notepad++.exe
+=> e.g. notepad.exe, code, C:\\Program Files\\Notepad++\\notepad++.exe
+
+터미널 (F9)
+=> Terminal (F9)
+
+auto = Windows Terminal 이 있으면 wt, 없으면 cmd. 또는 실행 파일 (cmd, powershell, wt ...)
+=> auto = wt if Windows Terminal is installed, otherwise cmd. Or an executable (cmd, powershell, wt ...)
+
+설정 파일: %APPDATA%\\MP-Commander\\settings.ini
+=> Settings file: %APPDATA%\\MP-Commander\\settings.ini
+
+# ── Views\UnblockDialog.xaml
+인터넷에서 받은 파일에 붙는 '차단' 표시(Mark of the Web)를 지웁니다. 실행할 때 나오는 보안 경고와 '이 파일은 다른 컴퓨터에서 왔으므로…' 차단이 사라집니다.
+=> Removes the block mark (Mark of the Web) that Windows puts on files downloaded from the internet. The security warning on launch and the 'This file came from another computer…' block go away.
+
+하위 폴더까지 (recursive)
+=> Include subfolders (recursive)
+
+폴더 안에서 차단 해제할 파일 형식
+=> File types to unblock inside folders
+
+모든 파일
+=> All files
+
+기타 형식
+=> Other types
+
+예: jar;py;reg  (; 로 구분, 점 없이)
+=> e.g. jar;py;reg  (separate with ;, without dots)
+
+직접 고른 파일은 형식과 관계없이 차단 해제합니다. 형식은 폴더 안의 파일에만 적용됩니다.
+=> Files you select directly are always unblocked. The types apply only to files inside folders.
+
+# ── Views\UnpackDialog.xaml
+압축 파일
+=> Archives
+
+풀 위치 (기본: 대상 패널 폴더)
+=> Extract to (default: target pane folder)
+
+압축 파일마다 그 이름으로 폴더를 만들어 풀기
+=> Create a folder named after each archive
+
+예: 자료.7z → 풀 위치\\자료\\ 아래에 풉니다. 끄면 풀 위치에 바로 풉니다.
+=> e.g. data.7z → extracted under destination\\data\\. Off: extracted directly into the destination.
+
+이미 있는 같은 이름의 파일은 덮어쓰기 (끄면 건너뛰기)
+=> Overwrite existing files with the same name (off: skip)
+
+# ── Views\ViewerWindow.xaml
+다음 ▼
+=> Next ▼
+
+다음 (F3 / Enter)
+=> Next (F3 / Enter)
+
+이전 ▲
+=> Previous ▲
+
+이전 (Shift+F3)
+=> Previous (Shift+F3)
+
+정규식
+=> Regex
+
+정규 표현식(.NET)으로 찾기. ^ $ 는 줄 단위. 예: ERROR|WARN,  \\d{4}-\\d{2}-\\d{2},  ^\\s*#
+=> Find with a regular expression (.NET). ^ $ match per line. e.g. ERROR|WARN,  \\d{4}-\\d{2}-\\d{2},  ^\\s*#
+
+대소문자 구분
+=> Match case
+
+찾을 문자열. Enter / F3 다음, Shift+F3 이전. 파일 전체에서 찾고, 찾은 줄은 아래 목록에 모두 나옵니다.
+=> Text to find. Enter / F3 next, Shift+F3 previous. The whole file is searched and all matching lines appear in the list below.
+

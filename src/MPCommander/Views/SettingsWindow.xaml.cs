@@ -11,7 +11,15 @@ public partial class SettingsWindow : Window
     private SettingsWindow(AppSettings settings)
     {
         InitializeComponent();
+        LocUi.Apply(this);   // XAML 글자를 지금 언어로
         _s = settings;
+
+        // 언어: 자동(운영체제) + lang 폴더의 팩
+        LangCombo.Items.Add(new System.Windows.Controls.ComboBoxItem { Content = Loc.T("자동 (운영체제 언어)"), Tag = "auto" });
+        foreach (var (code, name) in Loc.AvailablePacks())
+            LangCombo.Items.Add(new System.Windows.Controls.ComboBoxItem { Content = $"{name} ({code})", Tag = code });
+        LangCombo.SelectedIndex = Math.Max(0, LangCombo.Items.Cast<System.Windows.Controls.ComboBoxItem>().ToList()
+            .FindIndex(i => (string)i.Tag == (_s.Language ?? "auto")));
 
         BackupRootBox.Text = _s.BackupRoot;
         BackupPrefixBox.Text = _s.BackupPrefix;
@@ -35,6 +43,13 @@ public partial class SettingsWindow : Window
 
     private void Ok_Click(object sender, RoutedEventArgs e)
     {
+        var lang = (LangCombo.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string ?? "auto";
+        if (lang != (_s.Language ?? "auto"))
+        {
+            _s.Language = lang;
+            MessageBox.Show(this, "언어는 프로그램을 다시 시작하면 바뀝니다.\nThe language changes after restarting the program.",
+                "MP-Commander", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
         _s.BackupRoot = Compat.IsBlank(BackupRootBox.Text) ? "backup" : BackupRootBox.Text.Trim();
         _s.BackupPrefix = BackupPrefixBox.Text.Trim();
         _s.BackupRestart = BackupRestartCheck.IsChecked == true;

@@ -35,7 +35,7 @@ public sealed class ZipOperation : ProgressOperation
     public static ZipOperation Extract(string zipPath, string destDir, bool? overwrite = null)
         => new(false, new[] { zipPath }, destDir) { _conflictAll = overwrite switch { true => ConflictChoice.OverwriteAll, false => ConflictChoice.SkipAll, _ => null } };
 
-    public override string Title => _pack ? "압축" : "압축 풀기";
+    public override string Title => _pack ? Loc.T("압축") : Loc.T("압축 풀기");
     /// <summary>결과물이 생긴 폴더 (패널 새로고침용)</summary>
     public string TargetDirectory => _pack ? PathUtil.Parent(_target) ?? _target : _target;
 
@@ -49,7 +49,7 @@ public sealed class ZipOperation : ProgressOperation
 
     private void DoPack()
     {
-        Phase = "목록 수집 중";
+        Phase = Loc.T("목록 수집 중");
         var entries = new List<(string FullPath, string EntryName, bool IsDir, long Size)>();
         foreach (var raw in _sources)
         {
@@ -73,7 +73,7 @@ public sealed class ZipOperation : ProgressOperation
             TotalBytes += e.Size;
         }
 
-        Phase = "압축 중";
+        Phase = Loc.T("압축 중");
         var temp = _target + ".tvc-tmp";
         try
         {
@@ -163,7 +163,7 @@ public sealed class ZipOperation : ProgressOperation
             TotalBytes += e.Length;
         }
 
-        Phase = "압축 푸는 중";
+        Phase = Loc.T("압축 푸는 중");
         long done = 0;
         foreach (var e in zip.Entries)
         {
@@ -171,7 +171,7 @@ public sealed class ZipOperation : ProgressOperation
             var outPath = Path.GetFullPath(Path.Combine(dest, e.FullName.Replace('/', '\\')));
             if (!outPath.StartsWith(destPrefix, StringComparison.OrdinalIgnoreCase) && !PathUtil.Same(outPath, dest))
             {
-                ReportError(e.FullName, "대상 폴더 밖을 가리키는 항목이라 건너뜁니다.");   // zip slip 방지
+                ReportError(e.FullName, Loc.T("대상 폴더 밖을 가리키는 항목이라 건너뜁니다."));   // zip slip 방지
                 continue;
             }
             if (e.FullName.EndsWith('/') || e.FullName.EndsWith('\\'))

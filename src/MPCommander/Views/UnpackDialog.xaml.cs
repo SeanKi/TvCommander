@@ -18,12 +18,13 @@ public partial class UnpackDialog : Window
     private UnpackDialog(AppSettings settings, IReadOnlyList<string> archives, string sourceDir, string targetDir)
     {
         InitializeComponent();
+        LocUi.Apply(this);   // XAML 글자를 지금 언어로
         _settings = settings;
         _baseDir = targetDir;
         _archives = archives;
 
         var names = archives.Select(Path.GetFileName).ToList();
-        SourceText.Text = (names.Count <= 5 ? string.Join(", ", names) : string.Join(", ", names.Take(5)) + $" 외 {names.Count - 5}개")
+        SourceText.Text = (names.Count <= 5 ? string.Join(", ", names) : string.Join(", ", names.Take(5)) + Loc.F($" 외 {names.Count - 5}개"))
                           + $"  ({sourceDir})";
         PathBox.Text = PathUtil.WithSlash(targetDir);
         SubfolderCheck.IsChecked = settings.UnpackToSubfolder;
@@ -60,7 +61,7 @@ public partial class UnpackDialog : Window
         var dest = PathUtil.TrimEnd(PathBox.Text.Trim());
         var first = _archives[0];
         var example = SubfolderCheck.IsChecked == true ? Path.Combine(dest, FolderNameFor(first)) + "\\" : PathUtil.WithSlash(dest);
-        PreviewText.Text = $"예: {Path.GetFileName(first)} → {example}" + (_archives.Count > 1 ? $"   (모두 {_archives.Count}개)" : "");
+        PreviewText.Text = Loc.F($"예: {Path.GetFileName(first)} → {example}") + (_archives.Count > 1 ? Loc.F($"   (모두 {_archives.Count}개)") : "");
     }
 
     private void Ok_Click(object sender, RoutedEventArgs e)
@@ -68,7 +69,7 @@ public partial class UnpackDialog : Window
         string dest;
         try { dest = PathUtil.Normalize(PathBox.Text.Trim(), _baseDir); }
         catch (Exception ex) { ShowError(ex.Message); return; }
-        if (PathUtil.IsVirtual(dest)) { ShowError("압축은 PC 의 폴더(로컬·네트워크 드라이브)에만 풀 수 있습니다."); return; }
+        if (PathUtil.IsVirtual(dest)) { ShowError(Loc.T("압축은 PC 의 폴더(로컬·네트워크 드라이브)에만 풀 수 있습니다.")); return; }
 
         Destination = PathUtil.TrimEnd(dest);
         _settings.UnpackToSubfolder = PerArchiveFolder;

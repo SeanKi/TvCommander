@@ -101,7 +101,7 @@ public sealed class SevenZipOperation : ProgressOperation
     /// <summary>overwrite=false 면 이미 있는 파일은 건너뛴다</summary>
     public static SevenZipOperation Extract(string archivePath, string destDir, bool overwrite) => new(false, new[] { archivePath }, destDir, 0, overwrite);
 
-    public override string Title => _pack ? "7z 압축" : "압축 풀기";
+    public override string Title => _pack ? Loc.T("7z 압축") : Loc.T("압축 풀기");
     public string TargetDirectory => _pack ? PathUtil.Parent(_target) ?? _target : _target;
 
     public override void Cancel()
@@ -112,14 +112,14 @@ public sealed class SevenZipOperation : ProgressOperation
 
     protected override void Execute()
     {
-        var exe = SevenZip.Exe ?? throw new InvalidOperationException("7-Zip(7z.exe)을 찾을 수 없습니다.");
+        var exe = SevenZip.Exe ?? throw new InvalidOperationException(Loc.T("7-Zip(7z.exe)을 찾을 수 없습니다."));
         if (_pack) DoPack(exe);
         else DoExtract(exe);
     }
 
     private void DoPack(string exe)
     {
-        Phase = "목록 수집 중";
+        Phase = Loc.T("목록 수집 중");
         foreach (var raw in _sources)
         {
             ThrowIfCancelled();
@@ -138,7 +138,7 @@ public sealed class SevenZipOperation : ProgressOperation
         try
         {
             if (File.Exists(temp)) File.Delete(temp);
-            Phase = "압축 중";
+            Phase = Loc.T("압축 중");
             int code = Run(exe, $"a -t7z -mx={mx} -ssw -y -bsp1 -bso0 -bse2 -scsUTF-8 -sccUTF-8 \"{temp}\" \"@{listFile}\"", baseDir);
             ThrowIfCancelled();
             CheckExitCode(code, _target);
@@ -160,7 +160,7 @@ public sealed class SevenZipOperation : ProgressOperation
         var archive = _sources[0];
         TotalBytes = new FileInfo(archive).Length;
         Directory.CreateDirectory(_target);
-        Phase = "압축 푸는 중";
+        Phase = Loc.T("압축 푸는 중");
         var workDir = PathUtil.Parent(archive) ?? _target;
 
         // x.tar.gz 등: 7-Zip 은 한 겹(.tar)만 벗기므로, 임시 폴더에 .tar 를 꺼낸 뒤 그것을 다시 푼다
@@ -180,7 +180,7 @@ public sealed class SevenZipOperation : ProgressOperation
                     archive = tar;
                     TotalBytes = new FileInfo(tar).Length;
                     DoneBytes = 0;
-                    Phase = "압축 푸는 중 (tar)";
+                    Phase = Loc.T("압축 푸는 중 (tar)");
                     ExtractOne(exe, tar, temp);
                     return;
                 }
@@ -215,12 +215,12 @@ public sealed class SevenZipOperation : ProgressOperation
             case 0:
                 return;
             case 1:   // 경고: 잠긴 파일 등 일부를 건너뜀. 결과물은 쓸 만하다
-                ReportError(path, "일부 파일을 처리하지 못했습니다.\n" + Shorten(msg));
+                ReportError(path, Loc.T("일부 파일을 처리하지 못했습니다.\n") + Shorten(msg));
                 return;
             case 255:
                 throw new OperationCanceledException();
             default:
-                throw new IOException($"7-Zip 오류 (코드 {code})" + (msg.Length > 0 ? ":\n" + Shorten(msg) : ""));
+                throw new IOException(Loc.F($"7-Zip 오류 (코드 {code})") + (msg.Length > 0 ? ":\n" + Shorten(msg) : ""));
         }
     }
 

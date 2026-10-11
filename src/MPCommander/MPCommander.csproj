@@ -15,7 +15,7 @@
     <ApplicationIcon>Assets\MP-Commander.ico</ApplicationIcon>
     <AssemblyName>MP-Commander</AssemblyName>
     <RootNamespace>MPCommander</RootNamespace>
-    <Version>1.7.3</Version>
+    <Version>1.8.0</Version>
     <Product>Multi-Pane Commander</Product>
     <AssemblyTitle>MP-Commander</AssemblyTitle>
     <Description>Multi-Pane Commander - multi-panel file manager for Windows</Description>
@@ -73,4 +73,8 @@
     <Copy SourceFiles="$(NativeDll)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
   </Target>
 
+  <ItemGroup>
+    <!-- 언어 팩: 실행 파일 옆 lang\ 폴더로 -->
+    <None Include="lang\*.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

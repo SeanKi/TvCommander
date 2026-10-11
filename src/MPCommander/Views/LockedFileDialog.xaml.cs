@@ -11,11 +11,12 @@ public partial class LockedFileDialog : Window
     private LockedFileDialog(string file, IReadOnlyList<LockingProcess> users)
     {
         InitializeComponent();
+        LocUi.Apply(this);   // XAML 글자를 지금 언어로
         FileText.Text = file;
         var others = users.Where(u => !u.IsSelf && !u.IsService).ToList();
         ProcessText.Text = users.Count == 0
-            ? "쓰고 있는 프로그램을 찾지 못했습니다 (다른 PC 에서 네트워크로 열었거나 권한 문제일 수 있습니다)."
-            : "쓰고 있는 프로그램:\n" + string.Join("\n", users.Select(u => $"  • {u.Display}  (PID {u.Pid})  {u.ExePath}"));
+            ? Loc.T("쓰고 있는 프로그램을 찾지 못했습니다 (다른 PC 에서 네트워크로 열었거나 권한 문제일 수 있습니다).")
+            : Loc.T("쓰고 있는 프로그램:\n") + string.Join("\n", users.Select(u => $"  • {u.Display}  (PID {u.Pid})  {u.ExePath}"));
         CloseButton.IsEnabled = KillButton.IsEnabled = others.Count > 0;
         if (others.Count == 0) CloseButton.IsDefault = false;
     }
@@ -31,7 +32,7 @@ public partial class LockedFileDialog : Window
     {
         _choice = Enum.TryParse<LockedChoice>((string)((FrameworkElement)sender).Tag, out var c) ? c : LockedChoice.Cancel;
         if (_choice == LockedChoice.KillAndRetry &&
-            MessageBox.Show(this, "프로그램을 강제로 끝냅니다. 저장하지 않은 내용은 사라집니다. 계속할까요?", "강제 종료",
+            MessageBox.Show(this, Loc.T("프로그램을 강제로 끝냅니다. 저장하지 않은 내용은 사라집니다. 계속할까요?"), Loc.T("강제 종료"),
                 MessageBoxButton.OKCancel, MessageBoxImage.Warning, MessageBoxResult.Cancel) != MessageBoxResult.OK)
             return;
         DialogResult = true;

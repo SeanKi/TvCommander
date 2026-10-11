@@ -38,7 +38,7 @@ public sealed class FileOperation : ProgressOperation
     }
 
     public OpKind Kind { get; }
-    public override string Title => Kind == OpKind.Copy ? "복사" : "이동";
+    public override string Title => Kind == OpKind.Copy ? Loc.T("복사") : Loc.T("이동");
     public string? TargetDirectory { get; private set; }
 
     /// <summary>원본과 같은 폴더로 복사하면 오류 대신 "이름 - 복사본" 을 만든다 (붙여넣기용)</summary>
@@ -53,7 +53,7 @@ public sealed class FileOperation : ProgressOperation
         string ext = dot > 0 ? name.Substring(dot) : "";
         for (int n = 1; ; n++)
         {
-            var candidate = PathUtil.Combine(dir, $"{stem} - 복사본{(n == 1 ? "" : $" ({n})")}{ext}");
+            var candidate = PathUtil.Combine(dir, Loc.F($"{stem} - 복사본{(n == 1 ? "" : $" ({n})")}{ext}"));
             if (!GetInfo(candidate).Exists) return candidate;
         }
     }
@@ -80,32 +80,32 @@ public sealed class FileOperation : ProgressOperation
         if (!Attempt(targetDir, () => CreateDir(targetDir))) return;
 
         // ── 1단계: 목록 수집 ──
-        Phase = "목록 수집 중";
+        Phase = Loc.T("목록 수집 중");
         var work = new List<WorkItem>();
         foreach (var raw in _sources)
         {
             ThrowIfCancelled();
             var src = PathUtil.TrimEnd(raw);
             var name = newName ?? PathUtil.LastSegment(src);
-            if (Compat.IsEmpty(name) || PathUtil.IsRoot(src)) { ReportError(src, "드라이브나 기기 루트는 복사/이동할 수 없습니다."); continue; }
+            if (Compat.IsEmpty(name) || PathUtil.IsRoot(src)) { ReportError(src, Loc.T("드라이브나 기기 루트는 복사/이동할 수 없습니다.")); continue; }
 
             var dst = PathUtil.Combine(targetDir, name);
             if (PathUtil.Same(src, dst))
             {
                 // 같은 폴더에 붙여넣기(복사): 탐색기처럼 "이름 - 복사본" 으로
                 if (Kind == OpKind.Copy && RenameCopiesInSameFolder && newName == null) dst = UniqueCopyName(targetDir, name);
-                else { ReportError(src, "원본과 대상이 같습니다."); continue; }
+                else { ReportError(src, Loc.T("원본과 대상이 같습니다.")); continue; }
             }
 
             Info info = default;
             if (!Attempt(src, () => info = GetInfo(src))) continue;
-            if (!info.Exists) { ReportError(src, "원본이 없습니다."); continue; }
-            if (info.IsDir && PathUtil.IsUnder(dst, src)) { ReportError(src, "폴더를 자기 자신의 하위 폴더로 복사/이동할 수 없습니다."); continue; }
+            if (!info.Exists) { ReportError(src, Loc.T("원본이 없습니다.")); continue; }
+            if (info.IsDir && PathUtil.IsUnder(dst, src)) { ReportError(src, Loc.T("폴더를 자기 자신의 하위 폴더로 복사/이동할 수 없습니다.")); continue; }
 
             // PC 같은 볼륨 이동 + 대상 없음 → 이름 변경 한 번으로 끝
             if (Kind == OpKind.Move && IsLocalSameVolume(src, dst) && !File.Exists(dst) && !Directory.Exists(dst))
             {
-                Phase = "이동 중";
+                Phase = Loc.T("이동 중");
                 CurrentFile = src;
                 Touch();
                 int rc = NativeMethods.FmMoveFile(src, dst, 0, null, IntPtr.Zero, CancelPtr);
@@ -124,7 +124,7 @@ public sealed class FileOperation : ProgressOperation
             TotalFiles++;
             TotalBytes += w.Size;
         }
-        Phase = Kind == OpKind.Copy ? "복사 중" : "이동 중";
+        Phase = Kind == OpKind.Copy ? Loc.T("복사 중") : Loc.T("이동 중");
 
         foreach (var w in work)
         {
@@ -138,7 +138,7 @@ public sealed class FileOperation : ProgressOperation
         // ── 3단계: 이동이면 비워진 원본 폴더 제거 (자식부터) ──
         if (Kind == OpKind.Move)
         {
-            Phase = "정리 중";
+            Phase = Loc.T("정리 중");
             for (int i = work.Count - 1; i >= 0; i--)
             {
                 if (!work[i].IsDir) continue;
@@ -183,7 +183,7 @@ public sealed class FileOperation : ProgressOperation
             bool overwrite = false;
             Info dst = default;
             if (!Attempt(w.Dst, () => dst = GetInfo(w.Dst))) return;
-            if (dst.Exists && dst.IsDir) { ReportError(w.Dst, "같은 이름의 폴더가 이미 있습니다."); return; }
+            if (dst.Exists && dst.IsDir) { ReportError(w.Dst, Loc.T("같은 이름의 폴더가 이미 있습니다.")); return; }
             if (dst.Exists && !ResolveConflict(w, dst, out overwrite)) { Skipped++; return; }
 
             bool rename = Kind == OpKind.Move && IsLocalSameVolume(w.Src, w.Dst);

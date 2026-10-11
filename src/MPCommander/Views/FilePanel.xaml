@@ -1,6 +1,7 @@
 ﻿<UserControl x:Class="MPCommander.Views.FilePanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:MPCommander.Views">
     <Border x:Name="OuterBorder" BorderThickness="2" BorderBrush="Transparent">
         <DockPanel>
             <!-- 드라이브 / 경로 -->
@@ -96,7 +97,7 @@
                                             <!-- 인터넷에서 받은 파일(차단됨) 표시 -->
                                             <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="11" Foreground="#FFD9822B"
                                                        Margin="5,0,0,0" VerticalAlignment="Center"
-                                                       ToolTip="인터넷에서 받은 파일 (차단됨) — Ctrl+Shift+U 로 차단 해제">
+                                                       ToolTip="{x:Static local:UiText.BlockedFileTip}">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="Visibility" Value="Collapsed"/>

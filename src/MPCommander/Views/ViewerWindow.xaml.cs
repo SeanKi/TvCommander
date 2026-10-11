@@ -59,9 +59,10 @@ public partial class ViewerWindow : Window
     public ViewerWindow(string path, string? find = null, bool caseSensitive = false, bool regex = false)
     {
         InitializeComponent();
+        LocUi.Apply(this);   // XAML 글자를 지금 언어로
         _path = path;
         _isImage = ImageExtensions.Contains(Path.GetExtension(path));
-        Title = $"보기 - {Path.GetFileName(path)}";
+        Title = Loc.F($"보기 - {Path.GetFileName(path)}");
 
         _syncing = true;
         FindBox.Text = find ?? "";
@@ -169,7 +170,7 @@ public partial class ViewerWindow : Window
             ImageScroll.Visibility = Visibility.Visible;
             StateText.Visibility = Visibility.Collapsed;
             FindBar.Visibility = Visibility.Collapsed;
-            InfoText.Text = $"{_path}   │   {bmp.PixelWidth} × {bmp.PixelHeight}   │   {PathUtil.FormatSize(length)}   │   Esc 닫기";
+            InfoText.Text = Loc.F($"{_path}   │   {bmp.PixelWidth} × {bmp.PixelHeight}   │   {PathUtil.FormatSize(length)}   │   Esc 닫기");
             return true;
         }
         catch
@@ -183,14 +184,14 @@ public partial class ViewerWindow : Window
         _hex = true;
         var (data, length) = await GuardedIo.RunAsync(ctx => ReadHead(_path, HexLimit, ctx), 5000, _path);
         var text = await Task.Run(() => HexDump(data, data.Length));
-        if (data.Length < length) text += $"\n───── 파일이 커서 앞부분 {PathUtil.FormatSize(data.Length)}만 표시합니다 ─────";
+        if (data.Length < length) text += Loc.F($"\n───── 파일이 커서 앞부분 {PathUtil.FormatSize(data.Length)}만 표시합니다 ─────");
         HexBox.Text = text;
         HexBox.Visibility = Visibility.Visible;
         TextArea.Visibility = Visibility.Collapsed;
         StateText.Visibility = Visibility.Collapsed;
         ShowHitsPane(false);
-        FindCount.Text = FindBox.Text.Length > 0 ? "16진수 보기에서는 찾지 않음" : "";
-        InfoText.Text = $"{_path}   │   {PathUtil.FormatSize(length)}   │   HEX   │   H: 텍스트/HEX   Esc: 닫기";
+        FindCount.Text = FindBox.Text.Length > 0 ? Loc.T("16진수 보기에서는 찾지 않음") : "";
+        InfoText.Text = Loc.F($"{_path}   │   {PathUtil.FormatSize(length)}   │   HEX   │   H: 텍스트/HEX   Esc: 닫기");
         HexBox.Focus();
     }
 
@@ -211,9 +212,9 @@ public partial class ViewerWindow : Window
         if (_source == null) return;
         TextView.Refresh();
         var st = _source.Status;
-        var indexing = st.Done == 0 ? $"   │   색인 중 {(st.FileSize > 0 ? st.IndexedBytes * 100 / st.FileSize : 0)}%" : "";
-        InfoText.Text = $"{_path}   │   {PathUtil.FormatSize(st.FileSize)}   │   {_encodingName}   │   {st.LineCount:N0}줄{indexing}"
-                      + "   │   Ctrl+F 찾기  F3 다음  Shift+F3 이전   Ctrl+C 복사   H: HEX   W: 줄 바꿈   Esc: 닫기";
+        var indexing = st.Done == 0 ? Loc.F($"   │   색인 중 {(st.FileSize > 0 ? st.IndexedBytes * 100 / st.FileSize : 0)}%") : "";
+        InfoText.Text = Loc.F($"{_path}   │   {PathUtil.FormatSize(st.FileSize)}   │   {_encodingName}   │   {st.LineCount:N0}줄{indexing}")
+                      + Loc.T("   │   Ctrl+F 찾기  F3 다음  Shift+F3 이전   Ctrl+C 복사   H: HEX   W: 줄 바꿈   Esc: 닫기");
         FlushHits();
     }
 
@@ -261,7 +262,7 @@ public partial class ViewerWindow : Window
             try { _regex = TextRegex.Create(_find, _matchCase, compiled: true); }
             catch (ArgumentException ex)
             {
-                _findError = "정규식 오류: " + ex.Message;
+                _findError = Loc.T("정규식 오류: ") + ex.Message;
                 _searchDone = true;
                 ShowHitsPane(false);
                 UpdateFindCount();
@@ -336,7 +337,7 @@ public partial class ViewerWindow : Window
                 }
             }
             catch (OperationCanceledException) { }
-            catch (Exception ex) { if (gen == _gen) _findError = "찾기 실패: " + ex.Message; }
+            catch (Exception ex) { if (gen == _gen) _findError = Loc.T("찾기 실패: ") + ex.Message; }
             if (gen == _gen && !cts.IsCancellationRequested) _searchDone = true;
         });
     }
@@ -370,8 +371,8 @@ public partial class ViewerWindow : Window
                 if (gen == _gen) _searchDone = true;
             }
             catch (OperationCanceledException) { }
-            catch (RegexMatchTimeoutException) { if (gen == _gen) { _findError = "정규식이 너무 오래 걸려 멈췄습니다"; _searchDone = true; } }
-            catch (Exception ex) { if (gen == _gen) { _findError = "찾기 실패: " + ex.Message; _searchDone = true; } }
+            catch (RegexMatchTimeoutException) { if (gen == _gen) { _findError = Loc.T("정규식이 너무 오래 걸려 멈췄습니다"); _searchDone = true; } }
+            catch (Exception ex) { if (gen == _gen) { _findError = Loc.T("찾기 실패: ") + ex.Message; _searchDone = true; } }
         });
     }
 
@@ -406,16 +407,16 @@ public partial class ViewerWindow : Window
     private void UpdateFindCount()
     {
         if (_find.Length == 0 && FindBox.Text.Length == 0) { FindCount.Text = ""; return; }
-        if (_hex) { FindCount.Text = "16진수 보기에서는 찾지 않음"; return; }
+        if (_hex) { FindCount.Text = Loc.T("16진수 보기에서는 찾지 않음"); return; }
         if (_findError != null) { FindCount.Text = _findError; FindCount.ToolTip = _findError; return; }
         FindCount.ToolTip = null;
         long total = Interlocked.Read(ref _totalMatches), lines = Interlocked.Read(ref _totalLines);
         long size = _source?.Status.FileSize ?? 0;
-        string progress = _searchDone ? "" : $" · 찾는 중 {(size > 0 ? Math.Min(99, Interlocked.Read(ref _searchDoneBytes) * 100 / size) : 0)}%";
-        if (_searchDone && total == 0) { FindCount.Text = "없음"; return; }
+        string progress = _searchDone ? "" : Loc.F($" · 찾는 중 {(size > 0 ? Math.Min(99, Interlocked.Read(ref _searchDoneBytes) * 100 / size) : 0)}%");
+        if (_searchDone && total == 0) { FindCount.Text = Loc.T("없음"); return; }
         string pos = _curHit >= 0 && _curHit < _hits.Count ? $"{_hits[_curHit].FirstMatch + _curMatch + 1:N0} / " : "";
-        string cut = _totalLines > MaxListLines ? $" (목록 {MaxListLines:N0}줄)" : "";
-        FindCount.Text = $"{pos}{total:N0}개 · {lines:N0}줄{cut}{progress}";
+        string cut = _totalLines > MaxListLines ? Loc.F($" (목록 {MaxListLines:N0}줄)") : "";
+        FindCount.Text = Loc.F($"{pos}{total:N0}개 · {lines:N0}줄{cut}{progress}");
     }
 
     private IReadOnlyList<(int Start, int Len)> HighlightLine(string text)
@@ -473,7 +474,7 @@ public partial class ViewerWindow : Window
         int next = _curHit + dir;
         if (next >= _hits.Count)
         {
-            if (!_searchDone) { FindCount.Text = "다음 일치를 찾는 중..."; return; }
+            if (!_searchDone) { FindCount.Text = Loc.T("다음 일치를 찾는 중..."); return; }
             next = 0;
         }
         if (next < 0) next = _hits.Count - 1;
@@ -613,7 +614,7 @@ public partial class ViewerWindow : Window
         {
             Clipboard.SetText(text);
             long lines = to.Line - from.Line + 1;
-            FindCount.Text = lines > 1 ? $"{lines:N0}줄 ({text.Length:N0}자) 복사함" : $"{text.Length:N0}자 복사함";
+            FindCount.Text = lines > 1 ? Loc.F($"{lines:N0}줄 ({text.Length:N0}자) 복사함") : Loc.F($"{text.Length:N0}자 복사함");
         }
         catch { }
     }

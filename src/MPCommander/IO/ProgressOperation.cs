@@ -15,7 +15,7 @@ public abstract class ProgressOperation
     private IntPtr _thread;
 
     // ── 진행 상태 (UI 가 주기적으로 읽음) ──
-    public volatile string Phase = "준비 중";
+    public volatile string Phase = Loc.T("준비 중");
     public volatile string CurrentFile = "";
     public long TotalBytes, DoneBytes, CurrentSize, CurrentDone;
     public int TotalFiles, DoneFiles, Skipped, Errors;

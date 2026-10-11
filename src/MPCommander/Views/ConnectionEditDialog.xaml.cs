@@ -14,8 +14,9 @@ public partial class ConnectionEditDialog : Window
     private ConnectionEditDialog(RemoteConnection? original)
     {
         InitializeComponent();
+        LocUi.Apply(this);   // XAML 글자를 지금 언어로
         _original = original;
-        Title = original == null ? "연결 추가" : $"연결 편집 - {original.Name}";
+        Title = original == null ? Loc.T("연결 추가") : Loc.F($"연결 편집 - {original.Name}");
 
         var c = original ?? new RemoteConnection();
         NameBox.Text = c.Name;
@@ -46,10 +47,10 @@ public partial class ConnectionEditDialog : Window
     {
         if (AddressLabel == null) return;   // InitializeComponent 도중
         bool dav = Kind == RemoteKind.WebDav;
-        AddressLabel.Text = dav ? "URL" : "서버";
+        AddressLabel.Text = dav ? "URL" : Loc.T("서버");
         AddressHint.Text = dav
-            ? "전체 주소 (예: https://app.koofr.net/dav/Koofr, https://nas.local:5006/home)"
-            : "서버 이름 또는 IP (예: ftp.example.com, 192.168.0.10)";
+            ? Loc.T("전체 주소 (예: https://app.koofr.net/dav/Koofr, https://nas.local:5006/home)")
+            : Loc.T("서버 이름 또는 IP (예: ftp.example.com, 192.168.0.10)");
         var ftpOnly = dav ? Visibility.Collapsed : Visibility.Visible;
         PortLabel.Visibility = PortBox.Visibility = ftpOnly;
         StartLabel.Visibility = StartBox.Visibility = ftpOnly;
@@ -75,16 +76,16 @@ public partial class ConnectionEditDialog : Window
     private string? Validate(RemoteConnection c, bool checkName)
     {
         if (checkName && RemoteConnections.ValidateName(c.Name, _original?.Name) is { } nameError) return nameError;
-        if (c.Address.Length == 0) return c.Kind == RemoteKind.WebDav ? "URL 을 입력하세요." : "서버 주소를 입력하세요.";
+        if (c.Address.Length == 0) return c.Kind == RemoteKind.WebDav ? Loc.T("URL 을 입력하세요.") : Loc.T("서버 주소를 입력하세요.");
         if (c.Kind == RemoteKind.WebDav)
         {
             if (!Uri.TryCreate(c.Address, UriKind.Absolute, out var uri) || (uri.Scheme != "http" && uri.Scheme != "https"))
-                return "URL 은 http:// 또는 https:// 로 시작해야 합니다.";
+                return Loc.T("URL 은 http:// 또는 https:// 로 시작해야 합니다.");
         }
         else
         {
-            if (c.Address.Contains("://")) return "서버에는 ftp:// 없이 이름이나 IP 만 입력하세요.";
-            if (PortBox.Text.Trim().Length > 0 && (c.Port < 1 || c.Port > 65535)) return "포트는 1~65535 입니다.";
+            if (c.Address.Contains("://")) return Loc.T("서버에는 ftp:// 없이 이름이나 IP 만 입력하세요.");
+            if (PortBox.Text.Trim().Length > 0 && (c.Port < 1 || c.Port > 65535)) return Loc.T("포트는 1~65535 입니다.");
         }
         return null;
     }
@@ -114,7 +115,7 @@ public partial class ConnectionEditDialog : Window
         var fs = VirtualFs.For(root);
 
         TestButton.IsEnabled = false;
-        ShowResult("연결하는 중...", ok: true);
+        ShowResult(Loc.T("연결하는 중..."), ok: true);
         RemoteSupport.InvalidateProbes();
         try
         {
@@ -124,13 +125,13 @@ public partial class ConnectionEditDialog : Window
                 var space = c.Kind == RemoteKind.WebDav
                     ? await GuardedIo.RunAsync(_ => fs.SpaceInfo(root), fs.IdleTimeoutMs, root)
                     : null;
-                var spaceText = space is { } s ? $", 여유 {PathUtil.FormatSize((long)s.Free)} / {PathUtil.FormatSize((long)s.Total)}" : "";
-                ShowResult($"연결 성공: 항목 {count}개{spaceText}", ok: true);
+                var spaceText = space is { } s ? Loc.F($", 여유 {PathUtil.FormatSize((long)s.Free)} / {PathUtil.FormatSize((long)s.Total)}") : "";
+                ShowResult(Loc.F($"연결 성공: 항목 {count}개{spaceText}"), ok: true);
             }
         }
         catch (Exception ex)
         {
-            ShowResult("연결 실패: " + ex.Message, ok: false);
+            ShowResult(Loc.T("연결 실패: ") + ex.Message, ok: false);
         }
         finally
         {

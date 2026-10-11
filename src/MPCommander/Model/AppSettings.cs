@@ -20,6 +20,8 @@ public sealed class AppSettings
     private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     public int PanelCount { get; set; } = 2;
+    /// <summary>화면 언어: auto (운영체제 언어), ko, en ... (lang 폴더의 언어 팩). 다시 시작하면 적용</summary>
+    public string Language { get; set; } = "auto";
     /// <summary>목록 글씨 크기: 0 작게, 1 보통, 2 크게</summary>
     public int FontLevel { get; set; } = 1;
     public int ActivePanel { get; set; }
@@ -90,6 +92,7 @@ public sealed class AppSettings
             var ini = new IniFile();
             var s = ini.Section("Settings");
             void Put(string key, object value) => s.Add(new(key, Convert.ToString(value, Inv) ?? ""));
+            Put("Language", Language);
             Put("PanelCount", PanelCount);
             Put("FontLevel", FontLevel);
             Put("ActivePanel", ActivePanel);
@@ -143,6 +146,7 @@ public sealed class AppSettings
         bool Bool(string key) => bool.TryParse(Get(key), out var v) && v;
         double Dbl(string key, double fallback) => double.TryParse(Get(key), NumberStyles.Float, Inv, out var v) ? v : fallback;
 
+        a.Language = Get("Language") is { Length: > 0 } lang ? lang : "auto";
         a.PanelCount = Int("PanelCount", a.PanelCount);
         a.FontLevel = Int("FontLevel", a.FontLevel);
         a.ActivePanel = Int("ActivePanel", 0);

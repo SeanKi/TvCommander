@@ -111,7 +111,7 @@ public sealed class BackupCopyOperation : ProgressOperation
         _progressCb = OnProgress;
     }
 
-    public override string Title => "백업 후 복사";
+    public override string Title => Loc.T("백업 후 복사");
     public string BackupPath { get; }
     public int BackedUp, Copied, Renamed;
     public bool BackupCreated { get; private set; }
@@ -135,17 +135,17 @@ public sealed class BackupCopyOperation : ProgressOperation
         var overwrites = _plan.Overwrites.ToList();
         TotalFiles = _plan.Items.Count + overwrites.Count;
         TotalBytes = _plan.TotalBytes + overwrites.Sum(o => SafeLength(o.Destination));
-        Log($"# MP-Commander 백업 복사  {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-        Log($"대상: {_plan.TargetDirectory}");
-        foreach (var s in _plan.Sources) Log($"원본: {s}");
-        Log($"백업: {(overwrites.Count > 0 ? BackupPath : "(덮어쓸 파일 없음)")}");
+        Log(Loc.F($"# MP-Commander 백업 복사  {DateTime.Now:yyyy-MM-dd HH:mm:ss}"));
+        Log(Loc.F($"대상: {_plan.TargetDirectory}"));
+        foreach (var s in _plan.Sources) Log(Loc.F($"원본: {s}"));
+        Log(Loc.F($"백업: {(overwrites.Count > 0 ? BackupPath : Loc.T("(덮어쓸 파일 없음)"))}"));
 
         try
         {
             // 1) 백업
             if (overwrites.Count > 0)
             {
-                Phase = "백업 중";
+                Phase = Loc.T("백업 중");
                 Directory.CreateDirectory(BackupPath);
                 BackupCreated = true;
                 foreach (var it in overwrites)
@@ -159,12 +159,12 @@ public sealed class BackupCopyOperation : ProgressOperation
                         }))
                     {
                         BackedUp++;
-                        Log($"백업  {it.Relative}");
+                        Log(Loc.F($"백업  {it.Relative}"));
                     }
                     else
                     {
                         // 백업이 안 된 파일은 덮어쓰지 않는다 (되돌릴 수 없게 되므로)
-                        Fail(it.Destination, "백업하지 못해 덮어쓰지 않았습니다.");
+                        Fail(it.Destination, Loc.T("백업하지 못해 덮어쓰지 않았습니다."));
                         _skipOverwrite.Add(it.Destination);
                     }
                     DoneFiles++;
@@ -174,7 +174,7 @@ public sealed class BackupCopyOperation : ProgressOperation
             }
 
             // 2) 복사
-            Phase = "복사 중";
+            Phase = Loc.T("복사 중");
             foreach (var rel in _plan.Directories) Attempt(rel, () => Directory.CreateDirectory(Path.Combine(_plan.TargetDirectory, rel)));
             foreach (var it in _plan.Items)
             {
@@ -188,7 +188,7 @@ public sealed class BackupCopyOperation : ProgressOperation
         }
         finally
         {
-            Log($"# 결과: 백업 {BackedUp}, 복사 {Copied}, 이름 바꿔 교체 {Renamed}, 실패 {Errors}" + (IsCancelled ? " (취소됨)" : ""));
+            Log(Loc.F($"# 결과: 백업 {BackedUp}, 복사 {Copied}, 이름 바꿔 교체 {Renamed}, 실패 {Errors}") + (IsCancelled ? Loc.T(" (취소됨)") : ""));
             WriteLog();
         }
     }
@@ -209,7 +209,7 @@ public sealed class BackupCopyOperation : ProgressOperation
             if (rc == 0)
             {
                 Copied++;
-                Log($"복사  {it.Relative}");
+                Log(Loc.F($"복사  {it.Relative}"));
                 return;
             }
             ThrowIfCancelled();
@@ -223,14 +223,14 @@ public sealed class BackupCopyOperation : ProgressOperation
                 {
                     case LockedChoice.CloseAndRetry:
                     case LockedChoice.KillAndRetry:
-                        Phase = "프로그램 닫는 중";
+                        Phase = Loc.T("프로그램 닫는 중");
                         foreach (var lp in users.Where(u => !u.IsSelf && !u.IsService))
                         {
                             bool ok = choice == LockedChoice.KillAndRetry ? RunningProcesses.Kill(lp) : RunningProcesses.CloseGracefully(lp);
-                            if (ok) { Closed.Add(lp); Log($"닫음  {lp.Name} (PID {lp.Pid})"); }
+                            if (ok) { Closed.Add(lp); Log(Loc.F($"닫음  {lp.Name} (PID {lp.Pid})")); }
                             Touch();
                         }
-                        Phase = "복사 중";
+                        Phase = Loc.T("복사 중");
                         continue;
                     case LockedChoice.Retry:
                         continue;
@@ -241,7 +241,7 @@ public sealed class BackupCopyOperation : ProgressOperation
                         {
                             File.Move(it.Destination, old);
                             Renamed++;
-                            Log($"이름 바꿈  {it.Relative} → {Path.GetFileName(old)}");
+                            Log(Loc.F($"이름 바꿈  {it.Relative} → {Path.GetFileName(old)}"));
                         }
                         catch (Exception ex)
                         {
@@ -250,7 +250,7 @@ public sealed class BackupCopyOperation : ProgressOperation
                         }
                         continue;
                     case LockedChoice.Skip:
-                        Fail(it.Destination, "사용 중이라 건너뜀");
+                        Fail(it.Destination, Loc.T("사용 중이라 건너뜀"));
                         return;
                     default:
                         Cancel();
@@ -305,7 +305,7 @@ public sealed class BackupCopyOperation : ProgressOperation
     {
         Errors++;
         if (Failures.Count < 30) Failures.Add($"{path} — {message}");
-        Log($"실패  {path} — {message}");
+        Log(Loc.F($"실패  {path} — {message}"));
     }
 
     private static long SafeLength(string path)

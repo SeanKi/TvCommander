@@ -28,7 +28,7 @@ public sealed class UnblockOperation : ProgressOperation
         _patterns = allFiles ? [] : extensions.Select(e => "*." + e.Trim().TrimStart('*', '.')).Where(p => p.Length > 2).ToArray();
     }
 
-    public override string Title => "차단 해제";
+    public override string Title => Loc.T("차단 해제");
     /// <summary>표시를 지운 파일 수</summary>
     public int Unblocked;
     /// <summary>검사했지만 원래 차단 표시가 없던 파일 수</summary>
@@ -40,7 +40,7 @@ public sealed class UnblockOperation : ProgressOperation
 
     protected override void Execute()
     {
-        Phase = "차단 해제 중";
+        Phase = Loc.T("차단 해제 중");
         foreach (var raw in _paths)
         {
             ThrowIfCancelled();

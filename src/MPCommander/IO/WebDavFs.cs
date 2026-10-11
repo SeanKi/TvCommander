@@ -172,7 +172,7 @@ internal sealed class WebDavFs : IVirtualFs
     {
         var (c, segs) = Resolve(path);
         RemoteSupport.EnsureReachable(c);
-        if (!overwrite && File.Exists(localPath)) throw new IOException("파일이 이미 있습니다: " + localPath);
+        if (!overwrite && File.Exists(localPath)) throw new IOException(Loc.T("파일이 이미 있습니다: ") + localPath);
 
         var r = Request(c, MakeUri(c, segs, directory: false), "GET");
         try
@@ -196,11 +196,11 @@ internal sealed class WebDavFs : IVirtualFs
     public void Upload(string localPath, string remotePath, bool overwrite, Func<long, long, bool>? progress)
     {
         remotePath = PathUtil.TrimEnd(remotePath);
-        var parent = PathUtil.Parent(remotePath) ?? throw new IOException("연결 루트 경로가 잘못되었습니다.");
+        var parent = PathUtil.Parent(remotePath) ?? throw new IOException(Loc.T("연결 루트 경로가 잘못되었습니다."));
         var (c, segs) = Resolve(remotePath);
         RemoteSupport.EnsureReachable(c);
         if (PathUtil.Parent(parent) != null) EnsureFolder(parent);
-        if (!overwrite && GetEntry(remotePath) != null) throw new IOException("파일이 이미 있습니다: " + remotePath);
+        if (!overwrite && GetEntry(remotePath) != null) throw new IOException(Loc.T("파일이 이미 있습니다: ") + remotePath);
 
         var len = new FileInfo(localPath).Length;
         var r = Request(c, MakeUri(c, segs, directory: false), "PUT");
@@ -223,11 +223,11 @@ internal sealed class WebDavFs : IVirtualFs
     public void Delete(string path, bool recursive)
     {
         path = PathUtil.TrimEnd(path);
-        if (PathUtil.Parent(path) == null) throw new IOException("연결 루트는 삭제할 수 없습니다.");
+        if (PathUtil.Parent(path) == null) throw new IOException(Loc.T("연결 루트는 삭제할 수 없습니다."));
         var (c, segs) = Resolve(path);
         RemoteSupport.EnsureReachable(c);
-        var e = GetEntry(path) ?? throw new FileNotFoundException("없는 경로입니다: " + path);
-        if (e.IsFolder && !recursive && List(path, null).Count > 0) throw new IOException("폴더가 비어 있지 않습니다: " + path);
+        var e = GetEntry(path) ?? throw new FileNotFoundException(Loc.T("없는 경로입니다: ") + path);
+        if (e.IsFolder && !recursive && List(path, null).Count > 0) throw new IOException(Loc.T("폴더가 비어 있지 않습니다: ") + path);
         Simple(c, MakeUri(c, segs, directory: e.IsFolder), "DELETE", path);   // WebDAV 의 폴더 삭제는 원래 하위까지 지운다
         Forget(path);
     }
@@ -240,7 +240,7 @@ internal sealed class WebDavFs : IVirtualFs
         var e = GetEntry(path);
         if (e != null)
         {
-            if (!e.IsFolder) throw new IOException("같은 이름의 파일이 있습니다: " + path);
+            if (!e.IsFolder) throw new IOException(Loc.T("같은 이름의 파일이 있습니다: ") + path);
             return;
         }
         EnsureFolder(parent);
@@ -254,7 +254,7 @@ internal sealed class WebDavFs : IVirtualFs
         path = PathUtil.TrimEnd(path);
         var (c, segs) = Resolve(path);
         RemoteSupport.EnsureReachable(c);
-        var e = GetEntry(path) ?? throw new FileNotFoundException("없는 경로입니다: " + path);
+        var e = GetEntry(path) ?? throw new FileNotFoundException(Loc.T("없는 경로입니다: ") + path);
         var target = segs.Take(segs.Length - 1).Concat([newName]);
         var dest = MakeUri(c, target, directory: e.IsFolder);
         Simple(c, MakeUri(c, segs, directory: e.IsFolder), "MOVE", path, r =>

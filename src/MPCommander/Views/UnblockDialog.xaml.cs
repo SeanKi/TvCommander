@@ -15,6 +15,7 @@ public partial class UnblockDialog : Window
     private UnblockDialog(AppSettings settings, string targetText)
     {
         InitializeComponent();
+        LocUi.Apply(this);   // XAML 글자를 지금 언어로
         _settings = settings;
         TargetText.Text = targetText;
         RecursiveCheck.IsChecked = settings.UnblockRecursive;
@@ -49,7 +50,7 @@ public partial class UnblockDialog : Window
 
         if (AllFilesCheck.IsChecked != true && types.Count == 0)
         {
-            ErrorText.Text = "파일 형식을 하나 이상 고르거나 '모든 파일'을 켜세요.";
+            ErrorText.Text = Loc.T("파일 형식을 하나 이상 고르거나 '모든 파일'을 켜세요.");
             ErrorText.Visibility = Visibility.Visible;
             return;
         }

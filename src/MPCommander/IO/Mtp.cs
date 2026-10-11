@@ -73,7 +73,7 @@ public static class Mtp
         {
             if (Compat.TickCount64 - _devicesTick < 3000) return _devices;
         }
-        try { return await GuardedIo.RunAsync(_ => ListDevices(), 4000, "MTP 기기 목록"); }
+        try { return await GuardedIo.RunAsync(_ => ListDevices(), 4000, Loc.T("MTP 기기 목록")); }
         catch { return Array.Empty<MtpDeviceInfo>(); }
     }
 
@@ -81,7 +81,7 @@ public static class Mtp
     {
         var rest = path[Prefix.Length..].Trim('/');
         var parts = rest.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0) throw new IOException("기기 이름이 없는 경로입니다: " + path);
+        if (parts.Length == 0) throw new IOException(Loc.T("기기 이름이 없는 경로입니다: ") + path);
         return (parts[0], parts.Skip(1).ToArray());
     }
 
@@ -104,7 +104,7 @@ public static class Mtp
             ListDevices();
             info = Find();
         }
-        if (info == null) throw new IOException($"'{deviceName}' 기기를 찾을 수 없습니다. USB 연결을 확인하세요.");
+        if (info == null) throw new IOException(Loc.F($"'{deviceName}' 기기를 찾을 수 없습니다. USB 연결을 확인하세요."));
 
         lock (Sync)
         {
@@ -181,7 +181,7 @@ public static class Mtp
             s.Entries.TryAdd(prefix + e.Name, e);
 
         if (parentId == RootId && list.Count == 0)
-            throw new IOException("저장소가 보이지 않습니다. 폰의 잠금을 풀고, USB 연결 알림에서 '파일 전송'을 선택하세요.");
+            throw new IOException(Loc.T("저장소가 보이지 않습니다. 폰의 잠금을 풀고, USB 연결 알림에서 '파일 전송'을 선택하세요."));
         return list;
     }
 
@@ -217,7 +217,7 @@ public static class Mtp
     {
         if (PathUtil.Parent(path) == null) return RootId;
         if (s.Entries.TryGetValue(path, out var e)) return e.ObjectId;
-        return (GetEntry(path) ?? throw new DirectoryNotFoundException("휴대폰에 없는 경로입니다: " + path)).ObjectId;
+        return (GetEntry(path) ?? throw new DirectoryNotFoundException(Loc.T("휴대폰에 없는 경로입니다: ") + path)).ObjectId;
     }
 
     public static bool IsFolder(string path)
@@ -243,7 +243,7 @@ public static class Mtp
     internal static unsafe void Upload(string localPath, string dstPath, FmProgressCallback? cb, int* cancelFlag)
     {
         dstPath = PathUtil.TrimEnd(dstPath);
-        var parent = PathUtil.Parent(dstPath) ?? throw new IOException("기기 루트에는 파일을 둘 수 없습니다. 저장소 안으로 복사하세요.");
+        var parent = PathUtil.Parent(dstPath) ?? throw new IOException(Loc.T("기기 루트에는 파일을 둘 수 없습니다. 저장소 안으로 복사하세요."));
         var s = GetSession(dstPath);
         var parentId = EnsureFolder(parent);
         var name = PathUtil.LastSegment(dstPath);
@@ -278,11 +278,11 @@ public static class Mtp
         var e = GetEntry(path);
         if (e != null)
         {
-            if (!e.IsFolder) throw new IOException("같은 이름의 파일이 있습니다: " + path);
+            if (!e.IsFolder) throw new IOException(Loc.T("같은 이름의 파일이 있습니다: ") + path);
             return e.ObjectId;
         }
         if (PathUtil.Parent(parent) == null)
-            throw new IOException("기기 루트에는 폴더를 만들 수 없습니다. 저장소 안에 만드세요.");
+            throw new IOException(Loc.T("기기 루트에는 폴더를 만들 수 없습니다. 저장소 안에 만드세요."));
 
         var parentId = EnsureFolder(parent);
         var name = PathUtil.LastSegment(path);
@@ -300,7 +300,7 @@ public static class Mtp
         path = PathUtil.TrimEnd(path);
         var s = GetSession(path);
         if (PathUtil.Parent(path) == null || PathUtil.Parent(PathUtil.Parent(path)!) == null)
-            throw new IOException("기기나 저장소 자체는 삭제할 수 없습니다.");
+            throw new IOException(Loc.T("기기나 저장소 자체는 삭제할 수 없습니다."));
         var id = ResolveId(s, path);
         int hr = NativeMethods.FmMtpDelete(s.Handle, id, recursive ? 1 : 0);
         if (hr < 0) throw Error(hr, path);
@@ -317,7 +317,7 @@ public static class Mtp
         var s = GetSession(path);
         var id = ResolveId(s, path);
         int hr = NativeMethods.FmMtpRename(s.Handle, id, newName);
-        if (hr < 0) throw Error(hr, path, "이 기기는 이름 바꾸기를 지원하지 않을 수 있습니다.");
+        if (hr < 0) throw Error(hr, path, Loc.T("이 기기는 이름 바꾸기를 지원하지 않을 수 있습니다."));
         InvalidateChildren(s, PathUtil.Parent(path)!);
     }
 
@@ -345,7 +345,7 @@ public static class Mtp
     {
         var msg = Marshal.GetExceptionForHR(hr)?.Message ?? $"0x{hr:X8}";
         if (msg.StartsWith("Exception from HRESULT", StringComparison.Ordinal) || msg.StartsWith("HRESULT", StringComparison.Ordinal))
-            msg = $"휴대폰 작업 실패 (0x{hr:X8})";
+            msg = Loc.F($"휴대폰 작업 실패 (0x{hr:X8})");
         if (hint != null) msg += " " + hint;
         return new IOException($"{msg} ({path})", hr);
     }

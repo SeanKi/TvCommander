@@ -32,6 +32,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        LocUi.Apply(this);   // XAML 글자를 지금 언어로
         Title = $"MP-Commander {AppVersion.Display}";
         for (int i = 0; i < MaxPanels; i++)
         {
@@ -431,7 +432,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            ShowError("사용 설명서를 열 수 없습니다: " + ex.Message);
+            ShowError(Loc.T("사용 설명서를 열 수 없습니다: ") + ex.Message);
         }
     }
 
@@ -474,7 +475,7 @@ public partial class MainWindow : Window
         var local = await MaterializeAsync(it.FullPath);
         if (local == null) return;
         if (PathUtil.IsVirtual(it.FullPath))
-            P.FlashStatus("원격 파일은 임시 사본으로 열립니다. 수정한 뒤에는 F5 로 다시 복사하세요.");
+            P.FlashStatus(Loc.T("원격 파일은 임시 사본으로 열립니다. 수정한 뒤에는 F5 로 다시 복사하세요."));
         StartProcess(_settings.Editor, Quote(local), Path.GetDirectoryName(local));
     }
 
@@ -486,7 +487,7 @@ public partial class MainWindow : Window
         var fs = VirtualFs.For(path);
         var dir = Path.Combine(Path.GetTempPath(), "MP-Commander", "remote", Guid.NewGuid().ToString("N").Substring(0, 8));
         var local = Path.Combine(dir, PathUtil.LastSegment(path));
-        p.FlashStatus($"{fs.DisplayName}에서 가져오는 중... " + PathUtil.LastSegment(path));
+        p.FlashStatus(Loc.F($"{fs.DisplayName}에서 가져오는 중... ") + PathUtil.LastSegment(path));
         try
         {
             await GuardedIo.RunAsync(ctx =>
@@ -510,10 +511,10 @@ public partial class MainWindow : Window
         var items = src.GetSelectedOrCurrent();
         if (items.Count == 0 || src.CurrentPath == null) return;
 
-        string title = kind == OpKind.Copy ? "복사" : "이동";
-        string what = items.Count == 1 ? $"'{items[0].Name}'" : $"{items.Count}개 항목";
+        string title = kind == OpKind.Copy ? Loc.T("복사") : Loc.T("이동");
+        string what = items.Count == 1 ? $"'{items[0].Name}'" : Loc.F($"{items.Count}개 항목");
         var targetPath = _target?.CurrentPath ?? src.CurrentPath;
-        var dest = InputDialog.Show(this, title, $"{what}을(를) 다음 위치로 {title}:", PathUtil.WithSlash(targetPath));
+        var dest = InputDialog.Show(this, title, Loc.F($"{what}을(를) 다음 위치로 {title}:"), PathUtil.WithSlash(targetPath));
         if (Compat.IsBlank(dest)) { src.FocusList(); return; }
 
         await RunFileOperationAsync(kind, items.Select(i => i.FullPath).ToList(), dest, src);
@@ -583,8 +584,8 @@ public partial class MainWindow : Window
     private static ErrorChoice AskError(Window owner, string path, string message)
     {
         var r = MessageBox.Show(owner,
-            $"{message}\n\n{path}\n\n[예] 다시 시도    [아니요] 건너뛰기    [취소] 작업 중단",
-            "오류", MessageBoxButton.YesNoCancel, MessageBoxImage.Warning, MessageBoxResult.No);
+            Loc.F($"{message}\n\n{path}\n\n[예] 다시 시도    [아니요] 건너뛰기    [취소] 작업 중단"),
+            Loc.T("오류"), MessageBoxButton.YesNoCancel, MessageBoxImage.Warning, MessageBoxResult.No);
         return r switch
         {
             MessageBoxResult.Yes => ErrorChoice.Retry,
@@ -600,9 +601,9 @@ public partial class MainWindow : Window
         if (it == null || it.IsParent) return;
 
         int selLength = it.IsDirectory || it.Extension.Length == 0 ? it.Name.Length : it.Name.Length - it.Extension.Length - 1;
-        var name = InputDialog.Show(this, "이름 바꾸기", "새 이름:", it.Name, 0, selLength);
+        var name = InputDialog.Show(this, Loc.T("이름 바꾸기"), Loc.T("새 이름:"), it.Name, 0, selLength);
         if (Compat.IsBlank(name) || name == it.Name) { p.FocusList(); return; }
-        if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) { ShowError("이름에 사용할 수 없는 문자가 있습니다."); return; }
+        if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) { ShowError(Loc.T("이름에 사용할 수 없는 문자가 있습니다.")); return; }
 
         var src = it.FullPath;
         var dst = PathUtil.Combine(it.DirectoryPath, name);
@@ -636,7 +637,7 @@ public partial class MainWindow : Window
     {
         var p = P;
         if (p.CurrentPath == null) return;
-        var name = InputDialog.Show(this, "새 폴더", "폴더 이름 (a\\b 처럼 여러 단계도 가능):", "");
+        var name = InputDialog.Show(this, Loc.T("새 폴더"), Loc.T("폴더 이름 (a\\b 처럼 여러 단계도 가능):"), "");
         if (Compat.IsBlank(name)) { p.FocusList(); return; }
 
         var full = PathUtil.Combine(p.CurrentPath, name.Trim());
@@ -664,16 +665,16 @@ public partial class MainWindow : Window
         var items = p.GetSelectedOrCurrent();
         if (items.Count == 0 || p.CurrentPath == null) return;
 
-        string what = items.Count == 1 ? $"'{items[0].Name}'" : $"{items.Count}개 항목";
+        string what = items.Count == 1 ? $"'{items[0].Name}'" : Loc.F($"{items.Count}개 항목");
         if (PathUtil.IsVirtual(p.CurrentPath))
         {
             await DeleteRemoteAsync(p, items, what);
             return;
         }
         string msg = permanent
-            ? $"{what}을(를) 영구 삭제합니다. 복구할 수 없습니다.\n계속할까요?"
-            : $"{what}을(를) 휴지통으로 보낼까요?";
-        if (MessageBox.Show(this, msg, permanent ? "영구 삭제" : "삭제", MessageBoxButton.YesNo,
+            ? Loc.F($"{what}을(를) 영구 삭제합니다. 복구할 수 없습니다.\n계속할까요?")
+            : Loc.F($"{what}을(를) 휴지통으로 보낼까요?");
+        if (MessageBox.Show(this, msg, permanent ? Loc.T("영구 삭제") : Loc.T("삭제"), MessageBoxButton.YesNo,
                 permanent ? MessageBoxImage.Warning : MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
         {
             p.FocusList();
@@ -695,7 +696,7 @@ public partial class MainWindow : Window
         }, sta: true);
 
         if (rc != 0 && rc != Win32Errors.Cancelled)
-            ShowError($"삭제하지 못했습니다. (코드 0x{rc:X})");
+            ShowError(Loc.F($"삭제하지 못했습니다. (코드 0x{rc:X})"));
         p.ClearMarks();
         await p.RefreshAsync(focusAfter);
         p.FocusList();
@@ -705,8 +706,8 @@ public partial class MainWindow : Window
     private async Task DeleteRemoteAsync(FilePanel p, List<FileItem> items, string what)
     {
         var fs = VirtualFs.For(p.CurrentPath!);
-        if (MessageBox.Show(this, $"{what}을(를) {fs.DisplayName}에서 영구 삭제합니다. 휴지통이 없어 복구할 수 없습니다.\n계속할까요?",
-                $"{fs.DisplayName}에서 삭제", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
+        if (MessageBox.Show(this, Loc.F($"{what}을(를) {fs.DisplayName}에서 영구 삭제합니다. 휴지통이 없어 복구할 수 없습니다.\n계속할까요?"),
+                Loc.F($"{fs.DisplayName}에서 삭제"), MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
         {
             p.FocusList();
             return;
@@ -739,7 +740,7 @@ public partial class MainWindow : Window
     {
         var dir = P.CurrentPath;
         if (dir == null) return;
-        if (PathUtil.IsVirtual(dir)) { P.FlashStatus("원격(휴대폰·FTP·WebDAV) 폴더에서는 터미널을 열 수 없습니다."); return; }
+        if (PathUtil.IsVirtual(dir)) { P.FlashStatus(Loc.T("원격(휴대폰·FTP·WebDAV) 폴더에서는 터미널을 열 수 없습니다.")); return; }
         var term = _settings.Terminal;
         bool unc = dir.StartsWith(@"\\");
 
@@ -812,7 +813,7 @@ public partial class MainWindow : Window
             {
                 Clipboard.SetDataObject(text, true);
                 var lines = text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-                p.FlashStatus(lines.Length == 1 ? $"클립보드에 복사: {text}" : $"클립보드에 {lines.Length}개 복사");
+                p.FlashStatus(lines.Length == 1 ? Loc.F($"클립보드에 복사: {text}") : Loc.F($"클립보드에 {lines.Length}개 복사"));
                 break;
             }
             catch (COMException)
@@ -889,7 +890,7 @@ public partial class MainWindow : Window
             }
             catch (Exception ex)
             {
-                Dispatcher.BeginInvoke(() => ShowError($"실행하지 못했습니다: {file}\n{ex.Message}"));
+                Dispatcher.BeginInvoke(() => ShowError(Loc.F($"실행하지 못했습니다: {file}\n{ex.Message}")));
             }
         });
     }

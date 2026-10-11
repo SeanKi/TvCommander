@@ -71,6 +71,7 @@ public partial class SearchWindow : Window
     public SearchWindow(MainWindow host, string root)
     {
         InitializeComponent();
+        LocUi.Apply(this);   // XAML 글자를 지금 언어로
         _host = host;
         RootBox.Text = root;
         ResultList.ItemsSource = _results;
@@ -98,7 +99,7 @@ public partial class SearchWindow : Window
         catch (Exception ex) { StatusText.Text = ex.Message; return; }
 
         StartButton.IsEnabled = false;
-        StatusText.Text = "연결 확인 중...";
+        StatusText.Text = Loc.T("연결 확인 중...");
         var (ok, host) = await NetworkHealth.CheckPathAsync(root);
         StartButton.IsEnabled = true;
         if (!ok) { StatusText.Text = new HostUnreachableException(host!).Message; return; }
@@ -109,7 +110,7 @@ public partial class SearchWindow : Window
         {
             System.Text.RegularExpressions.Regex re;
             try { re = TextRegex.Create(ContentBox.Text, CaseCheck.IsChecked == true, compiled: true); }
-            catch (ArgumentException ex) { StatusText.Text = "정규식 오류: " + ex.Message; return; }
+            catch (ArgumentException ex) { StatusText.Text = Loc.T("정규식 오류: ") + ex.Message; return; }
             var matcher = CreateTextMatcher(re);
             lock (KeepAlive) KeepAlive.Add(matcher);   // 멈춘 네이티브 스레드가 늦게 불러도 안전하도록 계속 붙잡아 둔다
             textMatch = Marshal.GetFunctionPointerForDelegate(matcher);
@@ -133,10 +134,10 @@ public partial class SearchWindow : Window
             TextMatch = textMatch,
         };
         _handle = NativeMethods.FmSearchStart(ref p, _callback, IntPtr.Zero);
-        if (_handle == IntPtr.Zero) { StatusText.Text = "검색을 시작하지 못했습니다."; return; }
+        if (_handle == IntPtr.Zero) { StatusText.Text = Loc.T("검색을 시작하지 못했습니다."); return; }
 
         _startTick = Compat.TickCount64;
-        StartButton.Content = "중지";
+        StartButton.Content = Loc.T("중지");
         _timer.Start();
     }
 
@@ -220,13 +221,13 @@ public partial class SearchWindow : Window
     private string CountSummary()
     {
         if (_countFind == null) return "";
-        var pending = _countPending > 0 ? $" (세는 중 {_countPending:N0})" : "";
-        return $"   │   찾은 말 {_totalCount:N0}개 · {_totalLines:N0}줄{pending}";
+        var pending = _countPending > 0 ? Loc.F($" (세는 중 {_countPending:N0})") : "";
+        return Loc.F($"   │   찾은 말 {_totalCount:N0}개 · {_totalLines:N0}줄{pending}");
     }
 
     private string _doneSummaryBase = "";
 
-    private void RefreshDoneStatus() => StatusText.Text = "완료 - " + _doneSummaryBase.Replace("{COUNT}", CountSummary());
+    private void RefreshDoneStatus() => StatusText.Text = Loc.T("완료 - ") + _doneSummaryBase.Replace("{COUNT}", CountSummary());
 
     /// <summary>"abc" → "*abc*" (와일드카드가 없으면 부분 일치)</summary>
     private static string NormalizeMask(string mask)
@@ -282,13 +283,13 @@ public partial class SearchWindow : Window
         char* cur = stackalloc char[512];
         NativeMethods.FmSearchGetStatus(_handle, out var st, cur, 512);
         double secs = (Compat.TickCount64 - _startTick) / 1000.0;
-        string rest = $"   │   폴더 {st.DirsScanned:N0}, 파일 {st.FilesScanned:N0}   │   오류/시간초과 {st.Errors:N0}   │   {secs:0.0}초";
-        string summary = $"찾음 {_results.Count:N0}{CountSummary()}" + rest;
+        string rest = Loc.F($"   │   폴더 {st.DirsScanned:N0}, 파일 {st.FilesScanned:N0}   │   오류/시간초과 {st.Errors:N0}   │   {secs:0.0}초");
+        string summary = Loc.F($"찾음 {_results.Count:N0}{CountSummary()}") + rest;
 
         if (_results.Count >= MaxResults)
         {
             NativeMethods.FmSearchCancel(_handle);
-            summary += "   │   결과가 너무 많아 중단";
+            summary += Loc.T("   │   결과가 너무 많아 중단");
         }
 
         if (st.Running != 0)
@@ -297,7 +298,7 @@ public partial class SearchWindow : Window
         }
         else if (_pending.IsEmpty)
         {
-            _doneSummaryBase = $"찾음 {_results.Count:N0}{{COUNT}}" + rest + (_results.Count >= MaxResults ? "   │   결과가 너무 많아 중단" : "");
+            _doneSummaryBase = Loc.F($"찾음 {_results.Count:N0}{{COUNT}}") + rest + (_results.Count >= MaxResults ? Loc.T("   │   결과가 너무 많아 중단") : "");
             RefreshDoneStatus();   // 검색이 끝난 뒤에도 개수 세기가 끝날 때까지 합계를 고쳐 쓴다
             Release();
         }
@@ -306,7 +307,7 @@ public partial class SearchWindow : Window
     private void Stop()
     {
         if (_handle != IntPtr.Zero) NativeMethods.FmSearchCancel(_handle);
-        StatusText.Text = "중지하는 중...";
+        StatusText.Text = Loc.T("중지하는 중...");
     }
 
     private void Release()
@@ -318,7 +319,7 @@ public partial class SearchWindow : Window
             _handle = IntPtr.Zero;
         }
         _callback = null;
-        StartButton.Content = "찾기";
+        StartButton.Content = Loc.T("찾기");
     }
 
     private void GoTo_Click(object sender, RoutedEventArgs e) => GoToSelected();

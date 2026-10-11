@@ -67,7 +67,7 @@ internal sealed unsafe class TextFileSource : IDisposable
         int unit = enc is UnicodeEncoding ? 2 : 1;
         int be = enc.CodePage == 1201 ? 1 : 0;
         var h = NativeMethods.FmTextOpen(path, unit, be, bom);
-        if (h == IntPtr.Zero) throw new IOException($"파일을 열 수 없습니다: {path}");
+        if (h == IntPtr.Zero) throw new IOException(Loc.F($"파일을 열 수 없습니다: {path}"));
         return new TextFileSource(path, enc, bom, h);
     }
 
@@ -195,7 +195,7 @@ internal sealed unsafe class TextFileSource : IDisposable
         var s = Encoding.GetString(b, offset, count);
         int len = s.Length;
         while (len > 0 && (s[len - 1] == '\n' || s[len - 1] == '\r')) len--;
-        if (len > MaxLineChars) return s.Substring(0, MaxLineChars) + " …(줄이 너무 길어 잘림)";
+        if (len > MaxLineChars) return s.Substring(0, MaxLineChars) + Loc.T(" …(줄이 너무 길어 잘림)");
         return len == s.Length ? s : s.Substring(0, len);
     }
 

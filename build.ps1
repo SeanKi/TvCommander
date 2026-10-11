@@ -32,6 +32,9 @@ if ($Publish) {
     New-Item -ItemType Directory -Force $out | Out-Null
     $bin = "$root\src\MPCommander\bin\$Configuration\net472"
     Copy-Item "$bin\MP-Commander.exe", "$bin\MP-Commander.exe.config", "$bin\FmCore.dll" $out
+    # 언어 팩 (설정에서 고름, 기본은 운영체제 언어)
+    New-Item -ItemType Directory -Force "$out\lang" | Out-Null
+    Copy-Item "$bin\lang\*.txt" "$out\lang\"
     # 사용 설명서 (F1 / 툴바 ? 버튼으로 연다): manual\MANUAL.md + images
     New-Item -ItemType Directory -Force "$out\manual\images" | Out-Null
     Copy-Item "$root\docs\manual\MANUAL.md" "$out\manual\"

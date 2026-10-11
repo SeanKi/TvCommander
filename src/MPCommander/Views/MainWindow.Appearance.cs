@@ -9,7 +9,7 @@ namespace MPCommander.Views;
 public partial class MainWindow
 {
     /// <summary>목록 글씨 크기 3단계 (px). 보통 14px ≈ 10.5pt 로 Double Commander 기본과 비슷하다.</summary>
-    private static readonly (string Name, double Size)[] FontLevels = [("작게", 12), ("보통", 14), ("크게", 16)];
+    private static readonly (string Name, double Size)[] FontLevels = [(Loc.T("작게"), 12), (Loc.T("보통"), 14), (Loc.T("크게"), 16)];
 
     private void InitToolbarIcons()
     {
@@ -44,7 +44,7 @@ public partial class MainWindow
         level = Compat.Clamp(level, 0, FontLevels.Length - 1);
         _settings.FontLevel = level;
         Application.Current.Resources["ListFontSize"] = FontLevels[level].Size;
-        FontButton.ToolTip = $"목록 글씨 크기: {FontLevels[level].Name} (Ctrl+= / Ctrl+-)";
+        FontButton.ToolTip = Loc.F($"목록 글씨 크기: {FontLevels[level].Name} (Ctrl+= / Ctrl+-)");
     }
 
     private void Font_Click(object sender, RoutedEventArgs e)

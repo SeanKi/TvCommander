@@ -19,6 +19,7 @@ public partial class PackDialog : Window
     private PackDialog(AppSettings settings, string sourceText, string targetDir, string baseName, bool singleFolder)
     {
         InitializeComponent();
+        LocUi.Apply(this);   // XAML 글자를 지금 언어로
         _settings = settings;
         _baseDir = targetDir;
         SourceText.Text = sourceText;
@@ -27,7 +28,7 @@ public partial class PackDialog : Window
         Format7z.IsEnabled = has7z;
         SevenZipText.Text = has7z
             ? $"7-Zip: {SevenZip.Exe}"
-            : "7-Zip 을 찾지 못해 7z 형식은 쓸 수 없습니다. 7-Zip 을 설치하거나 7za.exe 를 MP-Commander 폴더에 두세요.";
+            : Loc.T("7-Zip 을 찾지 못해 7z 형식은 쓸 수 없습니다. 7-Zip 을 설치하거나 7za.exe 를 MP-Commander 폴더에 두세요.");
         LevelCombo.SelectedIndex = Math.Max(0, Math.Min(3, settings.PackLevel));
         if (singleFolder)
         {
@@ -72,8 +73,8 @@ public partial class PackDialog : Window
         string path;
         try { path = PathUtil.Normalize(PathBox.Text.Trim(), _baseDir); }
         catch (Exception ex) { ShowError(ex.Message); return; }
-        if (Compat.IsBlank(Path.GetFileName(path))) { ShowError("압축 파일 이름을 입력하세요."); return; }
-        if (PathUtil.IsVirtual(path)) { ShowError("압축 파일은 PC 의 폴더(로컬·네트워크 드라이브)에만 만들 수 있습니다."); return; }
+        if (Compat.IsBlank(Path.GetFileName(path))) { ShowError(Loc.T("압축 파일 이름을 입력하세요.")); return; }
+        if (PathUtil.IsVirtual(path)) { ShowError(Loc.T("압축 파일은 PC 의 폴더(로컬·네트워크 드라이브)에만 만들 수 있습니다.")); return; }
 
         var ext = Use7z ? ".7z" : ".zip";
         if (!path.EndsWith(ext, StringComparison.OrdinalIgnoreCase)) path += ext;

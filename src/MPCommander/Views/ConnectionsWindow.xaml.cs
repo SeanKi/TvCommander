@@ -13,6 +13,7 @@ public partial class ConnectionsWindow : Window
     public ConnectionsWindow(MainWindow host)
     {
         InitializeComponent();
+        LocUi.Apply(this);   // XAML 글자를 지금 언어로
         _host = host;
         Reload(null);
         Loaded += (_, _) =>
@@ -64,8 +65,8 @@ public partial class ConnectionsWindow : Window
     private void Delete_Click(object sender, RoutedEventArgs e)
     {
         if (Selected is not { } c) return;
-        if (MessageBox.Show(this, $"'{c.Name}' ({c.KindText} {c.AddressText}) 연결을 삭제할까요?\n서버의 파일은 지워지지 않습니다.",
-                "연결 삭제", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
+        if (MessageBox.Show(this, Loc.F($"'{c.Name}' ({c.KindText} {c.AddressText}) 연결을 삭제할까요?\n서버의 파일은 지워지지 않습니다."),
+                Loc.T("연결 삭제"), MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
             return;
         RemoteConnections.Delete(c.Name);
         Reload(null);

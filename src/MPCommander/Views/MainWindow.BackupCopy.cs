@@ -17,15 +17,15 @@ public partial class MainWindow
         var p = P;
         var items = p.GetSelectedOrCurrent();
         if (items.Count == 0 || p.CurrentPath == null) return;
-        if (PathUtil.IsVirtual(p.CurrentPath)) { p.FlashStatus("백업 복사는 PC 의 파일만 됩니다. 원격 파일은 먼저 PC 로 복사하세요."); return; }
+        if (PathUtil.IsVirtual(p.CurrentPath)) { p.FlashStatus(Loc.T("백업 복사는 PC 의 파일만 됩니다. 원격 파일은 먼저 PC 로 복사하세요.")); return; }
 
         var targetDir = _target?.CurrentPath;
         if (targetDir == null || _target == p || PathUtil.IsVirtual(targetDir))
         {
-            p.FlashStatus("백업 복사는 대상 패널(PC 폴더)로 복사합니다. 대상 패널을 PC 폴더로 여세요.");
+            p.FlashStatus(Loc.T("백업 복사는 대상 패널(PC 폴더)로 복사합니다. 대상 패널을 PC 폴더로 여세요."));
             return;
         }
-        if (PathUtil.Same(targetDir, p.CurrentPath)) { p.FlashStatus("원본과 대상 폴더가 같습니다."); return; }
+        if (PathUtil.Same(targetDir, p.CurrentPath)) { p.FlashStatus(Loc.T("원본과 대상 폴더가 같습니다.")); return; }
 
         var sources = items.Select(i => i.FullPath).ToList();
         foreach (var path in new[] { p.CurrentPath, targetDir })
@@ -38,13 +38,13 @@ public partial class MainWindow
         BackupCopyPlan plan;
         try
         {
-            p.FlashStatus("백업 복사 준비 중...");
+            p.FlashStatus(Loc.T("백업 복사 준비 중..."));
             plan = await GuardedIo.RunAsync(ctx => BackupCopyPlan.Build(sources, targetDir, ctx), 10000, targetDir);
         }
         catch (Exception ex) { ShowError(ex.Message); return; }
-        if (plan.Items.Count == 0) { p.FlashStatus("복사할 파일이 없습니다 (빈 폴더)."); return; }
+        if (plan.Items.Count == 0) { p.FlashStatus(Loc.T("복사할 파일이 없습니다 (빈 폴더).")); return; }
 
-        string what = items.Count == 1 ? $"'{items[0].Name}'" : $"{items.Count}개 항목";
+        string what = items.Count == 1 ? $"'{items[0].Name}'" : Loc.F($"{items.Count}개 항목");
         var dlg = BackupCopyDialog.Show(this, _settings, plan, $"{what}  ({p.CurrentPath})");
         if (dlg == null) { p.FocusList(); return; }
         SaveSettings();
@@ -73,17 +73,17 @@ public partial class MainWindow
 
         await RefreshPanelsShowingAsync(targetDir, op.BackupCreated ? PathUtil.Parent(op.BackupPath) : null);
 
-        var summary = $"백업 복사: 복사 {op.Copied:N0}개, 백업 {op.BackedUp:N0}개" +
-                      (op.Renamed > 0 ? $", 이름 바꿔 교체 {op.Renamed}개" : "") +
-                      (op.Errors > 0 ? $", 실패 {op.Errors}개" : "") +
-                      (restarted > 0 ? $", 다시 실행 {restarted}개" : "") +
-                      (op.IsCancelled ? " — 중간에 취소됨" : "") +
-                      (op.BackupCreated ? $"  │ 백업: {op.BackupPath}" : "");
+        var summary = Loc.F($"백업 복사: 복사 {op.Copied:N0}개, 백업 {op.BackedUp:N0}개") +
+                      (op.Renamed > 0 ? Loc.F($", 이름 바꿔 교체 {op.Renamed}개") : "") +
+                      (op.Errors > 0 ? Loc.F($", 실패 {op.Errors}개") : "") +
+                      (restarted > 0 ? Loc.F($", 다시 실행 {restarted}개") : "") +
+                      (op.IsCancelled ? Loc.T(" — 중간에 취소됨") : "") +
+                      (op.BackupCreated ? Loc.F($"  │ 백업: {op.BackupPath}") : "");
         p.FlashStatus(summary);
         if (op.Errors > 0 || restartErrors.Count > 0)
         {
             var detail = string.Join("\n", op.Failures.Concat(restartErrors));
-            MessageBox.Show(this, summary + "\n\n" + detail, "백업 후 복사", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, summary + "\n\n" + detail, Loc.T("백업 후 복사"), MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         p.FocusList();
     }

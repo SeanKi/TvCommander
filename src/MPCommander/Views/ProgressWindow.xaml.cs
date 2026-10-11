@@ -18,6 +18,7 @@ public partial class ProgressWindow : Window
     public ProgressWindow(ProgressOperation op)
     {
         InitializeComponent();
+        LocUi.Apply(this);   // XAML 글자를 지금 언어로
         _op = op;
         Title = op.Title;
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
@@ -36,14 +37,14 @@ public partial class ProgressWindow : Window
             : _op.TotalFiles > 0 ? (double)_op.DoneFiles / _op.TotalFiles : 0;
 
         double secs = Math.Max(0.5, (Compat.TickCount64 - _startTick) / 1000.0);
-        TotalText.Text = $"파일 {_op.DoneFiles:N0} / {_op.TotalFiles:N0},   {PathUtil.FormatSize(_op.DoneBytes)} / {PathUtil.FormatSize(_op.TotalBytes)},   {PathUtil.FormatSize((long)(_op.DoneBytes / secs))}/s"
-                         + (_op.Errors + _op.Skipped > 0 ? $",   건너뜀 {_op.Errors + _op.Skipped}" : "");
+        TotalText.Text = Loc.F($"파일 {_op.DoneFiles:N0} / {_op.TotalFiles:N0},   {PathUtil.FormatSize(_op.DoneBytes)} / {PathUtil.FormatSize(_op.TotalBytes)},   {PathUtil.FormatSize((long)(_op.DoneBytes / secs))}/s")
+                         + (_op.Errors + _op.Skipped > 0 ? Loc.F($",   건너뜀 {_op.Errors + _op.Skipped}") : "");
 
         // 진행이 멈추면 경고 (네트워크 지연 등). 취소 버튼은 막힌 I/O 도 끊는다.
         long idle = Compat.TickCount64 - Interlocked.Read(ref _op.LastProgressTick);
         if (idle > StallWarningMs && !_op.IsCancelled && !_op.WaitingForUser)
         {
-            StallText.Text = $"{idle / 1000}초째 응답이 없습니다. 네트워크나 디스크가 지연되고 있을 수 있습니다. [취소]를 누르면 중단합니다.";
+            StallText.Text = Loc.F($"{idle / 1000}초째 응답이 없습니다. 네트워크나 디스크가 지연되고 있을 수 있습니다. [취소]를 누르면 중단합니다.");
             StallText.Visibility = Visibility.Visible;
         }
         else
@@ -63,7 +64,7 @@ public partial class ProgressWindow : Window
     {
         _op.Cancel();
         CancelButton.IsEnabled = false;
-        PhaseText.Text = "취소하는 중...";
+        PhaseText.Text = Loc.T("취소하는 중...");
     }
 
     protected override void OnClosing(CancelEventArgs e)

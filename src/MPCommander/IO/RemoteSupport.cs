@@ -107,12 +107,12 @@ internal static class RemoteSupport
             HttpWebResponse h => $"{(int)h.StatusCode} {HttpMessage(h.StatusCode)}",
             _ => ex.Status switch
             {
-                WebExceptionStatus.Timeout => "응답 시간 초과",
-                WebExceptionStatus.RequestCanceled => "취소됨",
-                WebExceptionStatus.NameResolutionFailure => "서버 이름을 찾을 수 없음",
-                WebExceptionStatus.ConnectFailure => "서버에 연결할 수 없음",
+                WebExceptionStatus.Timeout => Loc.T("응답 시간 초과"),
+                WebExceptionStatus.RequestCanceled => Loc.T("취소됨"),
+                WebExceptionStatus.NameResolutionFailure => Loc.T("서버 이름을 찾을 수 없음"),
+                WebExceptionStatus.ConnectFailure => Loc.T("서버에 연결할 수 없음"),
                 WebExceptionStatus.TrustFailure or WebExceptionStatus.SecureChannelFailure =>
-                    "보안 연결(인증서) 오류 — 자체 서명 인증서라면 연결 설정에서 '인증서 오류 무시'를 켜세요",
+                    Loc.T("보안 연결(인증서) 오류 — 자체 서명 인증서라면 연결 설정에서 '인증서 오류 무시'를 켜세요"),
                 _ => ex.Message,
             },
         };
@@ -121,14 +121,14 @@ internal static class RemoteSupport
 
     private static string HttpMessage(HttpStatusCode code) => (int)code switch
     {
-        401 => "인증 실패 (사용자 이름·비밀번호 확인)",
-        403 => "권한 없음",
-        404 => "없음",
-        405 => "허용되지 않는 작업",
-        409 => "상위 폴더가 없음",
-        412 => "대상이 이미 있음",
-        423 => "잠김",
-        507 => "저장 공간 부족",
+        401 => Loc.T("인증 실패 (사용자 이름·비밀번호 확인)"),
+        403 => Loc.T("권한 없음"),
+        404 => Loc.T("없음"),
+        405 => Loc.T("허용되지 않는 작업"),
+        409 => Loc.T("상위 폴더가 없음"),
+        412 => Loc.T("대상이 이미 있음"),
+        423 => Loc.T("잠김"),
+        507 => Loc.T("저장 공간 부족"),
         _ => code.ToString(),
     };
 

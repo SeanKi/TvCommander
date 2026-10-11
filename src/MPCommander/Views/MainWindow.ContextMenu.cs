@@ -68,26 +68,26 @@ public partial class MainWindow
 
         var list = new List<MenuSpec>
         {
-            new(MenuCmd.View, "보기\tF3", file),
-            new(MenuCmd.Edit, "편집\tF4", file),
+            new(MenuCmd.View, Loc.T("보기\tF3"), file),
+            new(MenuCmd.Edit, Loc.T("편집\tF4"), file),
             MenuSpec.Separator,
-            new(MenuCmd.CopyToTarget, $"대상 패널로 복사{target}\tF5"),
-            new(MenuCmd.MoveToTarget, $"대상 패널로 이동{target}\tF6"),
-            new(MenuCmd.BackupCopy, $"백업 후 복사{target}...\tCtrl+B", !mtp),
-            new(MenuCmd.Rename, "이름 바꾸기\tShift+F6", single),
+            new(MenuCmd.CopyToTarget, Loc.F($"대상 패널로 복사{target}\tF5")),
+            new(MenuCmd.MoveToTarget, Loc.F($"대상 패널로 이동{target}\tF6")),
+            new(MenuCmd.BackupCopy, Loc.F($"백업 후 복사{target}...\tCtrl+B"), !mtp),
+            new(MenuCmd.Rename, Loc.T("이름 바꾸기\tShift+F6"), single),
         };
-        if (!shell) list.Add(new(MenuCmd.Delete, mtp ? "삭제 (영구)\tF8" : "삭제\tF8"));
+        if (!shell) list.Add(new(MenuCmd.Delete, mtp ? Loc.T("삭제 (영구)\tF8") : Loc.T("삭제\tF8")));
         list.Add(MenuSpec.Separator);
-        list.Add(new(MenuCmd.CopyFullPath, "전체 경로 복사\tCtrl+Shift+C"));
-        list.Add(new(MenuCmd.CopyName, "이름 복사"));
+        list.Add(new(MenuCmd.CopyFullPath, Loc.T("전체 경로 복사\tCtrl+Shift+C")));
+        list.Add(new(MenuCmd.CopyName, Loc.T("이름 복사")));
         if (!mtp)
         {
             list.Add(MenuSpec.Separator);
-            list.Add(new(MenuCmd.Pack, $"압축 (7z / ZIP){target}...\tAlt+F5"));
-            list.Add(new(MenuCmd.Unblock, "차단 해제...\tCtrl+Shift+U"));
-            if (archive) list.Add(new(MenuCmd.Unpack, $"압축 풀기{target}...\tAlt+F9"));
+            list.Add(new(MenuCmd.Pack, Loc.F($"압축 (7z / ZIP){target}...\tAlt+F5")));
+            list.Add(new(MenuCmd.Unblock, Loc.T("차단 해제...\tCtrl+Shift+U")));
+            if (archive) list.Add(new(MenuCmd.Unpack, Loc.F($"압축 풀기{target}...\tAlt+F9")));
         }
-        if (!shell && !mtp) list.Add(new(MenuCmd.Properties, "속성"));
+        if (!shell && !mtp) list.Add(new(MenuCmd.Properties, Loc.T("속성")));
         return list;
     }
 
@@ -95,13 +95,13 @@ public partial class MainWindow
     {
         var list = new List<MenuSpec>
         {
-            new(MenuCmd.NewFolder, "새 폴더\tF7"),
-            new(MenuCmd.Refresh, "새로고침\tCtrl+R"),
-            new(MenuCmd.CopyDirPath, "현재 경로 복사"),
+            new(MenuCmd.NewFolder, Loc.T("새 폴더\tF7")),
+            new(MenuCmd.Refresh, Loc.T("새로고침\tCtrl+R")),
+            new(MenuCmd.CopyDirPath, Loc.T("현재 경로 복사")),
         };
-        list.Insert(0, new(MenuCmd.Paste, "붙여넣기\tCtrl+V"));
-        if (!mtp) list.Add(new(MenuCmd.Terminal, "여기서 터미널 열기\tF9"));
-        if (!mtp) list.Add(new(MenuCmd.Unblock, "이 폴더 차단 해제...\tCtrl+Shift+U"));
+        list.Insert(0, new(MenuCmd.Paste, Loc.T("붙여넣기\tCtrl+V")));
+        if (!mtp) list.Add(new(MenuCmd.Terminal, Loc.T("여기서 터미널 열기\tF9")));
+        if (!mtp) list.Add(new(MenuCmd.Unblock, Loc.T("이 폴더 차단 해제...\tCtrl+Shift+U")));
         return list;
     }
 
@@ -181,14 +181,14 @@ public partial class MainWindow
         var p = P;
         var items = p.GetSelectedOrCurrent();
         if (items.Count == 0 || p.CurrentPath == null) return;
-        if (PathUtil.IsVirtual(p.CurrentPath)) { p.FlashStatus("원격 파일은 PC 로 복사한 뒤 압축하세요."); return; }
+        if (PathUtil.IsVirtual(p.CurrentPath)) { p.FlashStatus(Loc.T("원격 파일은 PC 로 복사한 뒤 압축하세요.")); return; }
 
         string baseName = items.Count == 1
             ? (items[0].IsDirectory ? items[0].Name : items[0].DisplayName)
             : PathUtil.LastSegment(p.CurrentPath) is { Length: > 0 } d ? d.TrimEnd(':') : "archive";
         // 대상 패널이 원격(휴대폰·FTP·WebDAV)이면 만들 수 없으므로 현재 폴더에
         var targetDir = _target?.CurrentPath is { } t && !PathUtil.IsVirtual(t) ? t : p.CurrentPath;
-        string what = items.Count == 1 ? $"'{items[0].Name}'" : $"{items.Count}개 항목";
+        string what = items.Count == 1 ? $"'{items[0].Name}'" : Loc.F($"{items.Count}개 항목");
 
         bool singleFolder = items.Count == 1 && items[0].IsDirectory;
         var dlg = PackDialog.Show(this, _settings, $"{what}  ({p.CurrentPath})", targetDir, baseName, singleFolder);
@@ -199,7 +199,7 @@ public partial class MainWindow
         var (ok, host) = await NetworkHealth.CheckPathAsync(archive);
         if (!ok) { ShowError(new HostUnreachableException(host!).Message); return; }
         if (File.Exists(archive) &&
-            MessageBox.Show(this, $"{archive}\n\n이미 있습니다. 덮어쓸까요?", "압축", MessageBoxButton.YesNo,
+            MessageBox.Show(this, Loc.F($"{archive}\n\n이미 있습니다. 덮어쓸까요?"), Loc.T("압축"), MessageBoxButton.YesNo,
                 MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
         {
             p.FocusList();
@@ -216,7 +216,7 @@ public partial class MainWindow
                 sources = await GuardedIo.RunAsync(_ => Directory.EnumerateFileSystemEntries(folder).ToList(), 5000, folder);
             }
             catch (Exception ex) { ShowError(ex.Message); return; }
-            if (sources.Count == 0) { ShowError($"{folder}\n\n폴더가 비어 있어 압축할 것이 없습니다."); return; }
+            if (sources.Count == 0) { ShowError(Loc.F($"{folder}\n\n폴더가 비어 있어 압축할 것이 없습니다.")); return; }
         }
         ProgressOperation op = dlg.Use7z ? SevenZipOperation.Pack(sources, archive, dlg.Level) : ZipOperation.Pack(sources, archive, dlg.Level);
         await RunWithProgressAsync(op);
@@ -228,7 +228,7 @@ public partial class MainWindow
         foreach (var panel in new[] { _target, p })
             if (panel?.CurrentPath != null && PathUtil.Same(panel.CurrentPath, dir)) await panel.RefreshAsync(Path.GetFileName(archive));
         if (!op.IsCancelled && File.Exists(archive))
-            p.FlashStatus($"압축 완료: {archive}  ({PathUtil.FormatSize(new FileInfo(archive).Length)})");
+            p.FlashStatus(Loc.F($"압축 완료: {archive}  ({PathUtil.FormatSize(new FileInfo(archive).Length)})"));
         p.FocusList();
     }
 
@@ -246,19 +246,19 @@ public partial class MainWindow
         var archives = p.GetSelectedOrCurrent().Where(IsArchive).Select(i => i.FullPath).ToList();
         if (archives.Count == 0)
         {
-            p.FlashStatus("압축 파일(ZIP, 7z, RAR, TAR 등)을 고르세요.");
+            p.FlashStatus(Loc.T("압축 파일(ZIP, 7z, RAR, TAR 등)을 고르세요."));
             return;
         }
-        if (PathUtil.IsVirtual(p.CurrentPath)) { p.FlashStatus("원격 파일은 PC 로 복사한 뒤 압축을 푸세요."); return; }
+        if (PathUtil.IsVirtual(p.CurrentPath)) { p.FlashStatus(Loc.T("원격 파일은 PC 로 복사한 뒤 압축을 푸세요.")); return; }
         if (SevenZip.Exe == null && archives.Any(a => !a.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)))
         {
             if (archives.All(a => !a.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)))
             {
-                p.FlashStatus("ZIP 외의 형식은 7-Zip 이 있어야 풀 수 있습니다. 7-Zip 을 설치하거나 7za.exe 를 MP-Commander 폴더에 두세요.");
+                p.FlashStatus(Loc.T("ZIP 외의 형식은 7-Zip 이 있어야 풀 수 있습니다. 7-Zip 을 설치하거나 7za.exe 를 MP-Commander 폴더에 두세요."));
                 return;
             }
             archives = archives.Where(a => a.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)).ToList();
-            p.FlashStatus("7-Zip 이 없어 ZIP 만 풉니다.");
+            p.FlashStatus(Loc.T("7-Zip 이 없어 ZIP 만 풉니다."));
         }
 
         var targetDir = _target?.CurrentPath is { } t && !PathUtil.IsVirtual(t) ? t : p.CurrentPath;
@@ -289,7 +289,7 @@ public partial class MainWindow
         if (dlg.PerArchiveFolder && lastDest != null)
             foreach (var panel in new[] { _target, p })
                 if (panel?.CurrentPath != null && PathUtil.Same(panel.CurrentPath, dlg.Destination)) await panel.RefreshAsync(PathUtil.LastSegment(lastDest));
-        p.FlashStatus($"압축 풀기: {done}/{archives.Count}개 → {dlg.Destination}");
+        p.FlashStatus(Loc.F($"압축 풀기: {done}/{archives.Count}개 → {dlg.Destination}"));
         p.FocusList();
     }
 }

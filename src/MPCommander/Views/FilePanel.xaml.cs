@@ -48,6 +48,7 @@ public partial class FilePanel : UserControl
     public FilePanel(MainWindow host, int index)
     {
         InitializeComponent();
+        LocUi.Apply(this);   // XAML 글자를 지금 언어로
         _host = host;
         Index = index;
 
@@ -130,7 +131,7 @@ public partial class FilePanel : UserControl
         var error = ErrorText.Text;
         var failed = _failedPath;
         if (await NavigateAsync(home))
-            ShowError(error + "\n→ 홈 폴더를 대신 열었습니다.", failed);
+            ShowError(error + Loc.T("\n→ 홈 폴더를 대신 열었습니다."), failed);
     }
 
     /// <summary>폴더를 연다. 실패하면 현재 목록은 그대로 두고 오류 표시줄을 띄운다.</summary>
@@ -148,7 +149,7 @@ public partial class FilePanel : UserControl
         }
         if (PathUtil.IsServerOnly(full))
         {
-            ShowError(@"공유 폴더 이름까지 입력하세요. (예: \\server\share)", null);
+            ShowError(Loc.T(@"공유 폴더 이름까지 입력하세요. (예: \\server\share)"), null);
             return false;
         }
 
@@ -163,14 +164,14 @@ public partial class FilePanel : UserControl
         _loadCts?.Cancel();
         var cts = new CancellationTokenSource();
         _loadCts = cts;
-        LoadingText.Text = $"불러오는 중... (Esc: 취소)\n{full}";
+        LoadingText.Text = Loc.F($"불러오는 중... (Esc: 취소)\n{full}");
         _loadingDelay.Start();
 
         try
         {
             var progress = new Progress<int>(n =>
             {
-                if (_loadCts == cts) LoadingText.Text = $"불러오는 중... {n:N0}개 (Esc: 취소)\n{full}";
+                if (_loadCts == cts) LoadingText.Text = Loc.F($"불러오는 중... {n:N0}개 (Esc: 취소)\n{full}");
             });
             var items = await DirectoryLoader.LoadAsync(full, _host.ShowHidden, progress, cts.Token);
             if (_loadCts != cts) return false;   // 더 새로운 탐색이 시작됨
@@ -224,7 +225,7 @@ public partial class FilePanel : UserControl
         _loadingDelay.Stop();
         LoadingOverlay.Visibility = Visibility.Collapsed;
         try { cts.Cancel(); } catch (ObjectDisposedException) { }
-        FlashStatus("불러오기를 취소했습니다.");
+        FlashStatus(Loc.T("불러오기를 취소했습니다."));
     }
 
     public Task<bool> RefreshAsync(string? focusName = null)
@@ -378,7 +379,7 @@ public partial class FilePanel : UserControl
         FlushDwell();
         bool added = _host.History.ToggleSmart(CurrentPath);   // Changed → 모든 패널 UpdateStar
         _host.History.Save();
-        FlashStatus(added ? "★ 자주 머문 폴더에 올렸습니다 (Alt+↓ 에서 맨 위)" : "☆ 자주 머문 폴더에서 내렸습니다");
+        FlashStatus(added ? Loc.T("★ 자주 머문 폴더에 올렸습니다 (Alt+↓ 에서 맨 위)") : Loc.T("☆ 자주 머문 폴더에서 내렸습니다"));
     }
 
     /// <summary>현재 폴더가 자주 머문 폴더 목록에 있으면 노란 별(채움), 아니면 빈 별</summary>
@@ -388,8 +389,8 @@ public partial class FilePanel : UserControl
         StarGlyph.Text = on ? "" : "";   // FavoriteStarFill / FavoriteStar
         StarGlyph.Foreground = on ? StarOnBrush : SystemColors.ControlTextBrush;
         StarButton.ToolTip = on
-            ? "자주 머문 폴더에 있음 — 누르면 내립니다 (Ctrl+D)"
-            : "자주 머문 폴더에 올리기 (Ctrl+D)";
+            ? Loc.T("자주 머문 폴더에 있음 — 누르면 내립니다 (Ctrl+D)")
+            : Loc.T("자주 머문 폴더에 올리기 (Ctrl+D)");
     }
 
     /// <summary>히스토리 메뉴: 자주 머문 폴더(스마트) → 최근 폴더</summary>
@@ -436,25 +437,25 @@ public partial class FilePanel : UserControl
 
         if (smart.Count > 0)
         {
-            menu.Items.Add(Title("★ 자주 머문 폴더"));
+            menu.Items.Add(Title(Loc.T("★ 자주 머문 폴더")));
             foreach (var s in smart)
                 menu.Items.Add(Entry(s.Path, s.Pinned
-                    ? (s.Visits > 0 ? $"★ 고정 · {s.Visits}회" : "★ 고정")
-                    : $"{s.Visits}회 · {FormatDwell(s.DwellSeconds)}"));
+                    ? (s.Visits > 0 ? Loc.F($"★ 고정 · {s.Visits}회") : Loc.T("★ 고정"))
+                    : Loc.F($"{s.Visits}회 · {FormatDwell(s.DwellSeconds)}")));
             menu.Items.Add(new Separator());
         }
 
-        menu.Items.Add(Title($"최근 폴더 ({recent.Count}/{history.MaxHistory})"));
+        menu.Items.Add(Title(Loc.F($"최근 폴더 ({recent.Count}/{history.MaxHistory})")));
         if (recent.Count == 0)
-            menu.Items.Add(new MenuItem { Header = new TextBlock { Text = "(없음)" }, IsEnabled = false });
+            menu.Items.Add(new MenuItem { Header = new TextBlock { Text = Loc.T("(없음)") }, IsEnabled = false });
         foreach (var p in recent) menu.Items.Add(Entry(p, null));
 
         menu.Items.Add(new Separator());
-        var clear = new MenuItem { Header = new TextBlock { Text = "히스토리 지우기..." } };
+        var clear = new MenuItem { Header = new TextBlock { Text = Loc.T("히스토리 지우기...") } };
         clear.Click += (_, _) =>
         {
             chosen = true;
-            if (MessageBox.Show(Window.GetWindow(this), "최근 폴더와 자주 머문 폴더 기록을 모두 지울까요?", "히스토리 지우기",
+            if (MessageBox.Show(Window.GetWindow(this), Loc.T("최근 폴더와 자주 머문 폴더 기록을 모두 지울까요?"), Loc.T("히스토리 지우기"),
                     MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.Yes)
             {
                 history.Clear();
@@ -476,9 +477,9 @@ public partial class FilePanel : UserControl
 
     private static string FormatDwell(double seconds) => seconds switch
     {
-        < 60 => $"{seconds:0}초",
-        < 3600 => $"{seconds / 60:0}분",
-        _ => $"{seconds / 3600:0.#}시간",
+        < 60 => Loc.F($"{seconds:0}초"),
+        < 3600 => Loc.F($"{seconds / 60:0}분"),
+        _ => Loc.F($"{seconds / 3600:0.#}시간"),
     };
 
     // ───────────────────────── 커서 / 포커스 ─────────────────────────
@@ -560,8 +561,8 @@ public partial class FilePanel : UserControl
 
     private void MarkByMask(bool value)
     {
-        var mask = InputDialog.Show(Window.GetWindow(this), value ? "선택" : "선택 해제",
-            "파일 마스크 (여러 개는 ; 로 구분):", "*.*");
+        var mask = InputDialog.Show(Window.GetWindow(this), value ? Loc.T("선택") : Loc.T("선택 해제"),
+            Loc.T("파일 마스크 (여러 개는 ; 로 구분):"), "*.*");
         if (Compat.IsBlank(mask)) { FocusList(); return; }
         var patterns = mask.SplitTrim(';');
         foreach (var it in _items)
@@ -579,9 +580,9 @@ public partial class FilePanel : UserControl
     private void UpdateStatus()
     {
         if (_flashTimer.IsEnabled) return;
-        var s = $"{PathUtil.FormatSize(_markedSize)} / {PathUtil.FormatSize(_totalSize)},  파일 {_markedFiles:N0}/{_fileCount:N0},  폴더 {_markedDirs:N0}/{_dirCount:N0}";
-        if (_blockedCount > 0) s += $"   │   차단 {_blockedCount:N0}";
-        if (_freeText.Length > 0) s += $"   │   여유 {_freeText}";
+        var s = Loc.F($"{PathUtil.FormatSize(_markedSize)} / {PathUtil.FormatSize(_totalSize)},  파일 {_markedFiles:N0}/{_fileCount:N0},  폴더 {_markedDirs:N0}/{_dirCount:N0}");
+        if (_blockedCount > 0) s += Loc.F($"   │   차단 {_blockedCount:N0}");
+        if (_freeText.Length > 0) s += Loc.F($"   │   여유 {_freeText}");
         StatusText.Text = s;
     }
 
@@ -863,11 +864,11 @@ public partial class FilePanel : UserControl
     private void UpdateHeaders()
     {
         string Arrow(SortColumn c) => _comparer.Column != c ? "" : _comparer.Descending ? " ▼" : " ▲";
-        NameColumn.Header = "이름" + Arrow(SortColumn.Name);
-        ExtColumn.Header = "확장자" + Arrow(SortColumn.Extension);
-        SizeColumn.Header = "크기" + Arrow(SortColumn.Size);
-        DateColumn.Header = "날짜" + Arrow(SortColumn.Date);
-        AttrColumn.Header = "속성" + Arrow(SortColumn.Attributes);
+        NameColumn.Header = Loc.T("이름") + Arrow(SortColumn.Name);
+        ExtColumn.Header = Loc.T("확장자") + Arrow(SortColumn.Extension);
+        SizeColumn.Header = Loc.T("크기") + Arrow(SortColumn.Size);
+        DateColumn.Header = Loc.T("날짜") + Arrow(SortColumn.Date);
+        AttrColumn.Header = Loc.T("속성") + Arrow(SortColumn.Attributes);
     }
 
     // ───────────────────────── 드라이브 / 경로 입력 ─────────────────────────
@@ -882,8 +883,8 @@ public partial class FilePanel : UserControl
             {
                 string kind = d.DriveType switch
                 {
-                    DriveType.Network => "네트워크",
-                    DriveType.Removable => "이동식",
+                    DriveType.Network => Loc.T("네트워크"),
+                    DriveType.Removable => Loc.T("이동식"),
                     DriveType.CDRom => "CD",
                     _ => "",
                 };
@@ -1096,7 +1097,7 @@ public partial class FilePanel : UserControl
         int idx = _items.FindIndex(i => !i.IsParent && i.Name.StartsWith(_quick, StringComparison.OrdinalIgnoreCase));
         if (idx < 0) idx = _items.FindIndex(i => !i.IsParent && i.Name.Contains(_quick, StringComparison.OrdinalIgnoreCase));
         if (idx >= 0) SetCursor(idx, true);
-        StatusText.Text = $"빠른 검색: {_quick}" + (idx < 0 ? "  (없음)" : "");
+        StatusText.Text = Loc.F($"빠른 검색: {_quick}") + (idx < 0 ? Loc.T("  (없음)") : "");
     }
 
     // ───────────────────────── 마우스 / 드래그 앤 드롭 ─────────────────────────
@@ -1208,7 +1209,7 @@ public partial class FilePanel : UserControl
 
         bool move = (e.KeyStates & DragDropKeyStates.ShiftKey) != 0;
         e.Effects = (move ? DragDropEffects.Move : DragDropEffects.Copy) & e.AllowedEffects;
-        StatusText.Text = $"→ {target}   (Ctrl: 바로 복사, Shift: 바로 이동, 그냥 놓으면 메뉴)";
+        StatusText.Text = Loc.F($"→ {target}   (Ctrl: 바로 복사, Shift: 바로 이동, 그냥 놓으면 메뉴)");
     }
 
     private void FileList_DragLeave(object sender, DragEventArgs e) => UpdateStatus();
@@ -1245,16 +1246,16 @@ public partial class FilePanel : UserControl
     private void ShowDropMenu(int count, string target, Action<OpKind> start)
     {
         var menu = new ContextMenu { PlacementTarget = FileList, Placement = PlacementMode.MousePoint };
-        menu.Items.Add(new MenuItem { Header = $"대상: {target}", IsEnabled = false });
+        menu.Items.Add(new MenuItem { Header = Loc.F($"대상: {target}"), IsEnabled = false });
         menu.Items.Add(new Separator());
-        var copy = new MenuItem { Header = $"여기에 복사 ({count}개)", FontWeight = FontWeights.SemiBold };
+        var copy = new MenuItem { Header = Loc.F($"여기에 복사 ({count}개)"), FontWeight = FontWeights.SemiBold };
         copy.Click += (_, _) => start(OpKind.Copy);
-        var move = new MenuItem { Header = $"여기로 이동 ({count}개)" };
+        var move = new MenuItem { Header = Loc.F($"여기로 이동 ({count}개)") };
         move.Click += (_, _) => start(OpKind.Move);
         menu.Items.Add(copy);
         menu.Items.Add(move);
         menu.Items.Add(new Separator());
-        menu.Items.Add(new MenuItem { Header = "취소" });
+        menu.Items.Add(new MenuItem { Header = Loc.T("취소") });
         menu.IsOpen = true;
     }
 

@@ -17,6 +17,17 @@
         </Style>
     </Window.Resources>
     <StackPanel Margin="14">
+        <GroupBox Header="언어 / Language">
+            <StackPanel>
+                <DockPanel>
+                    <TextBlock Text="화면 언어" Style="{StaticResource Label}"/>
+                    <ComboBox x:Name="LangCombo" Width="220" HorizontalAlignment="Left"/>
+                </DockPanel>
+                <TextBlock Foreground="Gray" TextWrapping="Wrap" Margin="0,2,0,2"
+                           Text="언어 팩은 프로그램 폴더의 lang\*.txt 입니다. 바꾸면 다시 시작할 때 적용됩니다."/>
+            </StackPanel>
+        </GroupBox>
+
         <GroupBox Header="백업 후 복사 (Backup-Copy, Ctrl+B)">
             <StackPanel>
                 <DockPanel>

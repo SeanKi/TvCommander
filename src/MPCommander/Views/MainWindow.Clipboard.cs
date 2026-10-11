@@ -34,11 +34,11 @@ public partial class MainWindow
 
         if (!TryClipboard(() => Clipboard.SetDataObject(data, true)))
         {
-            ShowError("클립보드를 사용할 수 없습니다. 다른 프로그램이 클립보드를 쓰고 있는지 확인하세요.");
+            ShowError(Loc.T("클립보드를 사용할 수 없습니다. 다른 프로그램이 클립보드를 쓰고 있는지 확인하세요."));
             return;
         }
-        string what = items.Count == 1 ? $"'{items[0].Name}'" : $"{items.Count}개 항목";
-        p.FlashStatus($"{(cut ? "잘라내기" : "복사")}: {what} — 붙여넣을 곳에서 Ctrl+V");
+        string what = items.Count == 1 ? $"'{items[0].Name}'" : Loc.F($"{items.Count}개 항목");
+        p.FlashStatus(Loc.F($"{(cut ? Loc.T("잘라내기") : Loc.T("복사"))}: {what} — 붙여넣을 곳에서 Ctrl+V"));
     }
 
     /// <summary>Ctrl+V: 클립보드의 파일을 활성 패널 폴더로 복사(잘라내기였으면 이동)</summary>
@@ -73,7 +73,7 @@ public partial class MainWindow
 
         if (paths == null || paths.Length == 0)
         {
-            p.FlashStatus("붙여넣을 파일이 클립보드에 없습니다.");
+            p.FlashStatus(Loc.T("붙여넣을 파일이 클립보드에 없습니다."));
             return;
         }
         // 잘라낸 것을 같은 폴더에 붙여넣으면 할 일이 없다
@@ -119,7 +119,7 @@ public partial class MainWindow
         if (dir == null) return;
         if (PathUtil.IsVirtual(dir))
         {
-            p.FlashStatus("휴대폰·FTP·WebDAV 파일에는 차단 표시가 없습니다. PC 로 복사한 뒤 차단 해제하세요.");
+            p.FlashStatus(Loc.T("휴대폰·FTP·WebDAV 파일에는 차단 표시가 없습니다. PC 로 복사한 뒤 차단 해제하세요."));
             return;
         }
 
@@ -128,9 +128,9 @@ public partial class MainWindow
         int folders = items.Count(i => i.IsDirectory), files = items.Count - folders;
         string desc = items.Count switch
         {
-            0 => $"현재 폴더: {dir}",
-            1 => $"{(items[0].IsDirectory ? "폴더" : "파일")} '{items[0].Name}'  ({dir})",
-            _ => $"{items.Count}개 항목 — 폴더 {folders}개, 파일 {files}개  ({dir})",
+            0 => Loc.F($"현재 폴더: {dir}"),
+            1 => $"{(items[0].IsDirectory ? Loc.T("폴더") : Loc.T("파일"))} '{items[0].Name}'  ({dir})",
+            _ => Loc.F($"{items.Count}개 항목 — 폴더 {folders}개, 파일 {files}개  ({dir})"),
         };
         if (!UnblockDialog.Show(this, _settings, desc))
         {
@@ -150,12 +150,12 @@ public partial class MainWindow
             .Where(x => x.CurrentPath != null && (PathUtil.Same(x.CurrentPath, dir) || PathUtil.IsUnder(x.CurrentPath, dir)))
             .Select(x => x.RefreshAsync()));
 
-        var summary = $"차단 해제: {op.Unblocked:N0}개 파일 (검사 {op.TotalFiles:N0}개, 원래 차단 없음 {op.NotBlocked:N0}개" +
-                      (op.Errors > 0 ? $", 실패 {op.Errors:N0}개)" : ")") + (op.IsCancelled ? " — 중간에 취소됨" : "");
+        var summary = Loc.F($"차단 해제: {op.Unblocked:N0}개 파일 (검사 {op.TotalFiles:N0}개, 원래 차단 없음 {op.NotBlocked:N0}개") +
+                      (op.Errors > 0 ? Loc.F($", 실패 {op.Errors:N0}개)") : ")") + (op.IsCancelled ? Loc.T(" — 중간에 취소됨") : "");
         p.FlashStatus(summary);
         if (op.Errors > 0)
             MessageBox.Show(this, summary + "\n\n" + string.Join("\n", op.Failures) + (op.Errors > op.Failures.Count ? "\n..." : ""),
-                "차단 해제", MessageBoxButton.OK, MessageBoxImage.Warning);
+                Loc.T("차단 해제"), MessageBoxButton.OK, MessageBoxImage.Warning);
         p.FocusList();
     }
 }

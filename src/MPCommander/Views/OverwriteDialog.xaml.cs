@@ -11,13 +11,14 @@ public partial class OverwriteDialog : Window
     private OverwriteDialog()
     {
         InitializeComponent();
+        LocUi.Apply(this);   // XAML 글자를 지금 언어로
     }
 
     public static ConflictChoice Ask(Window owner, ConflictInfo info)
     {
         var dlg = new OverwriteDialog { Owner = owner };
-        dlg.DstText.Text = $"{info.Destination}\n{PathUtil.FormatSize(info.DestinationSize)} ({info.DestinationSize:N0} 바이트),  {info.DestinationTime:yyyy-MM-dd HH:mm:ss}";
-        dlg.SrcText.Text = $"{info.Source}\n{PathUtil.FormatSize(info.SourceSize)} ({info.SourceSize:N0} 바이트),  {info.SourceTime:yyyy-MM-dd HH:mm:ss}";
+        dlg.DstText.Text = Loc.F($"{info.Destination}\n{PathUtil.FormatSize(info.DestinationSize)} ({info.DestinationSize:N0} 바이트),  {info.DestinationTime:yyyy-MM-dd HH:mm:ss}");
+        dlg.SrcText.Text = Loc.F($"{info.Source}\n{PathUtil.FormatSize(info.SourceSize)} ({info.SourceSize:N0} 바이트),  {info.SourceTime:yyyy-MM-dd HH:mm:ss}");
         dlg.ShowDialog();
         return dlg._choice;
     }

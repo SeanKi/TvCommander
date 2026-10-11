@@ -10,10 +10,12 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        // 언어: 설정(auto = 운영체제 언어) → lang\<코드>.txt. 창을 만들기 전에 정해야 한다
+        Loc.Init(AppSettings.Load().Language);
 
         DispatcherUnhandledException += (_, args) =>
         {
-            MessageBox.Show(args.Exception.Message, "MP-Commander 오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(args.Exception.Message, Loc.T("MP-Commander 오류"), MessageBoxButton.OK, MessageBoxImage.Error);
             args.Handled = true;
         };
         TaskScheduler.UnobservedTaskException += (_, args) => args.SetObserved();
@@ -24,7 +26,7 @@ public partial class App : Application
         }
         catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException or BadImageFormatException)
         {
-            MessageBox.Show("FmCore.dll 을 불러올 수 없습니다. 실행 파일과 같은 폴더에 있는지 확인하세요.\n\n" + ex.Message,
+            MessageBox.Show(Loc.T("FmCore.dll 을 불러올 수 없습니다. 실행 파일과 같은 폴더에 있는지 확인하세요.\n\n") + ex.Message,
                 "MP-Commander", MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(1);
             return;

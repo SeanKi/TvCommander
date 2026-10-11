@@ -7,6 +7,7 @@ public partial class InputDialog : Window
     private InputDialog()
     {
         InitializeComponent();
+        LocUi.Apply(this);   // XAML 글자를 지금 언어로
     }
 
     /// <summary>입력을 받는다. 취소하면 null.</summary>

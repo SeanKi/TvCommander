@@ -16,7 +16,7 @@ public sealed class LockingProcess
     public bool IsService { get; init; }
     public bool IsSelf { get; init; }
 
-    public string Display => IsSelf ? $"{Name} (이 프로그램)" : IsService ? $"{Name} (서비스)" : Name;
+    public string Display => IsSelf ? Loc.F($"{Name} (이 프로그램)") : IsService ? Loc.F($"{Name} (서비스)") : Name;
 
     /// <summary>같은 프로세스인지 (PID 는 재사용되므로 시작 시각까지 비교)</summary>
     public bool IsAlive
@@ -234,7 +234,7 @@ public static class RunningProcesses
     /// <summary>같은 실행 파일·인자로 다시 실행. 실패하면 오류 메시지.</summary>
     public static string? Restart(LockingProcess lp)
     {
-        if (lp.ExePath == null) return $"{lp.Name}: 실행 파일 경로를 알 수 없습니다.";
+        if (lp.ExePath == null) return Loc.F($"{lp.Name}: 실행 파일 경로를 알 수 없습니다.");
         try
         {
             Process.Start(new ProcessStartInfo(lp.ExePath, lp.Arguments)
