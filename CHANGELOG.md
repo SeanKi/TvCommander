@@ -1,5 +1,10 @@
 # 변경 내역
 
+## 1.8.2 — MDNotePad+ 연동
+- **마크다운 F3**: `.md` / `.markdown` / `.mdx` 는 프로그램 폴더에 `MDNotePad+.exe` 가 있으면 MDNotePad+ 로 연다 (없으면 내장 뷰어).
+- **툴바 MDNotePad+ 동기화 모드 버튼** (문서+동기화): `MDNotePad+.exe --sync` 로, 커서가 .md 파일이면 그 파일을 연다. MDNotePad+.exe 가 없으면 버튼이 숨는다.
+- 백업 후 복사 버튼 아이콘을 **폴더 + 시계** 로 바꿈 (날짜·시각 폴더에 백업).
+
 ## 1.8.1 — English manual
 - **영어 사용 설명서** `docs/manual/MANUAL.en.md` (English screenshots in `images/en/`).
 - F1 은 화면 언어의 설명서를 연다 (`manual\MANUAL.en.md`, 없으면 한국어 `MANUAL.md`). 설명서 폴더가 없으면 GitHub 의 해당 언어 설명서.

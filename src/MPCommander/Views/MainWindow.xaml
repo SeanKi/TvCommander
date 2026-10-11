@@ -62,7 +62,13 @@
                 <Separator/>
                 <Button Click="NewFolder_Click" ToolTip="새 폴더 (F7)"><TextBlock Style="{StaticResource Icon}" Text="&#xE8F4;"/></Button>
                 <Button Click="Terminal_Click" ToolTip="여기서 터미널 열기 (F9)"><TextBlock Style="{StaticResource Icon}" Text="&#xE756;"/></Button>
-                <Button Click="BackupCopy_Click" ToolTip="백업 후 복사 (Ctrl+B) — 대상의 같은 이름 파일을 backup\날짜_시각 에 백업한 뒤 복사.&#x0a;실행 중인 프로그램 확인·닫기, 끝나면 다시 실행 (프로그램 업데이트용)"><TextBlock Style="{StaticResource Icon}" Text="&#xEA35;"/></Button>
+                <Button Click="BackupCopy_Click" ToolTip="백업 후 복사 (Ctrl+B) — 대상의 같은 이름 파일을 backup\날짜_시각 에 백업한 뒤 복사.&#x0a;실행 중인 프로그램 확인·닫기, 끝나면 다시 실행 (프로그램 업데이트용)"><!-- 폴더 + 시계: 날짜·시각 폴더에 백업 -->
+                    <Grid Width="20" Height="18" Margin="1,0">
+                        <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="16" Text="&#xED25;" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,1,0,0"/>
+                        <Ellipse Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                 Fill="{Binding Background, RelativeSource={RelativeSource AncestorType=ToolBar}}"/>
+                        <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="11" FontWeight="Bold" Text="&#xE81C;" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0.5,0.5"/>
+                    </Grid></Button>
                 <Button Click="Pack_Click" ToolTip="압축 (Alt+F5) — 표시한 항목을 대상 패널 폴더에 7z 또는 ZIP 으로"><TextBlock Style="{StaticResource Icon}" Text="&#xE7B8;"/></Button>
                 <Button Click="Unpack_Click" ToolTip="압축 풀기 (Alt+F9) — 고른 압축 파일(ZIP·7z·RAR 등, 여러 개 가능)을 대상 패널 폴더에.&#x0a;기본으로 압축 파일마다 그 이름의 폴더를 만든다"><!-- 압축 아이콘(E7B8)의 뚜껑이 열린 모양: 글꼴에 없어 직접 그린다 -->
                     <Canvas Width="16" Height="16" Margin="2,1" VerticalAlignment="Center">
@@ -78,6 +84,13 @@
                 <Button Click="Swap_Click" ToolTip="활성·대상 패널 경로 교체 (Ctrl+U)"><TextBlock Style="{StaticResource Icon}" Text="&#xE8AB;"/></Button>
                 <ToggleButton x:Name="HiddenToggle" Click="Hidden_Click" ToolTip="숨김 파일 보기 (Ctrl+H)"><TextBlock Style="{StaticResource Icon}" Text="&#xE890;"/></ToggleButton>
                 <Button x:Name="FontButton" Click="Font_Click" ToolTip="목록 글씨 크기 (Ctrl+= / Ctrl+-)"><TextBlock Style="{StaticResource Icon}" Text="&#xE8D2;"/></Button>
+                <Button x:Name="MdSyncButton" Click="MdSync_Click" ToolTip="MDNotePad+ 동기화 모드로 열기 — 커서의 .md 파일(없으면 빈 창)을 저장소·동기화·git 이 있는 전체 모드로 (같은 폴더의 MDNotePad+.exe)"><!-- 문서 + 동기화 -->
+                    <Grid Width="20" Height="18" Margin="1,0">
+                        <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="16" Text="&#xE7C3;" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,1,0,0"/>
+                        <Ellipse Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                 Fill="{Binding Background, RelativeSource={RelativeSource AncestorType=ToolBar}}"/>
+                        <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="11" FontWeight="Bold" Text="&#xE895;" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0.5,0.5"/>
+                    </Grid></Button>
                 <Button Click="Manual_Click" ToolTip="사용 설명서 (F1) — 화면 언어의 설명서를, 같은 폴더에 MDNotePad+.exe 가 있으면 그것으로, 없으면 .md 에 연결된 프로그램으로 엽니다"><TextBlock Style="{StaticResource Icon}" Text="&#xE897;"/></Button>
                 <Button Click="Settings_Click" ToolTip="설정 — 백업 복사, 압축, 차단 해제, 편집기·터미널"><TextBlock Style="{StaticResource Icon}" Text="&#xE713;"/></Button>
             </ToolBar>

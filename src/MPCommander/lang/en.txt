@@ -1416,3 +1416,9 @@ auto = Windows Terminal 이 있으면 wt, 없으면 cmd. 또는 실행 파일 (c
 찾을 문자열. Enter / F3 다음, Shift+F3 이전. 파일 전체에서 찾고, 찾은 줄은 아래 목록에 모두 나옵니다.
 => Text to find. Enter / F3 next, Shift+F3 previous. The whole file is searched and all matching lines appear in the list below.
 
+MDNotePad+ 동기화 모드로 열기 — 커서의 .md 파일(없으면 빈 창)을 저장소·동기화·git 이 있는 전체 모드로 (같은 폴더의 MDNotePad+.exe)
+=> Open in MDNotePad+ sync mode — the .md file under the cursor (or an empty window) in the full mode with repository, sync and git (MDNotePad+.exe in the same folder)
+MDNotePad+ 를 실행할 수 없습니다: 
+=> Cannot start MDNotePad+: 
+MDNotePad+.exe 가 프로그램 폴더에 없습니다.
+=> MDNotePad+.exe is not in the program folder.

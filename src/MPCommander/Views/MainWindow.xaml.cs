@@ -43,6 +43,7 @@ public partial class MainWindow : Window
             _panels.Add(p);
         }
         HiddenToggle.IsChecked = _settings.ShowHidden;
+        if (MdNotePadPath == null) MdSyncButton.Visibility = Visibility.Collapsed;   // MDNotePad+ 가 없으면 버튼도 없다
         InitToolbarIcons();
         InitCommandLine();
         ApplyFontLevel(_settings.FontLevel);
@@ -395,6 +396,50 @@ public partial class MainWindow : Window
     private void BackupCopy_Click(object sender, RoutedEventArgs e) => CmdBackupCopy();
 
     private void Manual_Click(object sender, RoutedEventArgs e) => CmdManual();
+    private void MdSync_Click(object sender, RoutedEventArgs e) => CmdMdSync();
+
+    /// <summary>프로그램 폴더의 MDNotePad+.exe (없으면 null)</summary>
+    private static string? MdNotePadPath
+    {
+        get
+        {
+            var p = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MDNotePad+.exe");
+            return File.Exists(p) ? p : null;
+        }
+    }
+
+    private static bool IsMarkdown(string path) =>
+        Path.GetExtension(path).ToLowerInvariant() is ".md" or ".markdown" or ".mdx";
+
+    /// <summary>MDNotePad+ 로 연다. sync = 저장소·동기화·git 이 있는 전체 모드(--sync)</summary>
+    private bool StartMdNotePad(string? file, bool sync)
+    {
+        var exe = MdNotePadPath;
+        if (exe == null) return false;
+        var args = (sync ? "--sync " : "") + (file != null ? Quote(file) : "");
+        try
+        {
+            Process.Start(new ProcessStartInfo(exe, args.Trim()) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(exe) });
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ShowError(Loc.T("MDNotePad+ 를 실행할 수 없습니다: ") + ex.Message);
+            return true;
+        }
+    }
+
+    /// <summary>툴바: MDNotePad+ 동기화 모드. 커서가 .md 파일이면 그 파일을 연다</summary>
+    private async void CmdMdSync()
+    {
+        string? file = null;
+        var it = P.CursorItem;
+        if (it != null && !it.IsDirectory && IsMarkdown(it.FullPath))
+            file = await MaterializeAsync(it.FullPath);
+        if (!StartMdNotePad(file, sync: true))
+            ShowError(Loc.T("MDNotePad+.exe 가 프로그램 폴더에 없습니다."));
+        P.FocusList();
+    }
 
     private const string ManualUrl = "https://github.com/SeanKi/TvCommander/blob/main/docs/manual/";
 
@@ -468,7 +513,10 @@ public partial class MainWindow : Window
         var it = P.CursorItem;
         if (it == null || it.IsDirectory) return;
         var local = await MaterializeAsync(it.FullPath);
-        if (local != null) new ViewerWindow(local) { Owner = this }.Show();
+        if (local == null) return;
+        // 마크다운은 같은 폴더에 MDNotePad+ 가 있으면 그것으로 (없으면 내장 뷰어)
+        if (IsMarkdown(local) && StartMdNotePad(local, sync: false)) return;
+        new ViewerWindow(local) { Owner = this }.Show();
     }
 
     public async void CmdEdit()

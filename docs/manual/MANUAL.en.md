@@ -118,12 +118,13 @@ Nothing is written to the program folder, so updating means replacing the progra
 | Globe | Remote connections (FTP / WebDAV) | Ctrl+F |
 | Document · chain · text | Copy current folder path / full paths of selection / names | — / Ctrl+Shift+C / — |
 | Folder+ · `C:\` | New folder / terminal here | F7 / F9 |
-| Disks | **Backup-Copy** | Ctrl+B |
+| Folder + clock | **Backup-Copy** | Ctrl+B |
 | Box · open box | **Compress** / **Extract** | Alt+F5 / Alt+F9 |
 | Lock | **Unblock** | Ctrl+Shift+U |
 | ⇄ | Swap active and target pane paths | Ctrl+U |
 | Eye | Show hidden files | Ctrl+H |
 | AA | List font size (small · normal · large) | Ctrl+= / Ctrl+- |
+| Document + sync | **MDNotePad+ sync mode** — opens the .md file under the cursor in the full mode with repository, sync and git (shown only when MDNotePad+.exe is in the same folder) | — |
 | ? | **User manual** (this document) | F1 |
 | Gear | **Settings** | — |
 
@@ -201,6 +202,8 @@ Selected items are shown in **red**. With no selection, commands apply to the it
 ![Viewer — regex find, matching lines, full line](images/en/03-viewer-find.png)
 
 **F3** (or the `F3 View` button) opens the file under the cursor.
+
+> **Markdown (.md)** files open in MDNotePad+ when `MDNotePad+.exe` is in the same folder (otherwise in this viewer).
 
 - **Text:** encoding detected automatically (UTF-8 / UTF-16 / Korean ANSI). Line numbers on the left.
 - **Any file size opens at once** (a 300 MB log in about 0.2 s). Only the visible lines are read and drawn; the line index is built in the background
@@ -300,7 +303,7 @@ Files you select directly are always unblocked. Read-only files are handled too 
 ## 10. Backup-Copy
 
 For **replacing files in a target folder with new versions after backing up the old ones** — typically a program update.
-Toolbar disk button, **Ctrl+B**, or `Backup-Copy` in the right-click menu.
+Toolbar folder-and-clock button, **Ctrl+B**, or `Backup-Copy` in the right-click menu.
 
 ### ① Preparation window
 
