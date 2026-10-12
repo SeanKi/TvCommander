@@ -25,6 +25,7 @@ internal struct FmSearchParams
     public int IoTimeoutMs;
     public IntPtr TextMatch;       // FmTextMatchCallback (정규식 등 호출자 판정), 없으면 IntPtr.Zero
     public IntPtr TextMatchUser;
+    public IntPtr Files;           // 검사할 파일 목록 (Everything 결과, 경로마다 NUL, 끝에 NUL 하나 더), 없으면 IntPtr.Zero = 폴더를 돈다
 }
 
 [StructLayout(LayoutKind.Sequential)]

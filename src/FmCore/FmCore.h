@@ -40,6 +40,7 @@ typedef struct FmSearchParams {
     int ioTimeoutMs;          // 단일 I/O 호출이 이 시간을 넘으면 CancelSynchronousIo
     FmTextMatchCallback textMatch;   // NULL 이 아니면 text 대신 이것으로 내용 판정 (인코딩: BOM / UTF-8 / ANSI / UTF-16LE 자동)
     void* textMatchUser;
+    const wchar_t* files;     // NULL 이 아니면 폴더를 돌지 않고 이 파일들만 검사 ("경로\0경로\0\0", Everything 결과 등)
 } FmSearchParams;
 
 typedef struct FmSearchStatus {

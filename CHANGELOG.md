@@ -1,5 +1,14 @@
 # 변경 내역
 
+## 1.9.0 — Everything 연동
+- **파일 찾기 + Everything**: [Everything](https://www.voidtools.com/)(voidtools, 1.4 이상)이 실행 중이면 파일 목록을 Everything 색인에서 바로 가져온다 (기본 켬, 'Everything 1.x' 체크).
+  - 폴더를 돌지 않아 드라이브 전체도 1초 안팎 (모든 드라이브 `*.dll` 16만 개 1초, `C:\` `*.txt` 5만 개 0.25초).
+  - **포함 텍스트**는 Everything 이 준 파일들을 C++ 검색기가 직접 읽어 찾는다 (정규식·찾은 말·줄 수 그대로). C++ 검색기에 파일 목록 모드 추가.
+  - **모든 드라이브** 선택: 시작 폴더 대신 Everything 이 색인한 곳 전체.
+  - 색인되지 않은 곳(네트워크 공유, FTP·WebDAV, 휴대폰)이나 Everything 이 없으면 예전처럼 폴더를 직접 돈다.
+  - 숨김 파일은 Everything 의 색인 설정을 따른다. 휴지통 안은 뺀다.
+  - SDK DLL 없이 Everything 과 직접 통신 (WM_COPYDATA) — 배포 파일은 그대로 3개.
+
 ## 1.8.2 — MDNotePad+ 연동
 - **마크다운 F3**: `.md` / `.markdown` / `.mdx` 는 프로그램 폴더에 `MDNotePad+.exe` 가 있으면 MDNotePad+ 로 연다 (없으면 내장 뷰어).
 - **툴바 MDNotePad+ 동기화 모드 버튼** (문서+동기화): `MDNotePad+.exe --sync` 로, 커서가 .md 파일이면 그 파일을 연다. MDNotePad+.exe 가 없으면 버튼이 숨는다.

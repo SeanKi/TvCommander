@@ -78,6 +78,20 @@ public partial class SearchWindow : Window
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
         _timer.Tick += (_, _) => Pump();
         Loaded += (_, _) => { MaskBox.Focus(); MaskBox.SelectAll(); };
+        // Everything 이 떠 있을 때만 'Everything 사용' / '모든 드라이브'
+        _everythingVersion = Everything.Version();
+        if (_everythingVersion == null)
+        {
+            EverythingCheck.Visibility = Visibility.Collapsed;
+            AllDrivesCheck.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            EverythingCheck.Content = $"Everything {_everythingVersion}";
+            EverythingCheck.IsChecked = _useEverything;
+        }
+        _uiReady = true;
+        UpdateEverythingUi();
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape) { if (_handle != IntPtr.Zero) Stop(); else Close(); e.Handled = true; }
@@ -90,19 +104,115 @@ public partial class SearchWindow : Window
         if (_handle == IntPtr.Zero) RootBox.Text = root;
     }
 
+    // ── Everything (voidtools) ──
+    private const int EverythingMaxCandidates = 500_000;
+    private static bool _useEverything = true;   // 창을 다시 열어도 기억 (프로그램 실행 동안)
+    private readonly string? _everythingVersion;
+    private bool _everythingListing;              // Everything 결과를 목록에 넣는 중 (이름만 찾기)
+    private int _everythingCandidates = -1;       // 내용 찾기: Everything 이 준 후보 파일 수 (-1 = 폴더를 돎)
+    private double _everythingSeconds;
+
+    private bool EverythingOn => _everythingVersion != null && EverythingCheck.IsChecked == true;
+
+    private void Everything_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_uiReady) return;   // InitializeComponent 중의 Checked 는 무시 (기억한 값을 덮지 않도록)
+        _useEverything = EverythingCheck.IsChecked == true;
+        UpdateEverythingUi();
+    }
+
+    private void AllDrives_Click(object sender, RoutedEventArgs e) => UpdateEverythingUi();
+
+    private bool _uiReady;
+
+    private void UpdateEverythingUi()
+    {
+        if (!_uiReady) return;
+        AllDrivesCheck.IsEnabled = EverythingOn;
+        if (!EverythingOn) AllDrivesCheck.IsChecked = false;
+        RootBox.IsEnabled = AllDrivesCheck.IsChecked != true;
+        // 숨김 여부는 Everything 이 색인 설정대로 준다 (속성을 묻는 것은 결과마다 디스크를 읽어 너무 느리다)
+        HiddenCheck.IsEnabled = !EverythingOn;
+        HiddenCheck.ToolTip = EverythingOn ? Loc.T("Everything 을 쓸 때는 Everything 의 색인 설정(숨김 파일 제외 등)을 따릅니다") : null;
+    }
+
+    /// <summary>
+    /// Everything 으로 후보 목록을 얻는다. root 가 null 이면 모든 드라이브.
+    /// Everything 이 없거나, 응답이 없거나, root 가 색인되지 않았으면 null (→ 폴더를 직접 돈다)
+    /// </summary>
+    private async Task<List<EverythingItem>?> QueryEverythingAsync(string? root, string mask, bool filesOnly)
+    {
+        if (root != null)
+        {
+            // 색인된 곳인지: 바로 아래 항목이 하나라도 나오는지 (빈 폴더면 직접 돌아도 금방이다)
+            var probe = await Everything.QueryAsync("parent:" + Everything.Quote(root.Length > 3 ? root.TrimEnd('\\') : root), 1, 5000);
+            if (probe is not { Count: > 0 }) return null;
+        }
+        var query = Everything.BuildQuery(root, RecursiveCheck.IsChecked == true, mask, filesOnly);
+        return await Everything.QueryAsync(query, filesOnly ? EverythingMaxCandidates : MaxResults);
+    }
+
     private async void Start_Click(object sender, RoutedEventArgs e)
     {
         if (_handle != IntPtr.Zero) { Stop(); return; }
+        if (_everythingListing) return;
 
-        string root;
-        try { root = PathUtil.Normalize(RootBox.Text); }
-        catch (Exception ex) { StatusText.Text = ex.Message; return; }
+        bool allDrives = EverythingOn && AllDrivesCheck.IsChecked == true;
+        string? root = null;
+        if (!allDrives)
+        {
+            try { root = PathUtil.Normalize(RootBox.Text); }
+            catch (Exception ex) { StatusText.Text = ex.Message; return; }
+        }
+        var mask = NormalizeMask(MaskBox.Text);
+        bool hasText = !Compat.IsEmpty(ContentBox.Text);
 
-        StartButton.IsEnabled = false;
-        StatusText.Text = Loc.T("연결 확인 중...");
-        var (ok, host) = await NetworkHealth.CheckPathAsync(root);
-        StartButton.IsEnabled = true;
-        if (!ok) { StatusText.Text = new HostUnreachableException(host!).Message; return; }
+        // 정규식은 Everything 을 묻기 전에 확인한다
+        if (RegexCheck.IsChecked == true && hasText)
+        {
+            try { TextRegex.Create(ContentBox.Text, CaseCheck.IsChecked == true, compiled: false); }
+            catch (ArgumentException ex) { StatusText.Text = Loc.T("정규식 오류: ") + ex.Message; return; }
+        }
+
+        List<EverythingItem>? everything = null;
+        _everythingCandidates = -1;
+        if (EverythingOn && (root == null || !PathUtil.IsVirtual(root)))
+        {
+            StartButton.IsEnabled = false;
+            StatusText.Text = Loc.T("Everything 에서 찾는 중...");
+            long t0 = Compat.TickCount64;
+            everything = await QueryEverythingAsync(root, mask, filesOnly: hasText);
+            _everythingSeconds = (Compat.TickCount64 - t0) / 1000.0;
+            StartButton.IsEnabled = true;
+            if (everything == null && root == null) { StatusText.Text = Loc.T("Everything 이 응답하지 않습니다."); return; }
+        }
+
+        if (everything != null && !hasText)
+        {
+            // 이름만 찾기: Everything 결과가 곧 답이다
+            _results.Clear();
+            while (_pending.TryDequeue(out _)) { }
+            StartCounting(null, false, null);
+            foreach (var it in everything.Take(MaxResults))
+                _pending.Enqueue(new SearchResult(it.FullPath, it.Size, it.LastWrite, it.IsFolder));
+            _everythingListing = true;
+            _startTick = Compat.TickCount64;
+            _timer.Start();
+            Pump();
+            return;
+        }
+        if (everything != null) _everythingCandidates = everything.Count;
+
+        string? host = null;
+        if (everything == null && root != null)
+        {
+            StartButton.IsEnabled = false;
+            StatusText.Text = Loc.T("연결 확인 중...");
+            bool ok;
+            (ok, host) = await NetworkHealth.CheckPathAsync(root);
+            StartButton.IsEnabled = true;
+            if (!ok) { StatusText.Text = new HostUnreachableException(host!).Message; return; }
+        }
 
         // 정규식: 식이 맞는지 먼저 확인하고, 파일 내용 판정은 C++ 이 읽어 준 텍스트로 여기서 한다
         IntPtr textMatch = IntPtr.Zero;
@@ -121,9 +231,13 @@ public partial class SearchWindow : Window
         StartCounting(Compat.IsEmpty(ContentBox.Text) ? null : ContentBox.Text, CaseCheck.IsChecked == true,
             RegexCheck.IsChecked == true ? TextRegex.Create(ContentBox.Text, CaseCheck.IsChecked == true, compiled: true) : null);
         _callback = CreateCallback();
+        // Everything 후보가 있으면 C++ 검색기는 폴더를 돌지 않고 그 파일들만 읽는다
+        var files = everything == null ? IntPtr.Zero
+            : Marshal.StringToHGlobalUni(string.Concat(everything.Select(i => i.FullPath + "\0")) + "\0");
         var p = new FmSearchParams
         {
-            Root = root,
+            Files = files,
+            Root = root ?? "",
             Mask = NormalizeMask(MaskBox.Text),
             Text = Compat.IsEmpty(ContentBox.Text) ? null : ContentBox.Text,
             CaseSensitive = CaseCheck.IsChecked == true ? 1 : 0,
@@ -134,6 +248,7 @@ public partial class SearchWindow : Window
             TextMatch = textMatch,
         };
         _handle = NativeMethods.FmSearchStart(ref p, _callback, IntPtr.Zero);
+        if (files != IntPtr.Zero) Marshal.FreeHGlobal(files);   // C++ 이 바로 복사해 둔다
         if (_handle == IntPtr.Zero) { StatusText.Text = Loc.T("검색을 시작하지 못했습니다."); return; }
 
         _startTick = Compat.TickCount64;
@@ -278,12 +393,28 @@ public partial class SearchWindow : Window
                 _countSignal.Release();
             }
         }
+        if (_everythingListing)
+        {
+            // Everything 결과(이름만 찾기)를 목록에 다 넣으면 끝
+            if (!_pending.IsEmpty) { StatusText.Text = Loc.F($"찾음 {_results.Count:N0}"); return; }
+            bool capped = _results.Count >= MaxResults;
+            while (_pending.TryDequeue(out _)) { }
+            _doneSummaryBase = Loc.F($"찾음 {_results.Count:N0}{{COUNT}}") + Loc.F($"   │   Everything 으로 찾음 {_everythingSeconds:0.00}초")
+                               + (capped ? Loc.T("   │   결과가 너무 많아 중단") : "");
+            RefreshDoneStatus();
+            _everythingListing = false;
+            _timer.Stop();
+            return;
+        }
         if (_handle == IntPtr.Zero) return;
 
         char* cur = stackalloc char[512];
         NativeMethods.FmSearchGetStatus(_handle, out var st, cur, 512);
         double secs = (Compat.TickCount64 - _startTick) / 1000.0;
-        string rest = Loc.F($"   │   폴더 {st.DirsScanned:N0}, 파일 {st.FilesScanned:N0}   │   오류/시간초과 {st.Errors:N0}   │   {secs:0.0}초");
+        string rest = _everythingCandidates >= 0
+            // Everything 이 준 후보 파일을 읽는 중
+            ? Loc.F($"   │   Everything 후보 {_everythingCandidates:N0} ({_everythingSeconds:0.00}초), 읽음 {st.FilesScanned:N0}   │   오류/시간초과 {st.Errors:N0}   │   {secs:0.0}초")
+            : Loc.F($"   │   폴더 {st.DirsScanned:N0}, 파일 {st.FilesScanned:N0}   │   오류/시간초과 {st.Errors:N0}   │   {secs:0.0}초");
         string summary = Loc.F($"찾음 {_results.Count:N0}{CountSummary()}") + rest;
 
         if (_results.Count >= MaxResults)
