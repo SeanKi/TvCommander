@@ -297,6 +297,7 @@ public partial class MainWindow : Window
             case (Key.F2, None): CmdRename(); break;
             case (Key.F7, None): CmdMakeDir(); break;
             case (Key.F7, Alt): CmdSearch(); break;
+            case (Key.F7, Ctrl | Alt): CmdEverything(); break;
             case (Key.F5, Alt): CmdPack(); break;
             case (Key.F9, Alt): CmdUnpack(); break;
             case (Key.F10, Shift):
@@ -828,6 +829,57 @@ public partial class MainWindow : Window
             _searchWindow.SetRoot(root);
             _searchWindow.Activate();
         }
+    }
+
+    /// <summary>Ctrl+Alt+F7: Everything(voidtools) 검색 창을 현재 폴더로 연다</summary>
+    public void CmdEverything()
+    {
+        var exe = FindEverythingExe();
+        if (exe == null)
+        {
+            ShowError(Loc.T("Everything 을 찾을 수 없습니다. https://www.voidtools.com/ 에서 설치하세요."));
+            return;
+        }
+        // 현재 폴더 안에서 찾도록 (원격·휴대폰은 Everything 이 모르므로 빈 검색).
+        // 끝의 \ 는 뗀다: Everything 은 "C:" 를 "C:\" 로 받는다 ("C:\\" 는 그대로 \\ 가 됨)
+        var dir = P.CurrentPath;
+        var args = dir != null && !PathUtil.IsVirtual(dir) ? "-path \"" + dir.TrimEnd('\\') + "\"" : "";
+        StartProcess(exe, args, Path.GetDirectoryName(exe));
+    }
+
+    /// <summary>Everything.exe 위치: 프로그램 폴더(휴대용) → 실행 중인 Everything → 설치 정보(레지스트리) → Program Files</summary>
+    private static string? FindEverythingExe()
+    {
+        string[] names = ["Everything.exe", "Everything64.exe"];
+        var candidates = new List<string>();
+        foreach (var n in names) candidates.Add(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, n));
+        foreach (var p in Process.GetProcessesByName("Everything").Concat(Process.GetProcessesByName("Everything64")))
+        {
+            try { if (p.MainModule?.FileName is { } f) candidates.Add(f); }   // 관리자 권한·서비스 프로세스는 읽지 못한다
+            catch { }
+            finally { p.Dispose(); }
+        }
+        foreach (var hive in new[] { Microsoft.Win32.RegistryHive.LocalMachine, Microsoft.Win32.RegistryHive.CurrentUser })
+        foreach (var view in new[] { Microsoft.Win32.RegistryView.Registry64, Microsoft.Win32.RegistryView.Registry32 })
+        {
+            try
+            {
+                using var root = Microsoft.Win32.RegistryKey.OpenBaseKey(hive, view);
+                using (var k = root.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Everything.exe"))
+                    if (k?.GetValue("") is string app) candidates.Add(app.Trim('"'));
+                using (var k = root.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Everything"))
+                {
+                    if (k?.GetValue("DisplayIcon") is string icon) candidates.Add(icon.Split(',')[0].Trim('"'));
+                    if (k?.GetValue("InstallLocation") is string loc) foreach (var n in names) candidates.Add(Path.Combine(loc.Trim('"'), n));
+                }
+            }
+            catch { }
+        }
+        foreach (var pf in new[] { Environment.GetEnvironmentVariable("ProgramW6432"), Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                                   Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs") })
+            if (!Compat.IsEmpty(pf))
+                foreach (var n in names) candidates.Add(Path.Combine(pf!, "Everything", n));
+        return candidates.FirstOrDefault(f => !Compat.IsEmpty(f) && File.Exists(f));
     }
 
     /// <summary>Ctrl+F: 원격 연결 관리 (FTP / WebDAV 등록·편집·삭제·연결)</summary>

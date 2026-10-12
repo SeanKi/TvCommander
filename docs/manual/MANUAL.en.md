@@ -244,15 +244,6 @@ Options:
 | File name | Several masks separated by `;` such as `*.txt;*.log`. Without wildcards, names containing the text are found |
 | Contains text | Text to find in file contents (UTF-8 / Korean ANSI / UTF-16 files) |
 | Include subfolders / Match case / **Regex** / Include hidden files | Options |
-| **Everything 1.x** / **All drives** | Shown only while [Everything](https://www.voidtools.com/) is running (below) |
-
-- **With Everything**: when Everything is running, the file list comes straight from its index (on by default).
-  - No folder walk, so even whole drives take about a second (e.g. all `*.dll` on all drives, 160,000 files, in 1 s).
-  - With **Contains text**, MP-Commander reads the files Everything returned (regex, Matches and Line work as usual).
-  - **All drives**: search everything Everything has indexed instead of the start folder.
-  - Places Everything has not indexed (network shares, FTP/WebDAV, phones) are walked folder by folder automatically.
-  - Hidden files follow Everything's index settings (so "Include hidden files" is disabled then). The Recycle Bin is left out.
-  - The status bar shows e.g. `found with Everything in 0.21 s` / `Everything candidates 126, read 126`.
 
 - Searches on several threads; on a slow network a read that takes more than 5 s is skipped and the search continues.
 - With "contains text", the results get **Matches** (how many times) and **Line** (how many lines) columns, with totals in the status bar.
@@ -260,6 +251,9 @@ Options:
 - **Enter / double-click** a result: opens its folder in the pane with the cursor on the file.
 - **F3** on a result: opens it in the viewer **already searching the "contains text"** (with the same case and regex settings). Press F3 to go to the next match right away.
 - **Esc:** stops a running search, otherwise closes the window.
+
+> **Ctrl+Alt+F7 — Everything**: if [Everything](https://www.voidtools.com/) (voidtools) is installed, opens an Everything search window **limited to the current folder**.
+> Handy for finding names across whole drives in an instant. Everything is looked for in the program folder (portable), the running Everything, the install information and Program Files.
 
 ---
 
@@ -467,6 +461,7 @@ Hidden files (Ctrl+H) and font size (Ctrl+= / Ctrl+-) are changed directly on th
 | | Alt+F5 / Alt+F9 | Compress / extract |
 | | Ctrl+Shift+U | Unblock |
 | | Alt+F7 | Find files |
+| | Ctrl+Alt+F7 | Everything search window (current folder) |
 | Navigation | Enter / Backspace | Open / parent folder |
 | | Ctrl+\\ | Root |
 | | Alt+← / Alt+→ | Back / forward |

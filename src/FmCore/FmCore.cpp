@@ -318,8 +318,7 @@ struct State {
 
     std::mutex queueMutex;
     std::condition_variable queueCv;
-    std::deque<std::wstring> dirs;   // fileMode 이면 검사할 파일 경로
-    bool fileMode = false;
+    std::deque<std::wstring> dirs;
     int busy = 0;
     std::atomic<bool> cancel{ false };
     std::atomic<bool> running{ true };
@@ -634,46 +633,6 @@ void ProcessDirectory(State& s, Worker& w, const std::wstring& dir)
     }
 }
 
-// 파일 목록 모드: 주어진 파일 하나를 검사한다 (폴더를 돌지 않는다)
-void ProcessFile(State& s, Worker& w, const std::wstring& path)
-{
-    WIN32_FILE_ATTRIBUTE_DATA a;
-    BOOL ok;
-    {
-        IoScope io(w);
-        ok = GetFileAttributesExW(ExtendedPath(path).c_str(), GetFileExInfoStandard, &a);
-    }
-    if (!ok) {
-        if (GetLastError() != ERROR_FILE_NOT_FOUND && GetLastError() != ERROR_PATH_NOT_FOUND)
-            s.errors++;
-        return;
-    }
-    if (a.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-        return;
-    {
-        std::lock_guard<std::mutex> lk(s.currentMutex);
-        s.currentDir = path;
-    }
-    s.filesScanned++;
-
-    size_t slash = path.find_last_of(L'\\');
-    const wchar_t* name = path.c_str() + (slash == std::wstring::npos ? 0 : slash + 1);
-    bool match = PathMatchSpecExW(name, s.mask.c_str(), PMSF_MULTIPLE) == S_OK;
-    if (match && !s.text.empty())
-        match = s.textMatch ? FileMatchesCallback(s, w, path) : FileContains(s, w, path);
-    if (!match)
-        return;
-
-    FmEntry e{};
-    e.attributes = a.dwFileAttributes;
-    e.size = (uint64_t(a.nFileSizeHigh) << 32) | a.nFileSizeLow;
-    e.lastWrite = (uint64_t(a.ftLastWriteTime.dwHighDateTime) << 32) | a.ftLastWriteTime.dwLowDateTime;
-    std::vector<FmEntry> meta{ e };
-    std::vector<std::wstring> paths{ path };
-    s.found++;
-    Emit(s, meta, paths);
-}
-
 void WorkerLoop(std::shared_ptr<State> s, Worker* w)
 {
     w->thread = static_cast<HANDLE>(FmOpenCurrentThread());
@@ -691,10 +650,7 @@ void WorkerLoop(std::shared_ptr<State> s, Worker* w)
             s->dirs.pop_back();
             s->busy++;
         }
-        if (s->fileMode)
-            ProcessFile(*s, *w, dir);
-        else
-            ProcessDirectory(*s, *w, dir);
+        ProcessDirectory(*s, *w, dir);
         {
             std::lock_guard<std::mutex> lk(s->queueMutex);
             s->busy--;
@@ -765,14 +721,7 @@ FM_API void* FM_CALL FmSearchStart(const FmSearchParams* p, FmEntryBatchCallback
     if (!s->textMatch)
         search::BuildPatterns(*s);
 
-    if (p->files) {
-        // 파일 목록 모드: 앞에서부터 꺼내도록 거꾸로 쌓는다 (WorkerLoop 는 뒤에서 꺼낸다)
-        s->fileMode = true;
-        for (const wchar_t* f = p->files; *f; f += wcslen(f) + 1)
-            s->dirs.push_front(f);
-    } else {
-        s->dirs.push_back(s->root);
-    }
+    s->dirs.push_back(s->root);
     for (int i = 0; i < s->threadCount; ++i)
         s->workers.push_back(std::make_unique<search::Worker>());
 

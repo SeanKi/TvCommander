@@ -16,11 +16,7 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <TextBlock Text="시작 폴더" VerticalAlignment="Center" Margin="0,0,8,0"/>
-            <DockPanel Grid.Column="1">
-                <CheckBox x:Name="AllDrivesCheck" DockPanel.Dock="Right" Content="모든 드라이브" VerticalAlignment="Center" Margin="10,0,0,0"
-                          Checked="AllDrives_Click" Unchecked="AllDrives_Click" ToolTip="Everything 으로 모든 드라이브에서 찾습니다 (Everything 이 색인한 곳 전체)"/>
-                <TextBox x:Name="RootBox" Padding="3,2" Margin="0,2"/>
-            </DockPanel>
+            <TextBox x:Name="RootBox" Grid.Column="1" Padding="3,2" Margin="0,2"/>
             <TextBlock Grid.Row="1" Text="파일 이름" VerticalAlignment="Center" Margin="0,0,8,0"/>
             <TextBox x:Name="MaskBox" Grid.Row="1" Grid.Column="1" Padding="3,2" Margin="0,2" Text="*"
                      ToolTip="예: *.txt;*.log   와일드카드(* ?)가 없으면 이름에 포함된 것을 찾습니다"/>
@@ -39,8 +35,6 @@
             <CheckBox x:Name="RegexCheck" Content="정규식 (내용)" Margin="0,0,16,0"
                       ToolTip="포함 텍스트를 정규 표현식(.NET)으로 찾습니다. ^ $ 는 줄 단위. 예: ERROR|WARN,  \d{4}-\d{2}-\d{2},  ^\s*#"/>
             <CheckBox x:Name="HiddenCheck" Content="숨김 파일 포함" Margin="0,0,16,0"/>
-            <CheckBox x:Name="EverythingCheck" Content="Everything 사용" IsChecked="True" Margin="0,0,16,0" Checked="Everything_Click" Unchecked="Everything_Click"
-                      ToolTip="Everything(voidtools)이 실행 중이면 파일 목록을 Everything 색인에서 바로 가져옵니다 (폴더를 돌지 않아 매우 빠름).&#x0a;포함 텍스트는 그 파일들을 MP-Commander 가 직접 읽어 찾습니다.&#x0a;Everything 이 색인하지 않은 곳(네트워크 공유 등)은 자동으로 폴더를 직접 돕니다.&#x0a;숨김 파일은 Everything 의 색인 설정을 따릅니다."/>
         </WrapPanel>
 
         <DockPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">

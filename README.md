@@ -116,13 +116,11 @@ tests/IoProbe/         타임아웃·열거 성능 점검용 콘솔
 
 - 시작 폴더, 파일 이름(와일드카드 없으면 부분 일치), **포함 텍스트**, 하위 폴더 / 대소문자 구분 / **정규식** / 숨김 파일.
 - 여러 스레드(C++)로 찾고, 느린 네트워크에서는 I/O 하나가 5초를 넘으면 끊고 넘어간다.
-- **Everything 연동**: [Everything](https://www.voidtools.com/)(1.4 이상)이 실행 중이면 파일 목록을 Everything 색인에서 가져온다 (SDK DLL 없이 WM_COPYDATA IPC, `IO/Everything.cs`).
-  포함 텍스트는 그 파일 목록을 C++ 검색기의 **파일 목록 모드**(`FmSearchParams.files`)로 넘겨 읽는다. '모든 드라이브' 선택 가능.
-  색인되지 않은 곳(네트워크 공유 등)은 자동으로 폴더를 돈다. 속성은 묻지 않는다 (Everything 기본 설정에서 색인되지 않아 결과마다 디스크를 읽음).
 - 포함 텍스트: 보통은 C++ 이 UTF-8 / ANSI(CP949) / UTF-16 바이트로 찾는다.
   **정규식**을 켜면 C++ 이 파일을 읽어 인코딩(BOM, UTF-8, CP949, UTF-16)을 판별해 줄 단위 텍스트로 넘기고 .NET 정규식으로 판정한다 (뷰어와 같은 규칙: `^ $` 줄 단위).
 - 결과의 **찾은 말 / 줄** 열: 파일마다 포함 텍스트가 나온 횟수와 그 줄 수 (백그라운드에서 셈, 파일당 5초 제한, 64 MB 초과는 `-`). 상태 줄에 합계.
 - 결과에서 Enter / 더블클릭: 패널에서 보기, F3: 뷰어 (포함 텍스트로 찾은 상태).
+- **Ctrl+Alt+F7**: [Everything](https://www.voidtools.com/) 검색 창을 현재 폴더로 연다 (`Everything.exe -path 폴더`). Everything.exe 는 프로그램 폴더 → 실행 중인 프로세스 → 레지스트리(App Paths, 제거 정보) → Program Files 순으로 찾는다.
 
 ## 클립보드 (Ctrl+C / Ctrl+X / Ctrl+V)
 

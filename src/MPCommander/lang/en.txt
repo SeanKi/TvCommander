@@ -1423,32 +1423,5 @@ MDNotePad+ 를 실행할 수 없습니다:
 MDNotePad+.exe 가 프로그램 폴더에 없습니다.
 => MDNotePad+.exe is not in the program folder.
 
-모든 드라이브
-=> All drives
-
-Everything 으로 모든 드라이브에서 찾습니다 (Everything 이 색인한 곳 전체)
-=> Search all drives with Everything (everything Everything has indexed)
-
-Everything 사용
-=> Use Everything
-
-Everything(voidtools)이 실행 중이면 파일 목록을 Everything 색인에서 바로 가져옵니다 (폴더를 돌지 않아 매우 빠름).\n포함 텍스트는 그 파일들을 MP-Commander 가 직접 읽어 찾습니다.\nEverything 이 색인하지 않은 곳(네트워크 공유 등)은 자동으로 폴더를 직접 돕니다.\n숨김 파일은 Everything 의 색인 설정을 따릅니다.
-=> When Everything (voidtools) is running, the file list comes straight from its index (no folder walk, very fast).\nContains text is then searched by MP-Commander reading those files.\nPlaces Everything has not indexed (network shares etc.) are walked folder by folder automatically.\nHidden files follow Everything's index settings.
-
-Everything 을 쓸 때는 Everything 의 색인 설정(숨김 파일 제외 등)을 따릅니다
-=> With Everything, Everything's index settings apply (such as excluding hidden files)
-
-Everything 에서 찾는 중...
-=> Searching in Everything...
-
-Everything 이 응답하지 않습니다.
-=> Everything is not responding.
-
-찾음 {0:N0}
-=> Found {0:N0}
-
-   │   Everything 으로 찾음 {0:0.00}초
-=>    │   found with Everything in {0:0.00} s
-
-   │   Everything 후보 {0:N0} ({1:0.00}초), 읽음 {2:N0}   │   오류/시간초과 {3:N0}   │   {4:0.0}초
-=>    │   Everything candidates {0:N0} ({1:0.00} s), read {2:N0}   │   errors/timeouts {3:N0}   │   {4:0.0} s
+Everything 을 찾을 수 없습니다. https://www.voidtools.com/ 에서 설치하세요.
+=> Everything was not found. Install it from https://www.voidtools.com/
