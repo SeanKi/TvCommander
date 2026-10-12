@@ -1425,3 +1425,24 @@ MDNotePad+.exe 가 프로그램 폴더에 없습니다.
 
 Everything 을 찾을 수 없습니다. https://www.voidtools.com/ 에서 설치하세요.
 => Everything was not found. Install it from https://www.voidtools.com/
+
+이 파일들은 PC 폴더에만 놓을 수 있습니다
+=> These files can only be dropped on a PC folder
+
+→ {0}   (복사)
+=> → {0}   (copy)
+
+끌어 놓은 파일을 읽을 수 없습니다: 
+=> Cannot read the dropped files: 
+
+클립보드의 파일을 읽을 수 없습니다: 
+=> Cannot read the files on the clipboard: 
+
+복사: {0:N0}개 파일 → {1}
+=> Copied {0:N0} files → {1}
+
+잘못된 이름
+=> Invalid name
+
+지원하지 않는 데이터 형식입니다
+=> Unsupported data format

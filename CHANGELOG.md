@@ -1,5 +1,12 @@
 # 변경 내역
 
+## 1.9.2 — 탐색기에서 휴대폰 파일 가져오기
+- **탐색기의 휴대폰(USB) 저장소 파일을 패널에 끌어 놓으면 복사된다** (예전: '복사 불가' 표시). 탐색기에서 복사(Ctrl+C) 한 뒤 패널에서 Ctrl+V 도 된다.
+  - 경로가 없는 '가상 파일'(FileGroupDescriptorW + FileContents)을 읽는다 — zip 안의 파일, Outlook 첨부도 같은 방식으로 된다.
+  - 폴더 구조 그대로, 진행 창·취소·같은 이름 묻기(덮어쓰기/건너뛰기)는 보통 복사와 같다. 수정 시각을 유지한다.
+  - 내용은 작업 스레드에서 읽어 화면이 멈추지 않는다.
+- IoProbe `--virtual-files`
+
 ## 1.9.1 — Ctrl+Alt+F7: Everything
 - **Ctrl+Alt+F7**: Everything(voidtools) 검색 창을 현재 폴더 안에서 찾도록 연다 (Everything.exe 를 프로그램 폴더·실행 중인 프로세스·설치 정보·Program Files 에서 찾음).
 - 1.9.0 의 파일 찾기 안 Everything 연동은 되돌림 (파일 찾기는 1.8.2 와 같다).

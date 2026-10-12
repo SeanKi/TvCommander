@@ -1204,7 +1204,16 @@ public partial class FilePanel : UserControl
         e.Handled = true;
 
         var target = DropTargetDir(e.OriginalSource);
-        if (target == null || GetDropPaths(e.Data) is not { } paths) return;
+        if (target == null) return;
+        if (GetDropPaths(e.Data) is not { } paths)
+        {
+            // 휴대폰·zip 안·첨부 등 경로 없는 파일 (탐색기의 가상 파일): PC 폴더에 복사만
+            if (!VirtualFileCopyOperation.HasVirtualFiles(e.Data)) return;
+            if (PathUtil.IsVirtual(target)) { StatusText.Text = Loc.T("이 파일들은 PC 폴더에만 놓을 수 있습니다"); return; }
+            e.Effects = DragDropEffects.Copy & e.AllowedEffects;
+            StatusText.Text = Loc.F($"→ {target}   (복사)");
+            return;
+        }
         if (FilterDropPaths(paths, target).Length == 0) return;
 
         bool move = (e.KeyStates & DragDropKeyStates.ShiftKey) != 0;
@@ -1221,7 +1230,19 @@ public partial class FilePanel : UserControl
         UpdateStatus();
 
         var target = DropTargetDir(e.OriginalSource);
-        if (target == null || GetDropPaths(e.Data) is not { } raw) return;
+        if (target == null) return;
+        if (GetDropPaths(e.Data) is not { } raw)
+        {
+            if (!VirtualFileCopyOperation.HasVirtualFiles(e.Data) || PathUtil.IsVirtual(target)) return;
+            // 파일 목록은 놓는 순간 읽어야 한다 (내용은 작업 스레드에서)
+            VirtualFileCopyOperation? op = null;
+            try { op = VirtualFileCopyOperation.TryCreate(VirtualFileCopyOperation.Native(e.Data), target); }
+            catch (Exception ex) { _host.ShowError(Loc.T("끌어 놓은 파일을 읽을 수 없습니다: ") + ex.Message); }
+            if (op == null) return;
+            e.Effects = DragDropEffects.Copy;
+            Dispatcher.BeginInvoke(() => _ = _host.RunVirtualCopyAsync(op, target));
+            return;
+        }
         var paths = FilterDropPaths(raw, target);
         if (paths.Length == 0) return;
 

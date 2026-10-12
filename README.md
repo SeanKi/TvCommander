@@ -170,6 +170,9 @@ tests/IoProbe/         타임아웃·열거 성능 점검용 콘솔
   대상은 직전에 활성이던 패널이고, Ctrl+Shift+숫자로 고정할 수 있다. 2창에서는 항상 반대편.
 - **드래그 앤 드롭**: 파일을 다른 패널(또는 그 안의 폴더 위)에 놓으면 복사/이동 메뉴가 뜬다.
   Ctrl 을 누른 채 놓으면 바로 복사, Shift 는 바로 이동. 탐색기와도 주고받을 수 있다.
+- **탐색기의 가상 파일**: 탐색기에서 휴대폰(MTP) 저장소·zip 안·Outlook 첨부를 끌어 놓거나 복사해 Ctrl+V 하면 PC 폴더로 복사한다
+  (`FileGroupDescriptorW` + `FileContents` 스트림, `IO/VirtualFileDrop.cs`). 목록은 놓는 순간 UI 스레드에서 읽고, 내용은 데이터 개체를 작업 스레드로 마샬링해 읽는다.
+  원본이 비동기 추출(IDataObjectAsyncCapability)을 지원하면 그것을 써서 탐색기가 기다리지 않는다.
 
 ## 명령줄 (하단)
 

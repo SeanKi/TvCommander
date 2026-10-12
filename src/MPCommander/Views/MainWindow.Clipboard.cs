@@ -73,6 +73,19 @@ public partial class MainWindow
 
         if (paths == null || paths.Length == 0)
         {
+            // 탐색기에서 복사한 휴대폰·zip 안의 파일 (경로 없는 가상 파일)
+            VirtualFileCopyOperation? op = null;
+            if (!PathUtil.IsVirtual(dir))
+            {
+                try
+                {
+                    System.Runtime.InteropServices.ComTypes.IDataObject? native = null;
+                    TryClipboard(() => native = VirtualFileCopyOperation.FromClipboard());
+                    op = VirtualFileCopyOperation.TryCreate(native, dir);
+                }
+                catch (Exception ex) { ShowError(Loc.T("클립보드의 파일을 읽을 수 없습니다: ") + ex.Message); return; }
+            }
+            if (op != null) { await RunVirtualCopyAsync(op, dir); return; }
             p.FlashStatus(Loc.T("붙여넣을 파일이 클립보드에 없습니다."));
             return;
         }
@@ -82,6 +95,15 @@ public partial class MainWindow
 
         await RunFileOperationAsync(cut ? OpKind.Move : OpKind.Copy, paths, PathUtil.WithSlash(dir), null, renameCopiesInSameFolder: true);
         if (cut) TryClipboard(Clipboard.Clear);   // 탐색기처럼 이동한 뒤에는 비운다
+    }
+
+    /// <summary>탐색기의 가상 파일(휴대폰·zip 안 등)을 PC 폴더로 복사 — 끌어 놓기·붙여넣기 공통</summary>
+    public async Task RunVirtualCopyAsync(VirtualFileCopyOperation op, string targetDir)
+    {
+        await RunWithProgressAsync(op);
+        await RefreshPanelsShowingAsync(targetDir);
+        var p = VisiblePanels.FirstOrDefault(x => PathUtil.Same(x.CurrentPath, targetDir)) ?? P;
+        p.FlashStatus(Loc.F($"복사: {op.Copied:N0}개 파일 → {targetDir}") + (op.IsCancelled ? Loc.T(" — 중간에 취소됨") : ""));
     }
 
     /// <summary>클립보드는 다른 프로그램이 잠깐 잡고 있을 수 있어 몇 번 다시 시도한다.</summary>

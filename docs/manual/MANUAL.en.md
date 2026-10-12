@@ -189,6 +189,7 @@ Selected items are shown in **red**. With no selection, commands apply to the it
 | Delete | **F8**, **Del** (Recycle Bin) / **Shift+F8**, **Shift+Del** (permanent) | Phones, FTP and WebDAV have no Recycle Bin — deletion is permanent |
 | Clipboard | **Ctrl+C / Ctrl+X / Ctrl+V** | Works both ways with File Explorer. Pasting into the same folder creates `name - Copy` |
 | Drag and drop | Drop on another pane (or a folder in it) | Copy/move menu. Hold Ctrl to copy at once, Shift to move at once |
+| From File Explorer | Drop Explorer items on a pane, or copy in Explorer (Ctrl+C) → Ctrl+V in a pane | Items without a disk path — **phone (USB) storage, files inside a zip, Outlook attachments** — are copied to the PC folder too |
 
 - If a file with the same name exists you are asked: **Overwrite / Overwrite all / Overwrite older only / Skip / Skip all / Cancel**.
 - The progress window shows per-file and total progress and speed. Short operations finish without it.
