@@ -1446,3 +1446,12 @@ Everything 을 찾을 수 없습니다. https://www.voidtools.com/ 에서 설치
 
 지원하지 않는 데이터 형식입니다
 => Unsupported data format
+
+휴대폰·FTP·WebDAV 폴더는 크기를 계산하지 않습니다.
+=> Phone, FTP and WebDAV folder sizes are not calculated.
+
+{0}: {1} ({2:N0} B)   │   파일 {3:N0}, 폴더 {4:N0}
+=> {0}: {1} ({2:N0} B)   │   files {3:N0}, folders {4:N0}
+
+   │   읽지 못함 {0:N0}
+=>    │   unreadable {0:N0}

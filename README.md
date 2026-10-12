@@ -86,7 +86,7 @@ tests/IoProbe/         타임아웃·열거 성능 점검용 콘솔
 | Ctrl+Enter / Ctrl+Shift+Enter / Ctrl+P | 명령줄에 파일 이름 / 전체 경로 / 현재 폴더 경로 넣기 |
 | Enter, Backspace, Ctrl+PgUp | 열기, 상위 폴더 |
 | Ctrl+\ (경로 옆 `\` 버튼) | 루트로 (드라이브, 공유, FTP·WebDAV 연결, 휴대폰 기기) |
-| Insert, Space, Shift+↑↓, Ctrl+클릭, Shift+클릭 | 선택(빨간색) |
+| Insert, Space, Shift+↑↓, Ctrl+클릭, Shift+클릭 | 선택(빨간색). Space 로 폴더를 선택하면 하위 포함 크기를 백그라운드에서 계산 (C++ 검색기 재사용, `IO/DirSizeCalculator.cs`) |
 | Num+ / Num- / Num* / Ctrl+A | 마스크로 선택 / 해제 / 반전 / 전체 |
 | 글자 입력 | 빠른 검색 (1.5초 동안 이어서 입력) |
 

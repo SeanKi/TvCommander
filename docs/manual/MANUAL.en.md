@@ -176,6 +176,10 @@ Selected items are shown in **red**. With no selection, commands apply to the it
 
 > **Ctrl+click** works like Double Commander: when nothing is selected yet, Ctrl+clicking another item also selects the item under the cursor.
 
+> **Folder size (Space)**: selecting a folder with **Space** calculates the total size of all files in it, subfolders included, in the background and shows it in the Size column
+> (a growing running total with `…` while it counts). You can keep working meanwhile; going to another folder stops it.
+> When done, the status bar shows the size and file/folder counts, and the selected and total sums include it. Phone, FTP and WebDAV folders are not calculated.
+
 ---
 
 ## 5. File operations — copy, move, delete, rename
@@ -475,7 +479,7 @@ Hidden files (Ctrl+H) and font size (Ctrl+= / Ctrl+-) are changed directly on th
 | | Ctrl+← / Ctrl+→ | Open the folder under the cursor in the side pane |
 | | Ctrl+U | Swap active and target paths |
 | | Ctrl+F2 / F3 / F4 / F6 / F8 | 2 / 3 / 4 / 6 / 8 panes |
-| Selection | Insert, Space, Ctrl+click | One at a time |
+| Selection | Insert, Space, Ctrl+click | One at a time (Space on a folder also calculates its size) |
 | | Shift+↑↓, Shift+click | Range |
 | | Num+ / Num- / Num* / Ctrl+A | Select by mask / deselect / invert / all |
 | Other | F1 | User manual |

@@ -297,8 +297,15 @@ public partial class FilePanel : UserControl
         foreach (var it in items)
         {
             if (it.IsParent) continue;
-            if (it.IsDirectory) _dirCount++;
-            else { _fileCount++; _totalSize += it.Size; }
+            if (it.IsDirectory)
+            {
+                _dirCount++;
+                // 새로고침 전에 계산했거나 계산 중인 폴더 크기를 다시 붙인다
+                if (_sizeCalcs.TryGetValue(it.FullPath, out var calc)) it.SetDirSize(calc.Bytes, true);
+                else if (_dirSizes.TryGetValue(it.FullPath, out var size)) it.SetDirSize(size, false);
+            }
+            else _fileCount++;
+            _totalSize += it.EffectiveSize;
             if (marks != null && marks.Contains(it.Name)) SetMark(it, true);
         }
 
@@ -325,6 +332,7 @@ public partial class FilePanel : UserControl
     private void OnFolderChanged(string? oldPath, string newPath)
     {
         _quick = "";   // 이전 폴더에서 치던 빠른 검색은 이어지지 않는다
+        CancelDirSizes();
         var history = _host.History;
         if (oldPath != null)
         {
@@ -538,7 +546,80 @@ public partial class FilePanel : UserControl
         it.IsMarked = value;
         int d = value ? 1 : -1;
         if (it.IsDirectory) _markedDirs += d;
-        else { _markedFiles += d; _markedSize += d * it.Size; }
+        else _markedFiles += d;
+        _markedSize += d * it.EffectiveSize;
+    }
+
+    // ───────────────────────── 폴더 크기 (Space) ─────────────────────────
+
+    private readonly Dictionary<string, long> _dirSizes = new(StringComparer.OrdinalIgnoreCase);   // 이 폴더에서 계산한 것 (새로고침해도 유지)
+    private readonly Dictionary<string, DirSizeCalculator> _sizeCalcs = new(StringComparer.OrdinalIgnoreCase);
+    private DispatcherTimer? _sizeTimer;
+
+    private FileItem? ItemByPath(string path) => _items.FirstOrDefault(i => !i.IsParent && PathUtil.Same(i.FullPath, path));
+
+    /// <summary>폴더 크기 계산 시작. 계산은 C++ 스레드들이 하고, UI 는 0.2초마다 중간 합계를 읽는다</summary>
+    private async void StartDirSize(FileItem item)
+    {
+        var path = item.FullPath;
+        if (_sizeCalcs.ContainsKey(path)) return;
+        if (PathUtil.IsVirtual(path))
+        {
+            FlashStatus(Loc.T("휴대폰·FTP·WebDAV 폴더는 크기를 계산하지 않습니다."));
+            return;
+        }
+        var folder = CurrentPath;
+        var (ok, host) = await NetworkHealth.CheckPathAsync(path);   // 꺼진 서버에서 멈추지 않도록
+        if (!ok) { FlashStatus(new HostUnreachableException(host!).Message); return; }
+        if (!PathUtil.Same(folder, CurrentPath) || _sizeCalcs.ContainsKey(path)) return;   // 그사이 다른 폴더로 갔음
+
+        var calc = DirSizeCalculator.Start(path);
+        if (calc == null) return;
+        _sizeCalcs[path] = calc;
+        ItemByPath(path)?.SetDirSize(0, true);
+        _sizeTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(200), DispatcherPriority.Background, (_, _) => PollDirSizes(), Dispatcher);
+        _sizeTimer.Start();
+    }
+
+    private void PollDirSizes()
+    {
+        foreach (var calc in _sizeCalcs.Values.ToList())
+        {
+            bool running = calc.Poll();
+            ItemByPath(calc.Path)?.SetDirSize(calc.Bytes, running);
+            if (running) continue;
+
+            _sizeCalcs.Remove(calc.Path);
+            _dirSizes[calc.Path] = calc.Bytes;
+            calc.Dispose();
+            var msg = Loc.F($"{PathUtil.LastSegment(calc.Path)}: {PathUtil.FormatSize(calc.Bytes)} ({calc.Bytes:N0} B)   │   파일 {calc.Files:N0}, 폴더 {calc.Folders:N0}");
+            if (calc.Errors > 0) msg += Loc.F($"   │   읽지 못함 {calc.Errors:N0}");
+            FlashStatus(msg);
+        }
+        RecalcSizes();
+        if (!_flashTimer.IsEnabled) UpdateStatus();
+        if (_sizeCalcs.Count == 0) _sizeTimer?.Stop();
+    }
+
+    /// <summary>폴더 크기가 바뀌면 전체·표시 합계를 다시 센다</summary>
+    private void RecalcSizes()
+    {
+        _totalSize = _markedSize = 0;
+        foreach (var it in _items)
+        {
+            if (it.IsParent) continue;
+            _totalSize += it.EffectiveSize;
+            if (it.IsMarked) _markedSize += it.EffectiveSize;
+        }
+    }
+
+    /// <summary>다른 폴더로 가면 계산을 멈추고 결과도 버린다</summary>
+    private void CancelDirSizes()
+    {
+        foreach (var c in _sizeCalcs.Values) { c.Cancel(); c.Dispose(); }
+        _sizeCalcs.Clear();
+        _dirSizes.Clear();
+        _sizeTimer?.Stop();
     }
 
     public void ClearMarks()
@@ -1035,7 +1116,12 @@ public partial class FilePanel : UserControl
                 MoveCursor(+1);
                 break;
             case Key.Space when mods == ModifierKeys.None && _quick.Length == 0:
-                if (CursorItem is { } sp) SetMark(sp, !sp.IsMarked);
+                if (CursorItem is { } sp)
+                {
+                    SetMark(sp, !sp.IsMarked);
+                    // 폴더를 표시하면 하위 폴더까지의 크기를 백그라운드에서 계산 (Total Commander 처럼)
+                    if (sp is { IsDirectory: true, IsParent: false, IsMarked: true }) StartDirSize(sp);
+                }
                 UpdateStatus();
                 break;
             case Key.Up or Key.Down when mods == ModifierKeys.Shift:

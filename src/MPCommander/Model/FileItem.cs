@@ -69,7 +69,29 @@ public sealed class FileItem : INotifyPropertyChanged
 
     public DateTime LastWrite => LastWriteRaw <= 0 ? DateTime.MinValue : DateTime.FromFileTimeUtc(LastWriteRaw).ToLocalTime();
 
-    public string SizeText => _sizeText ??= IsParent ? "" : IsDirectory ? "<DIR>" : Size.ToString("N0");
+    public string SizeText => _sizeText ??= IsParent ? "" : !IsDirectory ? Size.ToString("N0")
+        // 폴더 크기는 칸에 들어가도록 단위로 (정확한 바이트 수는 계산이 끝나면 상태 줄에)
+        : _dirSize < 0 ? "<DIR>" : _dirSizeBusy ? PathUtil.FormatSize(_dirSize) + " …" : PathUtil.FormatSize(_dirSize);
+
+    private static readonly PropertyChangedEventArgs SizeTextArgs = new(nameof(SizeText));
+    private long _dirSize = -1;
+    private bool _dirSizeBusy;
+
+    /// <summary>계산한 폴더 크기 (하위 포함, Space 로 계산). 모르면 -1</summary>
+    public long DirSize => _dirSize;
+
+    /// <summary>폴더 크기 표시 (busy = 계산 중이라 중간 합계)</summary>
+    public void SetDirSize(long size, bool busy)
+    {
+        if (_dirSize == size && _dirSizeBusy == busy) return;
+        _dirSize = size;
+        _dirSizeBusy = busy;
+        _sizeText = null;
+        PropertyChanged?.Invoke(this, SizeTextArgs);
+    }
+
+    /// <summary>합계에 쓸 크기: 파일은 크기, 폴더는 계산했으면 그 크기</summary>
+    public long EffectiveSize => IsParent ? 0 : IsDirectory ? Math.Max(0, _dirSize) : Size;
     public string DateText => _dateText ??= IsParent || LastWriteRaw <= 0 ? "" : LastWrite.ToString("yyyy-MM-dd HH:mm");
 
     public string AttrText
