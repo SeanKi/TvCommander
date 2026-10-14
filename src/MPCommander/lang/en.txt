@@ -1455,3 +1455,36 @@ Everything 을 찾을 수 없습니다. https://www.voidtools.com/ 에서 설치
 
    │   읽지 못함 {0:N0}
 =>    │   unreadable {0:N0}
+
+파일 이름 찾기\nEnter: 파일 찾기 창 (현재 패널 폴더 아래)\nCtrl+Enter: Everything 으로 모든 드라이브에서 바로 찾아 목록으로 — ↓ 로 고르고 Enter 로 현재 패널에서 보기\n(Everything 문법: 공백 = 그리고, | = 또는, * ?, ext:pdf, folder: 등)
+=> Find file names\nEnter: Find files window (under the current pane folder)\nCtrl+Enter: search all drives with Everything and list the results right here — pick with ↓ and press Enter to show it in the current pane\n(Everything syntax: space = and, | = or, * ?, ext:pdf, folder: etc.)
+
+찾기 — Enter: 이 폴더, Ctrl+Enter: 전체
+=> Search — Enter: this folder, Ctrl+Enter: everywhere
+
+전체
+=> All
+
+Everything 으로 모든 드라이브에서 찾기 (Ctrl+Enter)
+=> Search all drives with Everything (Ctrl+Enter)
+
+찾을 이름을 입력하세요
+=> Type a name to search for
+
+Everything 이 실행 중이 아닙니다. Everything(voidtools)을 실행한 뒤 다시 Ctrl+Enter 를 누르세요.
+=> Everything is not running. Start Everything (voidtools) and press Ctrl+Enter again.
+
+Everything 에서 찾는 중...
+=> Searching in Everything...
+
+Everything 이 응답하지 않습니다.
+=> Everything is not responding.
+
+{0:N0}개 이상 (앞의 {1:N0}개)
+=> {0:N0}+ (first {1:N0})
+
+{0:N0}개
+=> {0:N0}
+
+Everything {0} · {1} · {2:0.00}초   │   ↓ 고르기 · Enter: 현재 패널에서 보기 · Esc: 닫기
+=> Everything {0} · {1} · {2:0.00} s   │   ↓ pick · Enter: show in current pane · Esc: close

@@ -814,7 +814,8 @@ public partial class MainWindow : Window
             StartProcess("cmd.exe", "", dir);
     }
 
-    public void CmdSearch()
+    /// <summary>Alt+F7 파일 찾기. name 이 있으면(툴바 검색 상자의 Enter) 그 이름으로 바로 찾기 시작</summary>
+    public void CmdSearch(string? name = null)
     {
         var root = P.CurrentPath ?? "C:\\";
         if (PathUtil.IsVirtual(root)) root = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);   // 찾기는 PC 경로만
@@ -829,6 +830,7 @@ public partial class MainWindow : Window
             _searchWindow.SetRoot(root);
             _searchWindow.Activate();
         }
+        if (name != null) _searchWindow.StartWithName(name);
     }
 
     /// <summary>Ctrl+Alt+F7: Everything(voidtools) 검색 창을 현재 폴더로 연다</summary>

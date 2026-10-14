@@ -90,6 +90,15 @@ public partial class SearchWindow : Window
         if (_handle == IntPtr.Zero) RootBox.Text = root;
     }
 
+    /// <summary>툴바 검색 상자에서: 파일 이름만 채우고(포함 텍스트 비움) 바로 찾는다. 찾는 중이면 그대로 둔다</summary>
+    public void StartWithName(string name)
+    {
+        if (_handle != IntPtr.Zero) return;
+        MaskBox.Text = name;
+        ContentBox.Text = "";
+        Start_Click(this, new RoutedEventArgs());
+    }
+
     private async void Start_Click(object sender, RoutedEventArgs e)
     {
         if (_handle != IntPtr.Zero) { Stop(); return; }

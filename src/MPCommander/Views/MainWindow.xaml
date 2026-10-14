@@ -24,7 +24,59 @@
     </Window.Resources>
 
     <DockPanel>
-        <ToolBarTray DockPanel.Dock="Top" IsLocked="True">
+        <DockPanel DockPanel.Dock="Top" Background="{Binding Background, ElementName=MainToolBarTray}">
+        <!-- 검색 상자: Enter = 파일 찾기(현재 폴더), Ctrl+Enter = Everything 으로 전체에서 찾아 아래로 펼침 -->
+        <Grid DockPanel.Dock="Right" Width="280" Margin="6,3,8,3" VerticalAlignment="Center">
+            <TextBox x:Name="SearchBox" Padding="22,3,46,3" VerticalContentAlignment="Center"
+                     PreviewKeyDown="SearchBox_PreviewKeyDown" TextChanged="SearchBox_TextChanged"
+                     ToolTip="파일 이름 찾기&#x0a;Enter: 파일 찾기 창 (현재 패널 폴더 아래)&#x0a;Ctrl+Enter: Everything 으로 모든 드라이브에서 바로 찾아 목록으로 — ↓ 로 고르고 Enter 로 현재 패널에서 보기&#x0a;(Everything 문법: 공백 = 그리고, | = 또는, * ?, ext:pdf, folder: 등)"/>
+            <TextBlock Style="{StaticResource Glyph}" Text="&#xE721;" FontSize="12" Foreground="Gray" IsHitTestVisible="False"
+                       HorizontalAlignment="Left" Margin="7,0,0,0"/>
+            <TextBlock x:Name="SearchHint" Text="찾기 — Enter: 이 폴더, Ctrl+Enter: 전체" Foreground="Gray" IsHitTestVisible="False"
+                       VerticalAlignment="Center" Margin="24,0,46,0" TextTrimming="CharacterEllipsis"/>
+            <Button x:Name="QuickAllButton" Content="전체" HorizontalAlignment="Right" Margin="0,2,2,2" Padding="6,0" Focusable="False"
+                    Click="QuickAll_Click" ToolTip="Everything 으로 모든 드라이브에서 찾기 (Ctrl+Enter)"/>
+            <Popup x:Name="SearchPopup" PlacementTarget="{Binding ElementName=SearchBox}" Placement="Bottom" StaysOpen="False"
+                   Width="800" Opened="SearchPopup_Opened">
+                <Border BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}" BorderThickness="1"
+                        Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}">
+                    <DockPanel>
+                        <TextBlock x:Name="SearchPopupStatus" DockPanel.Dock="Bottom" Margin="6,3" Foreground="Gray" TextTrimming="CharacterEllipsis"/>
+                        <ListView x:Name="SearchResults" MaxHeight="420" BorderThickness="0" FontSize="{DynamicResource ListFontSize}"
+                                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                                  PreviewKeyDown="SearchResults_PreviewKeyDown" MouseDoubleClick="SearchResults_MouseDoubleClick">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="이름" Width="230">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" FontSize="12" Foreground="{Binding GlyphBrush}"/>
+                                                    <TextBlock Text="{Binding Name}"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="폴더" Width="300" DisplayMemberBinding="{Binding Folder}"/>
+                                    <GridViewColumn Header="크기" Width="90">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate><TextBlock Text="{Binding SizeText}" TextAlignment="Right"/></DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="날짜" Width="130" DisplayMemberBinding="{Binding DateText}"/>
+                                </GridView>
+                            </ListView.View>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+                    </DockPanel>
+                </Border>
+            </Popup>
+        </Grid>
+        <ToolBarTray x:Name="MainToolBarTray" IsLocked="True">
             <ToolBar>
                 <ToolBar.Resources>
                     <Style TargetType="Button" BasedOn="{StaticResource {x:Static ToolBar.ButtonStyleKey}}">
@@ -95,6 +147,7 @@
                 <Button Click="Settings_Click" ToolTip="설정 — 백업 복사, 압축, 차단 해제, 편집기·터미널"><TextBlock Style="{StaticResource Icon}" Text="&#xE713;"/></Button>
             </ToolBar>
         </ToolBarTray>
+        </DockPanel>
 
         <UniformGrid DockPanel.Dock="Bottom" Rows="1" Margin="2,0,2,2">
             <Button Style="{StaticResource FnButton}" Tag="F3" Click="FnKey_Click" Content="F3 보기"/>
