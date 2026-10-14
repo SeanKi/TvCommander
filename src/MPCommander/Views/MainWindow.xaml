@@ -42,7 +42,8 @@
                         <TextBlock x:Name="SearchPopupStatus" DockPanel.Dock="Bottom" Margin="6,3" Foreground="Gray" TextTrimming="CharacterEllipsis"/>
                         <ListView x:Name="SearchResults" MaxHeight="420" BorderThickness="0" FontSize="{DynamicResource ListFontSize}"
                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
-                                  PreviewKeyDown="SearchResults_PreviewKeyDown" MouseDoubleClick="SearchResults_MouseDoubleClick">
+                                  PreviewKeyDown="SearchResults_PreviewKeyDown" MouseDoubleClick="SearchResults_MouseDoubleClick"
+                                  GridViewColumnHeader.Click="SearchResults_HeaderClick">
                             <ListView.View>
                                 <GridView>
                                     <GridViewColumn Header="이름" Width="230">

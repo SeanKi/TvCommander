@@ -266,6 +266,7 @@ Type a file or folder name in the search box at the right end of the toolbar. Wh
   (Pressing Enter right after typing searches first, then goes there.)
 - **↑ ↓ / PgUp PgDn** — pick from the list while the cursor stays in the box. Double-click works too. **Esc** closes the list (press again to clear the box and go back to the pane).
 - Order: exact name → names starting with the text → folders → shorter paths (up to 500).
+  **Click a column header** (Name, Folder, Size, Date) to sort ascending, click again for descending (▲ ▼). After sorting, Enter goes to the top item.
 - Everything's syntax works as is: space = and, `|` = or, `*` `?`, `ext:pdf`, `folder:`, `size:>100mb` etc. The Recycle Bin is left out.
 - If Everything is not running there is no list, and **Enter opens Find files** (current pane folder, searching for that name).
 
