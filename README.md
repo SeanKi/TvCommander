@@ -114,9 +114,9 @@ tests/IoProbe/         타임아웃·열거 성능 점검용 콘솔
 
 ## 툴바 검색 상자
 
-- 툴바 오른쪽 끝. **Enter**: 파일 찾기 창을 현재 패널 폴더로 열고 그 이름으로 바로 찾기.
-- **Ctrl+Enter** (또는 `전체` 버튼): Everything 으로 모든 드라이브에서 찾아 상자 아래 펼침 목록(Popup)에 — ↓ 로 고르고 Enter 면 현재 패널이 그 위치로 (파일은 폴더 + 커서, 폴더는 안으로).
-  Everything 과는 SDK DLL 없이 WM_COPYDATA IPC 로 통신 (`IO/Everything.cs`). 속성은 묻지 않는다 (Everything 기본 설정에서 색인되지 않아 결과마다 디스크를 읽음).
+- 툴바 오른쪽 끝. 입력이 0.3초 멈추면 Everything 으로 모든 드라이브에서 찾아 상자 아래 펼침 목록(Popup)에 — **Enter** 면 맨 위(↑↓ 로 고른) 항목을 현재 패널에서 보여 준다 (파일은 폴더 + 커서, 폴더는 안으로).
+  순서: 이름 같음 → 그 말로 시작 → 폴더 → 짧은 경로. Everything 이 없으면 Enter 는 파일 찾기 창(현재 패널 폴더).
+- Everything 과는 SDK DLL 없이 WM_COPYDATA IPC 로 통신 (`IO/Everything.cs`). 속성은 묻지 않는다 (Everything 기본 설정에서 색인되지 않아 결과마다 디스크를 읽음).
 
 ## 파일 찾기 (Alt+F7)
 

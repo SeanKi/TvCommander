@@ -100,7 +100,7 @@ Nothing is written to the program folder, so updating means replacing the progra
 | Where | What |
 |---|---|
 | Top | **Toolbar** (hover over an icon for its description and shortcut) |
-| Top right | **Search box** — Enter: Find files, Ctrl+Enter (or `All`): search everywhere with Everything ([chapter 7](#7-find-files-altf7)) |
+| Top right | **Search box** — lists Everything results from all drives as you type; Enter shows the item in the current pane ([chapter 7](#7-find-files-altf7)) |
 | Pane header | Drive list · path box · `..` (parent) · ☆ (favorite) · 🕘 (history) · `\` (root) |
 | Pane list | Name · Ext · Size · Date · Attr. Click a header to sort |
 | Below each pane | Selected size/count · **blocked n** (files downloaded from the internet) · free space |
@@ -260,14 +260,14 @@ Options:
 
 ### Toolbar search box
 
-Type a name in the search box at the right end of the toolbar and press:
+Type a file or folder name in the search box at the right end of the toolbar. When you pause for 0.3 s, [Everything](https://www.voidtools.com/) (voidtools) searches **all drives** and lists the results under the box.
 
-- **Enter** — the Find files window opens on the **current pane folder** and searches for that name right away (names containing it, when there are no wildcards).
-- **Ctrl+Enter** (or the **All** button in the box) — searches **all drives** with [Everything](https://www.voidtools.com/) (voidtools) and lists the results under the box (folders first).
-  - Press **↓** to move into the list, pick one and press **Enter** (or double-click): the **current pane** goes there — for a file it opens its folder with the cursor on it, for a folder it opens the folder.
-  - While the list is open, keep typing and it searches again after 0.3 s. **Esc** closes it.
-  - Everything's syntax works as is: space = and, `|` = or, `*` `?`, `ext:pdf`, `folder:`, `size:>100mb` etc. The Recycle Bin is left out.
-  - The Everything program must be running (otherwise the list says so).
+- **Enter** — shows the top item in the **current pane**: a file opens its folder with the cursor on it, a folder is opened.
+  (Pressing Enter right after typing searches first, then goes there.)
+- **↑ ↓ / PgUp PgDn** — pick from the list while the cursor stays in the box. Double-click works too. **Esc** closes the list (press again to clear the box and go back to the pane).
+- Order: exact name → names starting with the text → folders → shorter paths (up to 500).
+- Everything's syntax works as is: space = and, `|` = or, `*` `?`, `ext:pdf`, `folder:`, `size:>100mb` etc. The Recycle Bin is left out.
+- If Everything is not running there is no list, and **Enter opens Find files** (current pane folder, searching for that name).
 
 > **Ctrl+Alt+F7 — Everything**: if [Everything](https://www.voidtools.com/) (voidtools) is installed, opens an Everything search window **limited to the current folder**.
 > Handy for finding names across whole drives in an instant. Everything is looked for in the program folder (portable), the running Everything, the install information and Program Files.

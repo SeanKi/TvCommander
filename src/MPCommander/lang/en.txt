@@ -1456,24 +1456,6 @@ Everything 을 찾을 수 없습니다. https://www.voidtools.com/ 에서 설치
    │   읽지 못함 {0:N0}
 =>    │   unreadable {0:N0}
 
-파일 이름 찾기\nEnter: 파일 찾기 창 (현재 패널 폴더 아래)\nCtrl+Enter: Everything 으로 모든 드라이브에서 바로 찾아 목록으로 — ↓ 로 고르고 Enter 로 현재 패널에서 보기\n(Everything 문법: 공백 = 그리고, | = 또는, * ?, ext:pdf, folder: 등)
-=> Find file names\nEnter: Find files window (under the current pane folder)\nCtrl+Enter: search all drives with Everything and list the results right here — pick with ↓ and press Enter to show it in the current pane\n(Everything syntax: space = and, | = or, * ?, ext:pdf, folder: etc.)
-
-찾기 — Enter: 이 폴더, Ctrl+Enter: 전체
-=> Search — Enter: this folder, Ctrl+Enter: everywhere
-
-전체
-=> All
-
-Everything 으로 모든 드라이브에서 찾기 (Ctrl+Enter)
-=> Search all drives with Everything (Ctrl+Enter)
-
-찾을 이름을 입력하세요
-=> Type a name to search for
-
-Everything 이 실행 중이 아닙니다. Everything(voidtools)을 실행한 뒤 다시 Ctrl+Enter 를 누르세요.
-=> Everything is not running. Start Everything (voidtools) and press Ctrl+Enter again.
-
 Everything 에서 찾는 중...
 => Searching in Everything...
 
@@ -1486,5 +1468,11 @@ Everything 이 응답하지 않습니다.
 {0:N0}개
 => {0:N0}
 
-Everything {0} · {1} · {2:0.00}초   │   ↓ 고르기 · Enter: 현재 패널에서 보기 · Esc: 닫기
-=> Everything {0} · {1} · {2:0.00} s   │   ↓ pick · Enter: show in current pane · Esc: close
+파일·폴더 이름 찾기 — 입력하는 대로 Everything 이 모든 드라이브에서 찾아 아래에 펼칩니다\nEnter: 맨 위(또는 ↑↓ 로 고른) 항목을 현재 패널에서 보기 — 파일은 그 폴더를 열고 커서를, 폴더는 그 안으로\n(Everything 문법: 공백 = 그리고, | = 또는, * ?, ext:pdf, folder: 등)\nEverything 이 실행 중이 아니면 Enter 는 파일 찾기 창(현재 패널 폴더)을 엽니다
+=> Find file and folder names — as you type, Everything searches all drives and lists the results below\nEnter: show the top item (or the one picked with ↑↓) in the current pane — a file opens its folder with the cursor on it, a folder is opened\n(Everything syntax: space = and, | = or, * ?, ext:pdf, folder: etc.)\nIf Everything is not running, Enter opens Find files (current pane folder)
+
+찾기 (Everything) — Enter: 현재 패널로
+=> Search (Everything) — Enter: go in current pane
+
+Everything {0} · {1} · {2:0.00}초   │   Enter: 현재 패널에서 보기 · ↑↓ 고르기 · Esc: 닫기
+=> Everything {0} · {1} · {2:0.00} s   │   Enter: show in current pane · ↑↓ pick · Esc: close

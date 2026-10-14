@@ -35,49 +35,73 @@ public sealed class QuickResult
 }
 
 /// <summary>
-/// 툴바 검색 상자: Enter = 파일 찾기 창(현재 패널 폴더 아래, 이름으로 바로 찾기),
-/// Ctrl+Enter = Everything 으로 모든 드라이브에서 찾아 아래로 펼침 → 고르면 현재 패널에서 보여 준다.
+/// 툴바 검색 상자: 입력하는 대로(0.3초 멈추면) Everything 으로 모든 드라이브에서 찾아 아래로 펼치고,
+/// Enter 면 맨 위(또는 ↑↓ 로 고른) 항목을 현재 패널에서 보여 준다.
+/// Everything 이 실행 중이 아니면 Enter 는 파일 찾기 창(현재 패널 폴더 아래, 그 이름으로)을 연다.
 /// </summary>
 public partial class MainWindow
 {
     private const int QuickMaxResults = 500;
     private DispatcherTimer? _quickTimer;
     private int _quickGeneration;
+    private string? _quickResultsFor;   // 지금 목록이 어떤 말로 찾은 것인지
+    private Task? _quickRunning;
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         SearchHint.Visibility = SearchBox.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
-        // 펼친 상태에서는 입력이 멈추면(0.3초) 다시 찾는다
-        if (!SearchPopup.IsOpen) return;
-        _quickTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(300), DispatcherPriority.Background, (_, _) => { _quickTimer!.Stop(); _ = QuickSearchAsync(); }, Dispatcher);
+        if (!SearchBox.IsKeyboardFocusWithin) return;   // 코드에서 바꾼 경우
+        if (SearchBox.Text.Trim().Length == 0)
+        {
+            _quickTimer?.Stop();
+            _quickGeneration++;
+            SearchPopup.IsOpen = false;
+            return;
+        }
+        // 입력이 멈추면(0.3초) 찾는다 — 글자마다 찾지 않는다
+        _quickTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(300), DispatcherPriority.Background, (_, _) => { _quickTimer!.Stop(); _quickRunning = QuickSearchAsync(); }, Dispatcher);
         _quickTimer.Stop();
         _quickTimer.Start();
     }
 
-    private void QuickAll_Click(object sender, RoutedEventArgs e)
+    private async void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        SearchBox.Focus();
-        _ = QuickSearchAsync();
-    }
-
-    private void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
-    {
-        var mods = Keyboard.Modifiers;
         switch (e.Key)
         {
-            case Key.Enter when mods == ModifierKeys.Control:
+            case Key.Enter when Keyboard.Modifiers == ModifierKeys.None:
+            {
                 e.Handled = true;
-                _ = QuickSearchAsync();
+                var text = SearchBox.Text.Trim();
+                if (text.Length == 0) return;
+                if (Everything.Version() == null)
+                {
+                    // Everything 이 없으면 파일 찾기 창으로
+                    SearchPopup.IsOpen = false;
+                    CmdSearch(text);
+                    return;
+                }
+                // 목록이 아직 이 말로 찾은 것이 아니면 지금 찾고 나서 이동
+                if (_quickTimer?.IsEnabled == true) { _quickTimer.Stop(); _quickRunning = QuickSearchAsync(); }
+                if (_quickRunning != null) await _quickRunning;
+                if (!string.Equals(_quickResultsFor, SearchBox.Text.Trim(), StringComparison.Ordinal)) await QuickSearchAsync();
+                OpenQuickResult();
                 break;
-            case Key.Enter when mods == ModifierKeys.None:
-                e.Handled = true;
-                if (SearchBox.Text.Trim().Length == 0) return;
-                SearchPopup.IsOpen = false;
-                CmdSearch(SearchBox.Text.Trim());
-                break;
+            }
             case Key.Down when SearchPopup.IsOpen && SearchResults.Items.Count > 0:
                 e.Handled = true;
-                FocusResult(0);
+                MoveQuickSelection(+1);
+                break;
+            case Key.Up when SearchPopup.IsOpen && SearchResults.Items.Count > 0:
+                e.Handled = true;
+                MoveQuickSelection(-1);
+                break;
+            case Key.PageDown when SearchPopup.IsOpen && SearchResults.Items.Count > 0:
+                e.Handled = true;
+                MoveQuickSelection(+10);
+                break;
+            case Key.PageUp when SearchPopup.IsOpen && SearchResults.Items.Count > 0:
+                e.Handled = true;
+                MoveQuickSelection(-10);
                 break;
             case Key.Escape:
                 e.Handled = true;
@@ -87,58 +111,62 @@ public partial class MainWindow
         }
     }
 
+    /// <summary>입력 칸에 커서를 둔 채 목록의 선택만 옮긴다</summary>
+    private void MoveQuickSelection(int delta)
+    {
+        int n = SearchResults.Items.Count;
+        int i = Compat.Clamp(SearchResults.SelectedIndex + delta, 0, n - 1);
+        SearchResults.SelectedIndex = i;
+        SearchResults.ScrollIntoView(SearchResults.Items[i]);
+    }
+
     /// <summary>Everything 으로 찾아 펼침 목록에 채운다 (응답은 Everything 이 다른 프로세스에서 하므로 UI 는 기다리기만)</summary>
     private async Task QuickSearchAsync()
     {
         var text = SearchBox.Text.Trim();
         int gen = ++_quickGeneration;
-        SearchPopup.IsOpen = true;
-        if (text.Length == 0)
-        {
-            SearchResults.ItemsSource = null;
-            SearchPopupStatus.Text = Loc.T("찾을 이름을 입력하세요");
-            return;
-        }
+        if (text.Length == 0) { SearchPopup.IsOpen = false; return; }
         var version = Everything.Version();
         if (version == null)
         {
-            SearchResults.ItemsSource = null;
-            SearchPopupStatus.Text = Loc.T("Everything 이 실행 중이 아닙니다. Everything(voidtools)을 실행한 뒤 다시 Ctrl+Enter 를 누르세요.");
+            // Everything 이 없으면 펼치지 않는다 (Enter = 파일 찾기 창)
+            SearchPopup.IsOpen = false;
             return;
         }
+        SearchPopup.IsOpen = true;
         SearchPopupStatus.Text = Loc.T("Everything 에서 찾는 중...");
         long t0 = Compat.TickCount64;
         var items = await Everything.QueryAsync(Everything.ForSearchBox(text), QuickMaxResults, 10000);
         if (gen != _quickGeneration) return;   // 그사이 다시 찾음
         if (items == null)
         {
+            SearchResults.ItemsSource = null;
             SearchPopupStatus.Text = Loc.T("Everything 이 응답하지 않습니다.");
             return;
         }
-        // 폴더 먼저, 그다음 이름이 찾는 말로 시작하는 것, 나머지는 경로순
+        _quickResultsFor = text;
+        // Enter 는 맨 위로 가므로 순서가 중요하다: 이름이 똑같은 것 → 이름이 그 말로 시작 → 폴더 → 짧은 경로
         var list = items.Select(i => new QuickResult(i))
-                        .OrderBy(r => r.IsFolder ? 0 : 1)
+                        .OrderBy(r => string.Equals(r.Name, text, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
                         .ThenBy(r => r.Name.StartsWith(text, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                        .ThenBy(r => r.IsFolder ? 0 : 1)
+                        .ThenBy(r => r.FullPath.Length)
                         .ToList();
         SearchResults.ItemsSource = list;
         double secs = (Compat.TickCount64 - t0) / 1000.0;
         var count = items.Count >= QuickMaxResults ? Loc.F($"{QuickMaxResults:N0}개 이상 (앞의 {QuickMaxResults:N0}개)") : Loc.F($"{items.Count:N0}개");
-        SearchPopupStatus.Text = Loc.F($"Everything {version} · {count} · {secs:0.00}초   │   ↓ 고르기 · Enter: 현재 패널에서 보기 · Esc: 닫기");
-        if (list.Count > 0) SearchResults.SelectedIndex = 0;
+        SearchPopupStatus.Text = Loc.F($"Everything {version} · {count} · {secs:0.00}초   │   Enter: 현재 패널에서 보기 · ↑↓ 고르기 · Esc: 닫기");
+        if (list.Count > 0)
+        {
+            SearchResults.SelectedIndex = 0;
+            SearchResults.ScrollIntoView(list[0]);
+        }
     }
 
     private void SearchPopup_Opened(object? sender, EventArgs e)
     {
         // 상자 오른쪽 끝에 맞춰 왼쪽으로 펼친다 (툴바 오른쪽 끝에 있으므로)
         SearchPopup.HorizontalOffset = SearchBox.ActualWidth - SearchPopup.Width;
-    }
-
-    private void FocusResult(int index)
-    {
-        SearchResults.SelectedIndex = index;
-        SearchResults.UpdateLayout();
-        if (SearchResults.ItemContainerGenerator.ContainerFromIndex(index) is ListViewItem item) item.Focus();
-        else SearchResults.Focus();
     }
 
     private void SearchResults_PreviewKeyDown(object sender, KeyEventArgs e)
