@@ -13,7 +13,7 @@ public partial class MainWindow
 {
     private enum MenuCmd
     {
-        View = 1, Edit, CopyToTarget, MoveToTarget, Rename, Delete, CopyFullPath, CopyName, Pack, Unpack, Properties, BackupCopy,
+        View = 1, Edit, CopyToTarget, MoveToTarget, Rename, Delete, CopyFullPath, CopyName, Pack, Unpack, Properties, BackupCopy, Restore,
         NewFolder = 20, Refresh, CopyDirPath, Terminal, Unblock, Paste,
     }
 
@@ -76,6 +76,9 @@ public partial class MainWindow
             new(MenuCmd.BackupCopy, Loc.F($"백업 후 복사{target}...\tCtrl+B"), !mtp),
             new(MenuCmd.Rename, Loc.T("이름 바꾸기\tShift+F6"), single),
         };
+        // backup 아래 날짜 폴더(기록이 있는)면 복원
+        if (single && items[0].IsDirectory && !mtp && BackupCopyPlan.IsBackupFolder(items[0].FullPath))
+            list.Insert(list.FindIndex(s => s.Id == MenuCmd.BackupCopy) + 1, new(MenuCmd.Restore, Loc.T("이 백업에서 복원...\tCtrl+Shift+B")));
         if (!shell) list.Add(new(MenuCmd.Delete, mtp ? Loc.T("삭제 (영구)\tF8") : Loc.T("삭제\tF8")));
         list.Add(MenuSpec.Separator);
         list.Add(new(MenuCmd.CopyFullPath, Loc.T("전체 경로 복사\tCtrl+Shift+C")));
@@ -147,6 +150,7 @@ public partial class MainWindow
             case MenuCmd.Pack: CmdPack(); break;
             case MenuCmd.Unpack: CmdUnpack(); break;
             case MenuCmd.BackupCopy: CmdBackupCopy(); break;
+            case MenuCmd.Restore: CmdRestore(); break;
             case MenuCmd.Properties:
                 if (P.CursorItem is { IsParent: false } it) ShowProperties(it.FullPath);
                 break;

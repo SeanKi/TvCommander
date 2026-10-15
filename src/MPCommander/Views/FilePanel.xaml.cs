@@ -622,6 +622,9 @@ public partial class FilePanel : UserControl
         _sizeTimer?.Stop();
     }
 
+    /// <summary>표시(빨간색)한 항목이 있는지</summary>
+    public bool HasMarks => _items.Any(i => i.IsMarked);
+
     public void ClearMarks()
     {
         foreach (var it in _items) SetMark(it, false);

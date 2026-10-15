@@ -334,6 +334,7 @@ public partial class MainWindow : Window
             case (Key.V, Ctrl): CmdPaste(); break;
             case (Key.U, Ctrl | Shift): CmdUnblock(); break;
             case (Key.B, Ctrl): CmdBackupCopy(); break;
+            case (Key.B, Ctrl | Shift): CmdRestore(); break;
             case (Key.Enter, Ctrl):
                 if (P.CursorItem is { IsParent: false } ce) AppendToCommandLine(ce.Name);
                 break;
@@ -395,6 +396,7 @@ public partial class MainWindow : Window
     private void Unblock_Click(object sender, RoutedEventArgs e) => CmdUnblock();
     private void Pack_Click(object sender, RoutedEventArgs e) => CmdPack();
     private void BackupCopy_Click(object sender, RoutedEventArgs e) => CmdBackupCopy();
+    private void Restore_Click(object sender, RoutedEventArgs e) => CmdRestore();
 
     private void Manual_Click(object sender, RoutedEventArgs e) => CmdManual();
     private void MdSync_Click(object sender, RoutedEventArgs e) => CmdMdSync();

@@ -22,6 +22,56 @@ public sealed class BackupCopyPlan
     public IEnumerable<BackupCopyItem> Overwrites => Items.Where(i => i.DestinationExists);
     public long TotalBytes => Items.Sum(i => i.Size);
 
+    /// <summary>복원: 그때 새로 생겼던 파일(대상 기준 상대 경로) — 백업 폴더로 옮겨 치운다</summary>
+    public List<string> Removals { get; } = new();
+    /// <summary>복원이면 원래 백업 폴더</summary>
+    public string? RestoreFrom { get; private set; }
+
+    public const string LogName = "backup-copy.log";
+
+    /// <summary>
+    /// 복원 계획: 백업 폴더(backup\날짜_시각)의 기록을 읽어, 백업해 둔 파일은 대상으로 되돌리고
+    /// 그때 새로 복사된(백업이 없는) 파일은 치운다.
+    /// </summary>
+    public static BackupCopyPlan BuildRestore(string backupDir, IoContext? ctx = null)
+    {
+        backupDir = PathUtil.TrimEnd(backupDir);
+        var (target, copied) = ReadLog(backupDir);
+        if (target == null) throw new IOException(Loc.F($"기록에 대상 폴더가 없습니다: {Path.Combine(backupDir, LogName)}"));
+        if (!Directory.Exists(target)) throw new IOException(Loc.F($"대상 폴더가 없습니다: {target}"));
+
+        var sources = new DirectoryInfo(backupDir).EnumerateFileSystemInfos()
+            .Where(i => !string.Equals(i.Name, LogName, StringComparison.OrdinalIgnoreCase))
+            .Select(i => i.FullName).ToList();
+        var plan = Build(sources, target, ctx);
+        plan.RestoreFrom = backupDir;
+        var backedUp = new HashSet<string>(plan.Items.Select(i => i.Relative), StringComparer.OrdinalIgnoreCase);
+        foreach (var rel in copied.Distinct(StringComparer.OrdinalIgnoreCase))
+            if (!backedUp.Contains(rel) && File.Exists(Path.Combine(plan.TargetDirectory, rel)))
+                plan.Removals.Add(rel);
+        return plan;
+    }
+
+    /// <summary>backup-copy.log 에서 대상 폴더와 복사한 파일들 (한국어·영어 기록 모두)</summary>
+    public static (string? Target, List<string> Copied) ReadLog(string backupDir)
+    {
+        var path = Path.Combine(backupDir, LogName);
+        if (!File.Exists(path)) throw new IOException(Loc.F($"백업 기록이 없습니다: {path}"));
+        string? target = null;
+        var copied = new List<string>();
+        foreach (var line in File.ReadAllLines(path))
+        {
+            if (target == null && (line.StartsWith("대상: ") || line.StartsWith("Target: ")))
+                target = line.Substring(line.IndexOf(": ", StringComparison.Ordinal) + 2).Trim();
+            else if (line.StartsWith("복사  ")) copied.Add(line.Substring(4).Trim());
+            else if (line.StartsWith("Copied  ")) copied.Add(line.Substring(8).Trim());
+        }
+        return (target, copied);
+    }
+
+    /// <summary>폴더가 백업 폴더(기록이 있는)인지</summary>
+    public static bool IsBackupFolder(string dir) => File.Exists(Path.Combine(dir, LogName));
+
     private BackupCopyPlan(IReadOnlyList<string> sources, string targetDir)
     {
         Sources = sources;
@@ -113,7 +163,8 @@ public sealed class BackupCopyOperation : ProgressOperation
 
     public override string Title => Loc.T("백업 후 복사");
     public string BackupPath { get; }
-    public int BackedUp, Copied, Renamed;
+    public int BackedUp, Copied, Renamed, Removed;
+    public BackupCopyPlan Plan => _plan;
     public bool BackupCreated { get; private set; }
     public List<string> Failures { get; } = new();
     /// <summary>복사 중에 닫은 프로그램 (끝나고 다시 실행할 후보)</summary>
@@ -133,21 +184,26 @@ public sealed class BackupCopyOperation : ProgressOperation
     protected override void Execute()
     {
         var overwrites = _plan.Overwrites.ToList();
-        TotalFiles = _plan.Items.Count + overwrites.Count;
+        TotalFiles = _plan.Items.Count + overwrites.Count + _plan.Removals.Count;
         TotalBytes = _plan.TotalBytes + overwrites.Sum(o => SafeLength(o.Destination));
+        bool keep = overwrites.Count > 0 || _plan.Removals.Count > 0;   // 백업(보관) 폴더가 필요한지
         Log(Loc.F($"# MP-Commander 백업 복사  {DateTime.Now:yyyy-MM-dd HH:mm:ss}"));
+        if (_plan.RestoreFrom != null) Log(Loc.F($"# 복원: {_plan.RestoreFrom}"));
         Log(Loc.F($"대상: {_plan.TargetDirectory}"));
         foreach (var s in _plan.Sources) Log(Loc.F($"원본: {s}"));
-        Log(Loc.F($"백업: {(overwrites.Count > 0 ? BackupPath : Loc.T("(덮어쓸 파일 없음)"))}"));
+        Log(Loc.F($"백업: {(keep ? BackupPath : Loc.T("(덮어쓸 파일 없음)"))}"));
 
         try
         {
             // 1) 백업
+            if (keep)
+            {
+                Directory.CreateDirectory(BackupPath);
+                BackupCreated = true;
+            }
             if (overwrites.Count > 0)
             {
                 Phase = Loc.T("백업 중");
-                Directory.CreateDirectory(BackupPath);
-                BackupCreated = true;
                 foreach (var it in overwrites)
                 {
                     ThrowIfCancelled();
@@ -185,10 +241,36 @@ public sealed class BackupCopyOperation : ProgressOperation
                 _bytesBase += it.Size;
                 DoneBytes = _bytesBase;
             }
+
+            // 3) 복원: 그때 새로 생겼던 파일은 보관 폴더로 옮겨 치운다 (지우지 않는다)
+            if (_plan.Removals.Count > 0)
+            {
+                Phase = Loc.T("새로 생겼던 파일 치우는 중");
+                foreach (var rel in _plan.Removals)
+                {
+                    ThrowIfCancelled();
+                    var path = Path.Combine(_plan.TargetDirectory, rel);
+                    var keepPath = Path.Combine(BackupPath, rel);
+                    CurrentFile = path;
+                    Touch();
+                    if (File.Exists(path) && Attempt(path, () =>
+                        {
+                            Directory.CreateDirectory(Path.GetDirectoryName(keepPath)!);
+                            if (File.Exists(keepPath)) File.Delete(keepPath);
+                            File.Move(path, keepPath);   // 실행 중인 exe·dll 도 같은 드라이브면 옮길 수 있다
+                        }))
+                    {
+                        Removed++;
+                        Log(Loc.F($"치움  {rel}"));
+                    }
+                    DoneFiles++;
+                }
+            }
         }
         finally
         {
-            Log(Loc.F($"# 결과: 백업 {BackedUp}, 복사 {Copied}, 이름 바꿔 교체 {Renamed}, 실패 {Errors}") + (IsCancelled ? Loc.T(" (취소됨)") : ""));
+            Log(Loc.F($"# 결과: 백업 {BackedUp}, 복사 {Copied}, 이름 바꿔 교체 {Renamed}, 실패 {Errors}") +
+                (Removed > 0 ? Loc.F($", 치움 {Removed}") : "") + (IsCancelled ? Loc.T(" (취소됨)") : ""));
             WriteLog();
         }
     }

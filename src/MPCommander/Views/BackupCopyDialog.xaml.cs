@@ -17,17 +17,22 @@ public partial class BackupCopyDialog : Window
     private List<LockingProcess> _current = new();
     private bool _checking;
 
+    private readonly string? _keepPath;   // 복원: 지금 파일을 옮겨 둘 곳 (backup\last_one)
+
     public string BackupPath { get; private set; } = "";
     public bool Restart => RestartCheck.IsChecked == true;
+    /// <summary>[방향 바꾸기] 를 눌러 닫았음 — 원본·대상 패널을 바꿔 다시 연다</summary>
+    public bool SwapRequested { get; private set; }
     /// <summary>한 번이라도 대상 파일을 쓰고 있던 프로그램 (복사 뒤 다시 실행 후보)</summary>
     public IReadOnlyCollection<LockingProcess> Seen => _seen.Values;
 
-    private BackupCopyDialog(AppSettings settings, BackupCopyPlan plan, string sourceText)
+    private BackupCopyDialog(AppSettings settings, BackupCopyPlan plan, string sourceText, string? keepPath)
     {
         InitializeComponent();
         LocUi.Apply(this);   // XAML 글자를 지금 언어로
         _settings = settings;
         _plan = plan;
+        _keepPath = keepPath;
 
         SourceText.Text = sourceText;
         TargetText.Text = plan.TargetDirectory;
@@ -36,15 +41,40 @@ public partial class BackupCopyDialog : Window
         RootBox.Text = settings.BackupRoot;
         PrefixBox.Text = settings.BackupPrefix;
         RestartCheck.IsChecked = settings.BackupRestart;
+
+        if (keepPath != null)
+        {
+            // 복원: 백업해 둔 파일을 대상으로 되돌리고, 그때 새로 생긴 파일은 치운다. 지금 파일은 last_one 에 보관
+            Title = Loc.T("백업에서 복원 (Restore)");
+            IntroText.Text = Loc.T("백업 폴더의 기록(backup-copy.log)을 보고 대상 폴더를 백업 전으로 되돌립니다. 지금 대상에 있는 파일은 지우지 않고 아래 보관 폴더로 옮겨 둡니다 (그 폴더에서 다시 복원할 수 있습니다).");
+            SourceLabel.Text = Loc.T("백업");
+            CountText.Text = Loc.F($"되돌릴 파일 {plan.Items.Count:N0}개 ({PathUtil.FormatSize(plan.TotalBytes)}), 그때 새로 생긴 파일 {plan.Removals.Count:N0}개는 치움");
+            BackupFields.Visibility = Visibility.Collapsed;
+            SwapButton.Visibility = Visibility.Collapsed;
+            OkButton.Content = Loc.T("계속 (복원)");
+        }
         UpdatePreview();
         Loaded += async (_, _) => await CheckAsync();
     }
 
-    /// <summary>계속을 누르면 대화상자, 취소하면 null</summary>
+    /// <summary>계속을 누르면 대화상자, 취소하면 null. [방향 바꾸기] 면 SwapRequested 인 대화상자</summary>
     public static BackupCopyDialog? Show(Window owner, AppSettings settings, BackupCopyPlan plan, string sourceText)
     {
-        var dlg = new BackupCopyDialog(settings, plan, sourceText) { Owner = owner };
+        var dlg = new BackupCopyDialog(settings, plan, sourceText, null) { Owner = owner };
+        return dlg.ShowDialog() == true || dlg.SwapRequested ? dlg : null;
+    }
+
+    /// <summary>복원 준비 창. keepPath = 지금 파일을 옮겨 둘 곳</summary>
+    public static BackupCopyDialog? ShowRestore(Window owner, AppSettings settings, BackupCopyPlan plan, string keepPath)
+    {
+        var dlg = new BackupCopyDialog(settings, plan, plan.RestoreFrom ?? "", keepPath) { Owner = owner };
         return dlg.ShowDialog() == true ? dlg : null;
+    }
+
+    private void Swap_Click(object sender, RoutedEventArgs e)
+    {
+        SwapRequested = true;
+        Close();
     }
 
     private void Backup_Changed(object sender, RoutedEventArgs e) => UpdatePreview();
@@ -52,6 +82,11 @@ public partial class BackupCopyDialog : Window
     private void UpdatePreview()
     {
         if (BackupPreview == null || PrefixBox == null) return;
+        if (_keepPath != null)
+        {
+            BackupPreview.Text = Loc.F($"지금 파일 보관: {_keepPath}\\");
+            return;
+        }
         if (!_plan.Overwrites.Any())
         {
             BackupPreview.Text = Loc.T("덮어쓸 파일이 없어 백업 폴더는 만들지 않습니다.");
@@ -77,7 +112,8 @@ public partial class BackupCopyDialog : Window
         try
         {
             // 덮어쓸 파일만 확인하면 된다 (새로 생기는 파일은 아무도 쓰지 않는다)
-            var files = _plan.Overwrites.Select(o => o.Destination).ToList();
+            var files = _plan.Overwrites.Select(o => o.Destination)
+                .Concat(_plan.Removals.Select(r => Path.Combine(_plan.TargetDirectory, r))).ToList();
             var find = Task.Run(() => RunningProcesses.FindUsing(files));
             if (await Task.WhenAny(find, Task.Delay(15000)) != find)
             {
@@ -90,7 +126,9 @@ public partial class BackupCopyDialog : Window
 
             var others = _current.Where(p => !p.IsSelf).ToList();
             string msg = others.Count == 0
-                ? Loc.T("대상 파일을 쓰고 있는 프로그램이 없습니다. [계속]을 누르면 백업 후 복사합니다.")
+                ? (_keepPath != null
+                    ? Loc.T("대상 파일을 쓰고 있는 프로그램이 없습니다. [계속]을 누르면 복원합니다.")
+                    : Loc.T("대상 파일을 쓰고 있는 프로그램이 없습니다. [계속]을 누르면 백업 후 복사합니다."))
                 : Loc.F($"{others.Count}개 프로그램이 대상 파일을 쓰고 있습니다. 프로그램을 저장·종료한 뒤(또는 [닫기 요청]) [다시 확인] 하고 [계속]을 누르세요.");
             if (_current.Any(p => p.IsSelf))
                 msg += Loc.T("\nMP-Commander 자신이 쓰는 파일은 복사 중에 '이름 바꿔 교체'를 고르면 바꿀 수 있습니다 (다시 시작하면 적용).");
@@ -152,7 +190,8 @@ public partial class BackupCopyDialog : Window
     private void Ok_Click(object sender, RoutedEventArgs e)
     {
         string path = "";
-        if (_plan.Overwrites.Any())
+        if (_keepPath != null) path = _keepPath;
+        else if (_plan.Overwrites.Any())
         {
             try { path = _plan.MakeBackupPath(RootBox.Text.Trim(), PrefixBox.Text, _now); }
             catch (Exception ex) { ShowError(Loc.T("백업 위치가 올바르지 않습니다: ") + ex.Message); return; }
@@ -166,8 +205,11 @@ public partial class BackupCopyDialog : Window
             return;
 
         BackupPath = path;
-        _settings.BackupRoot = Compat.IsBlank(RootBox.Text) ? "backup" : RootBox.Text.Trim();
-        _settings.BackupPrefix = PrefixBox.Text.Trim();
+        if (_keepPath == null)
+        {
+            _settings.BackupRoot = Compat.IsBlank(RootBox.Text) ? "backup" : RootBox.Text.Trim();
+            _settings.BackupPrefix = PrefixBox.Text.Trim();
+        }
         _settings.BackupRestart = Restart;
         DialogResult = true;
     }

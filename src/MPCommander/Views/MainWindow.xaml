@@ -120,6 +120,13 @@
                                  Fill="{Binding Background, RelativeSource={RelativeSource AncestorType=ToolBar}}"/>
                         <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="11" FontWeight="Bold" Text="&#xE81C;" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0.5,0.5"/>
                     </Grid></Button>
+                <Button Click="Restore_Click" ToolTip="백업에서 복원 (Ctrl+Shift+B) — backup 아래 날짜 폴더(backup-copy.log 가 있는)에 커서를 두고 누르면&#x0a;기록을 보고 대상 폴더를 백업 전으로 되돌립니다. 지금 파일은 backup\last_one 으로 옮겨 둡니다"><!-- 폴더 + 되돌리기 화살표 -->
+                    <Grid Width="20" Height="18" Margin="1,0">
+                        <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="16" Text="&#xED25;" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,1,0,0"/>
+                        <Ellipse Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                 Fill="{Binding Background, RelativeSource={RelativeSource AncestorType=ToolBar}}"/>
+                        <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="11" FontWeight="Bold" Text="&#xE7A7;" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0.5,0.5"/>
+                    </Grid></Button>
                 <Button Click="Pack_Click" ToolTip="압축 (Alt+F5) — 표시한 항목을 대상 패널 폴더에 7z 또는 ZIP 으로"><TextBlock Style="{StaticResource Icon}" Text="&#xE7B8;"/></Button>
                 <Button Click="Unpack_Click" ToolTip="압축 풀기 (Alt+F9) — 고른 압축 파일(ZIP·7z·RAR 등, 여러 개 가능)을 대상 패널 폴더에.&#x0a;기본으로 압축 파일마다 그 이름의 폴더를 만든다"><!-- 압축 아이콘(E7B8)의 뚜껑이 열린 모양: 글꼴에 없어 직접 그린다 -->
                     <Canvas Width="16" Height="16" Margin="2,1" VerticalAlignment="Center">

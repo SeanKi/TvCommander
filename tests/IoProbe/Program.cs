@@ -8,6 +8,7 @@ if (args is [var mode, var remote] && (mode == "--mtp-put" || mode == "--mtp-del
 if (args is ["--unblock"]) { await UnblockTests.Run(); return; }
 if (args is ["--7z"]) { await SevenZipTests.Run(); return; }
 if (args is ["--backup-copy"]) { await BackupCopyTests.Run(); return; }
+if (args is ["--restore"]) { await RestoreTests.Run(); return; }
 if (args is ["--regex-search"]) { await RegexSearchTests.Run(); return; }
 if (args is ["--large-search"]) { await LargeSearchTests.Run(); return; }
 if (args is ["--virtual-files"]) { await VirtualFileTests.Run(); return; }

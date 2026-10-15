@@ -1476,3 +1476,93 @@ Everything 이 응답하지 않습니다.
 
 Everything {0} · {1} · {2:0.00}초   │   Enter: 현재 패널에서 보기 · ↑↓ 고르기 · Esc: 닫기
 => Everything {0} · {1} · {2:0.00} s   │   Enter: show in current pane · ↑↓ pick · Esc: close
+
+기록에 대상 폴더가 없습니다: {0}
+=> The log has no target folder: {0}
+
+대상 폴더가 없습니다: {0}
+=> Target folder not found: {0}
+
+백업 기록이 없습니다: {0}
+=> No backup log: {0}
+
+새로 생겼던 파일 치우는 중
+=> Moving aside the files that were added
+
+치움  {0}
+=> Moved aside  {0}
+
+# 복원: {0}
+=> # Restore: {0}
+
+, 치움 {0}
+=> , moved aside {0}
+
+백업에서 복원 (Restore)
+=> Restore from backup
+
+백업 폴더의 기록(backup-copy.log)을 보고 대상 폴더를 백업 전으로 되돌립니다. 지금 대상에 있는 파일은 지우지 않고 아래 보관 폴더로 옮겨 둡니다 (그 폴더에서 다시 복원할 수 있습니다).
+=> Uses the backup folder's log (backup-copy.log) to put the target folder back as it was before the backup. Files now in the target are not deleted but moved to the holding folder below (you can restore from that folder again).
+
+되돌릴 파일 {0:N0}개 ({1}), 그때 새로 생긴 파일 {2:N0}개는 치움
+=> {0:N0} files to put back ({1}), {2:N0} files added at that time will be moved aside
+
+계속 (복원)
+=> Continue (restore)
+
+지금 파일 보관: {0}\\
+=> Current files kept in: {0}\\
+
+대상 파일을 쓰고 있는 프로그램이 없습니다. [계속]을 누르면 복원합니다.
+=> No program is using the target files. Press [Continue] to restore.
+
+대상 폴더
+=> Target folder
+
+⇄ 방향 바꾸기
+=> ⇄ Swap direction
+
+원본과 대상을 바꿉니다: 다른 패널에서 표시한 항목(없으면 커서 항목)을 이 패널 폴더로 백업 후 복사
+=> Swap source and target: Backup-Copy the items marked in the other pane (or the item under its cursor) into this pane's folder
+
+백업 복사할 파일·폴더를 고르세요 (원본 패널에서 표시하거나 커서를 두세요).
+=> Choose the files or folders to Backup-Copy (mark them in the source pane or put the cursor on one).
+
+대상 폴더가 원본 폴더 안에 있습니다.
+=> The target folder is inside the source folder.
+
+방향을 바꾸려면 이 패널에서 복사할 파일·폴더를 표시하거나 커서를 두세요.
+=> To swap direction, mark the files or folders to copy in this pane or put the cursor on one.
+
+복원할 백업 폴더(PC)를 고르세요.
+=> Choose a backup folder (on this PC) to restore.
+
+복원: backup 아래의 날짜 폴더(backup-copy.log 가 있는 폴더)에 커서를 두고 누르세요.
+=> Restore: put the cursor on a dated folder under backup (one that has backup-copy.log) and press it.
+
+복원 준비 중...
+=> Preparing restore...
+
+복원할 수 없습니다: 
+=> Cannot restore: 
+
+되돌릴 것이 없습니다.
+=> Nothing to restore.
+
+이전 보관 폴더를 휴지통으로 옮기지 못했습니다: {0}
+=> Could not move the previous holding folder to the Recycle Bin: {0}
+
+복원: 되돌림 {0:N0}개, 치움 {1:N0}개, 보관 {2:N0}개
+=> Restore: put back {0:N0}, moved aside {1:N0}, kept {2:N0}
+
+  │ 지금 파일 보관: {0}
+=>   │ current files kept in: {0}
+
+복원
+=> Restore
+
+백업에서 복원 (Ctrl+Shift+B) — backup 아래 날짜 폴더(backup-copy.log 가 있는)에 커서를 두고 누르면\n기록을 보고 대상 폴더를 백업 전으로 되돌립니다. 지금 파일은 backup\\last_one 으로 옮겨 둡니다
+=> Restore from backup (Ctrl+Shift+B) — put the cursor on a dated folder under backup (with backup-copy.log) and press it:\nthe log is used to put the target folder back as it was. Current files are moved to backup\\last_one
+
+이 백업에서 복원...\tCtrl+Shift+B
+=> Restore from this backup...\tCtrl+Shift+B

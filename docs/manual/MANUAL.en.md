@@ -120,6 +120,7 @@ Nothing is written to the program folder, so updating means replacing the progra
 | Document · chain · text | Copy current folder path / full paths of selection / names | — / Ctrl+Shift+C / — |
 | Folder+ · `C:\` | New folder / terminal here | F7 / F9 |
 | Folder + clock | **Backup-Copy** | Ctrl+B |
+| Folder + undo | **Restore from backup** | Ctrl+Shift+B |
 | Box · open box | **Compress** / **Extract** | Alt+F5 / Alt+F9 |
 | Lock | **Unblock** | Ctrl+Shift+U |
 | ⇄ | Swap active and target pane paths | Ctrl+U |
@@ -326,6 +327,10 @@ Files you select directly are always unblocked. Read-only files are handled too 
 For **replacing files in a target folder with new versions after backing up the old ones** — typically a program update.
 Toolbar folder-and-clock button, **Ctrl+B**, or `Backup-Copy` in the right-click menu.
 
+**Source and target**: the source is what you marked in the active pane (or the item under the cursor); **the target is the other pane's current folder** (the folder itself, not the file or folder under that pane's cursor).
+If nothing is marked in the active pane but something is marked in the other pane, that pane is the source — so clicking the target pane after marking does not flip the direction.
+The preparation window shows the source and the **target folder**; if they are the wrong way round, press **⇄ Swap direction**.
+
 ### ① Preparation window
 
 ![Backup-Copy — preparation](images/en/08-backup-copy.png)
@@ -367,7 +372,17 @@ If a file is still being used by another program, this window appears:
 - `backup\20261011_1022\` appears in the target folder (or your chosen location) with the old files and a **`backup-copy.log`** (what was backed up, copied and closed, and any failures).
 - The closed programs are restarted and the status bar shows `copied n, backed up m, restarted k │ backup: path`.
 
-> To roll back, see Part 2 [A. Deploying a program update safely](#a-deploying-a-program-update-safely-backup-and-rollback).
+### ④ Restore (roll back)
+
+Toolbar **folder-and-undo** button, **Ctrl+Shift+B**, or `Restore from this backup` in a backup folder's right-click menu.
+
+1. Put the cursor on a dated folder under `backup` (e.g. `backup\v1.1.3_20261011_1022`, the one with `backup-copy.log`).
+2. The restore window shows the backup and target folders and how many files will be put back. Checking, closing and restarting programs works as in Backup-Copy.
+3. [Continue (restore)] — using the log it
+   - **puts the backed-up files back**,
+   - **moves aside the files that were added** at that time (moved, not deleted),
+   - keeps every current file it replaces or moves aside in **`backup\last_one`** (with its own log — restoring from `last_one` takes you back to before the restore),
+   - moves the previous `last_one` to the Recycle Bin.
 
 ---
 
@@ -475,7 +490,7 @@ Hidden files (Ctrl+H) and font size (Ctrl+= / Ctrl+-) are changed directly on th
 | | F7 | New folder |
 | | F8, Del / Shift+F8, Shift+Del | Delete to Recycle Bin / permanently |
 | | Ctrl+C / Ctrl+X / Ctrl+V | Clipboard copy / cut / paste |
-| | Ctrl+B | Backup-Copy |
+| | Ctrl+B / Ctrl+Shift+B | Backup-Copy / Restore from backup |
 | | Alt+F5 / Alt+F9 | Compress / extract |
 | | Ctrl+Shift+U | Unblock |
 | | Alt+F7 | Find files |
@@ -537,11 +552,11 @@ Hidden files (Ctrl+H) and font size (Ctrl+= / Ctrl+-) are changed directly on th
 
 **Rolling back**
 
-1. Keep the target pane at `C:\Production` and open `C:\Production\backup\v1.1.3_20261011_1022` in the active pane (it contains a `MyApp` folder with the old files).
-2. Put the cursor on `MyApp` and press **Ctrl+B** again.
-3. This time the current (faulty) version is saved to a new backup folder and the old files return to their place. The program is restarted too.
+1. Open `C:\Production\backup` and put the cursor on `v1.1.3_20261011_1022`.
+2. Press **Ctrl+Shift+B** (or the restore button on the toolbar) → [Continue (restore)].
+3. The old files return to their place and the files added by the new version are moved aside. The current (faulty) version is kept in `backup\last_one`, and the program is restarted.
 
-> The backup contains **only changed files** (new files had nothing to back up). To also remove files added by the new version, delete the files listed as `Copied` in `backup-copy.log` that are not in the backup.
+> To go forward to the new version again, restore from `backup\last_one` the same way.
 
 **Tips**
 
