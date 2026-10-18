@@ -105,6 +105,13 @@
                 <Button Click="Refresh_Click" ToolTip="새로고침 (Ctrl+R)"><TextBlock Style="{StaticResource Icon}" Text="&#xE72C;"/></Button>
                 <Separator/>
                 <Button Click="Search_Click" ToolTip="파일 찾기 (Alt+F7)"><TextBlock Style="{StaticResource Icon}" Text="&#xE721;"/></Button>
+                <Button Click="FolderSync_Click" ToolTip="폴더 비교 · 동기화 (Shift+F2) — 활성 패널(A)과 대상 패널(B) 폴더를 하위까지 비교해&#x0a;양쪽 똑같이 / 한쪽 → 반대쪽 최신만 / 한쪽만 남기기. 어느 쪽을 남길지 조언"><!-- 겹친 두 폴더: 비교 -->
+                    <Grid Width="20" Height="18" Margin="1,0">
+                        <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="13" Text="&#xED25;" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                        <Rectangle Width="13" Height="11" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0,1"
+                                   Fill="{Binding Background, RelativeSource={RelativeSource AncestorType=ToolBar}}"/>
+                        <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="13" Text="&#xED25;" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                    </Grid></Button>
                 <Button Click="Connections_Click" ToolTip="원격 연결 관리 — FTP / FTPS / WebDAV 등록·연결 (Ctrl+F)"><TextBlock Style="{StaticResource Icon}" Text="&#xE774;"/></Button>
                 <Separator/>
                 <Button Click="CopyPath_Click" ToolTip="현재 폴더 경로 복사"><TextBlock Style="{StaticResource Icon}" Text="&#xE8C8;"/></Button>

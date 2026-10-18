@@ -1,0 +1,133 @@
+<Window x:Class="MPCommander.Views.FolderSyncWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="폴더 비교 · 동기화" Width="1180" Height="760" MinWidth="720" MinHeight="420"
+        WindowStartupLocation="CenterOwner" FontFamily="Segoe UI" FontSize="12">
+    <DockPanel Margin="10">
+        <!-- 폴더 -->
+        <Grid DockPanel.Dock="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <TextBlock Text="A" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBox x:Name="PathA" Grid.Column="1" Padding="3,2" Margin="0,2"/>
+            <TextBlock Grid.Row="1" Text="B" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBox x:Name="PathB" Grid.Row="1" Grid.Column="1" Padding="3,2" Margin="0,2"/>
+            <StackPanel Grid.Column="2" Grid.RowSpan="2" Orientation="Horizontal" Margin="8,2,0,2">
+                <Button Content="⇄" Padding="10,0" Click="SwapAB_Click" ToolTip="A 와 B 바꾸기"/>
+                <Button x:Name="CompareButton" Content="비교" Padding="18,0" Margin="6,0,0,0" IsDefault="True" Click="Compare_Click"/>
+            </StackPanel>
+            <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="0,6,0,0">
+                <TextBlock Text="제외" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <TextBox x:Name="ExcludeBox" Width="260" Padding="3,1"
+                         ToolTip="비교하지 않을 파일·폴더 이름 (; 로 여러 개, * ? 와일드카드). 예: .git;.vs;*.tmp;Thumbs.db"/>
+                <CheckBox x:Name="ContentCheck" Content="크기 같고 날짜만 다른 작은 파일(1 MB 이하)은 내용 비교" IsChecked="True"
+                          VerticalAlignment="Center" Margin="16,0,0,0"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- 조언 -->
+        <Border x:Name="AdviceBox" DockPanel.Dock="Top" Margin="0,8,0,0" Padding="10,6" CornerRadius="3" Visibility="Collapsed"
+                Background="#FFFFF8E1" BorderBrush="#FFE0C060" BorderThickness="1">
+            <TextBlock x:Name="AdviceText" TextWrapping="Wrap"/>
+        </Border>
+
+        <!-- 방식 -->
+        <GroupBox DockPanel.Dock="Top" Header="동기화 방식" Margin="0,8,0,0" Padding="6,4">
+            <WrapPanel>
+                <RadioButton x:Name="ModeBoth" GroupName="Mode" Content="양쪽 똑같이" Margin="0,0,18,0" Checked="Mode_Changed"
+                             ToolTip="한쪽에만 있는 것은 반대쪽으로 복사, 양쪽이 다르면 더 최신 쪽으로. 아무것도 지우지 않는다"/>
+                <RadioButton x:Name="ModeAtoB" GroupName="Mode" Content="A → B 최신만" Margin="0,0,18,0" Checked="Mode_Changed"
+                             ToolTip="B 에 없거나 A 가 더 최신인 것만 B 로 복사. B 에만 있는 것·B 가 더 최신인 것은 그대로"/>
+                <RadioButton x:Name="ModeBtoA" GroupName="Mode" Content="B → A 최신만" Margin="0,0,18,0" Checked="Mode_Changed"
+                             ToolTip="A 에 없거나 B 가 더 최신인 것만 A 로 복사"/>
+                <RadioButton x:Name="ModeMirrorA" GroupName="Mode" Content="A 만 남기기 (B 를 A 와 똑같이)" Margin="0,0,18,0" Checked="Mode_Changed"
+                             ToolTip="B 를 A 와 똑같이: 다른 것은 A 로 덮어쓰고, B 에만 있는 것은 휴지통으로"/>
+                <RadioButton x:Name="ModeMirrorB" GroupName="Mode" Content="B 만 남기기 (A 를 B 와 똑같이)" Checked="Mode_Changed"
+                             ToolTip="A 를 B 와 똑같이: 다른 것은 B 로 덮어쓰고, A 에만 있는 것은 휴지통으로"/>
+            </WrapPanel>
+        </GroupBox>
+
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+            <Button DockPanel.Dock="Right" Content="닫기" Style="{StaticResource DialogButton}" Margin="6,0,0,0" IsCancel="True" Click="Close_Click"/>
+            <Button x:Name="RunButton" DockPanel.Dock="Right" Content="동기화 실행" Padding="16,3" IsEnabled="False" Click="Run_Click"/>
+            <CheckBox x:Name="ShowSkipped" DockPanel.Dock="Left" Content="그대로 둘 항목도 보기" IsChecked="True" VerticalAlignment="Center" Margin="0,0,16,0" Click="ShowSkipped_Click"/>
+            <TextBlock x:Name="StatusText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+        </DockPanel>
+
+        <ListView x:Name="List" Margin="0,8,0,0" FontSize="{DynamicResource ListFontSize}"
+                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                  MouseDoubleClick="List_MouseDoubleClick" KeyDown="List_KeyDown">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Width="34">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate><CheckBox IsChecked="{Binding Include, Mode=TwoWay}" Focusable="False"/></DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="경로" Width="330" DisplayMemberBinding="{Binding DisplayPath}"/>
+                    <GridViewColumn Header="상태" Width="120">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock x:Name="T" Text="{Binding DiffText}"/>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Diff}" Value="OnlyA"><Setter TargetName="T" Property="Foreground" Value="#FF1565C0"/></DataTrigger>
+                                    <DataTrigger Binding="{Binding Diff}" Value="NewerA"><Setter TargetName="T" Property="Foreground" Value="#FF1565C0"/></DataTrigger>
+                                    <DataTrigger Binding="{Binding Diff}" Value="OnlyB"><Setter TargetName="T" Property="Foreground" Value="#FF2E7D32"/></DataTrigger>
+                                    <DataTrigger Binding="{Binding Diff}" Value="NewerB"><Setter TargetName="T" Property="Foreground" Value="#FF2E7D32"/></DataTrigger>
+                                    <DataTrigger Binding="{Binding Diff}" Value="Conflict"><Setter TargetName="T" Property="Foreground" Value="#FFC62828"/></DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="작업" Width="200">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock x:Name="T" Text="{Binding ActionText}"/>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Action}" Value="DeleteA"><Setter TargetName="T" Property="Foreground" Value="#FFC62828"/></DataTrigger>
+                                    <DataTrigger Binding="{Binding Action}" Value="DeleteB"><Setter TargetName="T" Property="Foreground" Value="#FFC62828"/></DataTrigger>
+                                    <DataTrigger Binding="{Binding Action}" Value="None"><Setter TargetName="T" Property="Foreground" Value="Gray"/></DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="A 크기" Width="90">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate><TextBlock Text="{Binding ASize}" TextAlignment="Right"/></DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="A 날짜" Width="150" DisplayMemberBinding="{Binding ADate}"/>
+                    <GridViewColumn Header="B 크기" Width="90">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate><TextBlock Text="{Binding BSize}" TextAlignment="Right"/></DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="B 날짜" Width="150" DisplayMemberBinding="{Binding BDate}"/>
+                </GridView>
+            </ListView.View>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="A → B 로 복사" Click="SetAtoB_Click"/>
+                    <MenuItem Header="A ← B 로 복사" Click="SetBtoA_Click"/>
+                    <MenuItem Header="그대로 두기" Click="SetNone_Click"/>
+                    <Separator/>
+                    <MenuItem Header="A 패널에서 보기" Click="ShowInA_Click"/>
+                    <MenuItem Header="B 패널에서 보기" Click="ShowInB_Click"/>
+                </ContextMenu>
+            </ListView.ContextMenu>
+        </ListView>
+    </DockPanel>
+</Window>

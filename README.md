@@ -1,4 +1,4 @@
-<img src="src/MPCommander/Assets/MP-Commander-256.png" width="96" align="right" alt="MP-Commander icon">
+﻿<img src="src/MPCommander/Assets/MP-Commander-256.png" width="96" align="right" alt="MP-Commander icon">
 
 # MP-Commander (Multi-Pane Commander)
 
@@ -127,6 +127,13 @@ tests/IoProbe/         타임아웃·열거 성능 점검용 콘솔
 - 결과의 **찾은 말 / 줄** 열: 파일마다 포함 텍스트가 나온 횟수와 그 줄 수 (백그라운드에서 셈, 파일당 5초 제한, 64 MB 초과는 `-`). 상태 줄에 합계.
 - 결과에서 Enter / 더블클릭: 패널에서 보기, F3: 뷰어 (포함 텍스트로 찾은 상태).
 - **Ctrl+Alt+F7**: [Everything](https://www.voidtools.com/) 검색 창을 현재 폴더로 연다 (`Everything.exe -path 폴더`). Everything.exe 는 프로그램 폴더 → 실행 중인 프로세스 → 레지스트리(App Paths, 제거 정보) → Program Files 순으로 찾는다.
+
+## 폴더 비교 · 동기화 (Shift+F2)
+
+- `IO/FolderSync.cs`: `FolderCompare.Run` 이 두 폴더를 하위까지 읽어 비교 (크기 + 수정 시각 2초 오차, 크기 같고 1 MB 이하는 내용 비교, 한쪽에만 있는 폴더는 맨 위 하나로 묶음, 제외 이름은 PathMatchSpec).
+- `Plan(SyncMode)`: 양쪽 똑같이 / A→B·B→A 최신만 / A·B 만 남기기. `Advice()`: 한쪽에만 있는 것·더 최신인 것의 수로 남길 쪽 조언.
+- `FolderSyncOperation`: 복사(FmCopyFile, 수정 시각 유지) 먼저, 삭제는 마지막에 한 번에 휴지통으로. 창은 `Views/FolderSyncWindow`.
+- 점검: `IoProbe --folder-sync`.
 
 ## 편집기 (F4)
 

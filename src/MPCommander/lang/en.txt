@@ -1728,3 +1728,219 @@ CP949 로 나타낼 수 없는 글자가 있어 저장하지 않았습니다. �
 
 비워 두면 내장 편집기 (CSV 는 표 편집기). 외부 편집기를 쓰려면 적으세요 — 예: code, C:\Program Files\Notepad++\notepad++.exe\nShift+F4 는 늘 외부 편집기 (비어 있으면 메모장)
 => Leave empty for the built-in editor (CSV opens in the grid editor). Enter an external editor to use it instead — e.g. code, C:\Program Files\Notepad++\notepad++.exe\nShift+F4 always uses the external editor (Notepad when empty)
+
+A 에만
+=> Only in A
+
+B 에만
+=> Only in B
+
+A 가 최신
+=> A is newer
+
+B 가 최신
+=> B is newer
+
+날짜 같고 내용 다름
+=> Same date, different content
+
+A 에서 삭제
+=> Delete from A
+
+B 에서 삭제
+=> Delete from B
+
+그대로
+=> Leave
+
+{0:N0}개, {1}
+=> {0:N0} files, {1}
+
+비교 중... {0:N0}
+=> Comparing... {0:N0}
+
+읽는 중... {0} {1:N0}
+=> Reading... {0} {1:N0}
+
+직접 고르세요
+=> choose yourself
+
+B 의 더 최신 파일을 덮어씀
+=> overwrites the newer file in B
+
+A 의 더 최신 파일을 덮어씀
+=> overwrites the newer file in A
+
+A: 파일 {0:N0}개 ({1}), A 에만 {2:N0}, A 가 최신 {3:N0}   │   B: 파일 {4:N0}개 ({5}), B 에만 {6:N0}, B 가 최신 {7:N0}
+=> A: {0:N0} files ({1}), only in A {2:N0}, A newer {3:N0}   │   B: {4:N0} files ({5}), only in B {6:N0}, B newer {7:N0}
+
+   │   날짜 같고 내용 다름 {0:N0}
+=>    │   same date, different content {0:N0}
+
+두 폴더가 같습니다.
+=> The two folders are the same.
+
+한쪽에만 있거나 더 최신인 파일은 없고, 날짜가 같은데 내용이 다른 파일만 있습니다 — 목록에서 직접 고르세요.
+=> Nothing is only on one side or newer; only files with the same date but different content — choose them in the list.
+
+A 를 남기세요: B 에는 A 에 없는 파일도, 더 최신 파일도 없습니다. 'A 만 남기기' 나 'A → B 최신만' 으로 맞추면 잃는 것이 없습니다.
+=> Keep A: B has nothing that A lacks and nothing newer. 'Keep only A' or 'A → B newer only' loses nothing.
+
+B 를 남기세요: A 에는 B 에 없는 파일도, 더 최신 파일도 없습니다. 'B 만 남기기' 나 'B → A 최신만' 으로 맞추면 잃는 것이 없습니다.
+=> Keep B: A has nothing that B lacks and nothing newer. 'Keep only B' or 'B → A newer only' loses nothing.
+
+양쪽 똑같이를 권합니다: 두 폴더 모두 상대에 없는 파일이나 더 최신 파일이 있습니다. 꼭 한쪽만 남겨야 한다면 더 많은 쪽인 {0} 를 남기세요 — 이때 {1} 의 {2:N0}개(없는 파일·더 최신 파일)를 잃습니다.
+=> Recommended: make both identical — each folder has files the other lacks or newer files. If you must keep only one side, keep {0} (it has more) — {2:N0} items of {1} (missing or newer files) would be lost.
+
+폴더 동기화
+=> Folder sync
+
+휴지통으로 옮기는 중
+=> Moving to the Recycle Bin
+
+폴더 비교 · 동기화
+=> Folder compare & sync
+
+A 와 B 바꾸기
+=> Swap A and B
+
+비교
+=> Compare
+
+제외
+=> Exclude
+
+비교하지 않을 파일·폴더 이름 (; 로 여러 개, * ? 와일드카드). 예: .git;.vs;*.tmp;Thumbs.db
+=> File and folder names not to compare (several with ;, * ? wildcards). E.g. .git;.vs;*.tmp;Thumbs.db
+
+크기 같고 날짜만 다른 작은 파일(1 MB 이하)은 내용 비교
+=> Compare the content of small files (up to 1 MB) with the same size but a different date
+
+동기화 방식
+=> Sync mode
+
+양쪽 똑같이
+=> Make both identical
+
+한쪽에만 있는 것은 반대쪽으로 복사, 양쪽이 다르면 더 최신 쪽으로. 아무것도 지우지 않는다
+=> Copy what is only on one side to the other; where both differ, the newer one wins. Nothing is deleted
+
+A → B 최신만
+=> A → B newer only
+
+B 에 없거나 A 가 더 최신인 것만 B 로 복사. B 에만 있는 것·B 가 더 최신인 것은 그대로
+=> Copy to B only what B lacks or what is newer in A. Items only in B or newer in B are left alone
+
+B → A 최신만
+=> B → A newer only
+
+A 에 없거나 B 가 더 최신인 것만 A 로 복사
+=> Copy to A only what A lacks or what is newer in B
+
+A 만 남기기 (B 를 A 와 똑같이)
+=> Keep only A (make B the same as A)
+
+B 를 A 와 똑같이: 다른 것은 A 로 덮어쓰고, B 에만 있는 것은 휴지통으로
+=> Make B the same as A: differing files are overwritten from A, items only in B go to the Recycle Bin
+
+B 만 남기기 (A 를 B 와 똑같이)
+=> Keep only B (make A the same as B)
+
+A 를 B 와 똑같이: 다른 것은 B 로 덮어쓰고, A 에만 있는 것은 휴지통으로
+=> Make A the same as B: differing files are overwritten from B, items only in A go to the Recycle Bin
+
+동기화 실행
+=> Synchronize
+
+그대로 둘 항목도 보기
+=> Show items left alone
+
+경로
+=> Path
+
+상태
+=> Status
+
+작업
+=> Action
+
+A 크기
+=> A size
+
+A 날짜
+=> A date
+
+B 크기
+=> B size
+
+B 날짜
+=> B date
+
+A → B 로 복사
+=> Copy A → B
+
+A ← B 로 복사
+=> Copy A ← B
+
+그대로 두기
+=> Leave as is
+
+A 패널에서 보기
+=> Show in a pane (A)
+
+B 패널에서 보기
+=> Show in a pane (B)
+
+PC 폴더(로컬·네트워크 드라이브)끼리만 비교합니다.
+=> Only PC folders (local or network drives) can be compared.
+
+A 와 B 가 같은 폴더입니다.
+=> A and B are the same folder.
+
+한 폴더가 다른 폴더 안에 있습니다. 서로 떨어진 두 폴더를 고르세요.
+=> One folder is inside the other. Choose two separate folders.
+
+비교 중...
+=> Comparing...
+
+, 내용이 같아 같은 파일로 본 것 {0:N0}
+=> , same content treated as same {0:N0}
+
+   │   읽지 못한 폴더 {0:N0}
+=>    │   unreadable folders {0:N0}
+
+비교 {0:0.0}초 — 다른 항목 {1:N0}, 같은 파일 {2:N0}{3}
+=> Compared in {0:0.0} s — {1:N0} different, {2:N0} same{3}
+
+비교를 중지했습니다.
+=> Comparison stopped.
+
+비교하지 못했습니다: 
+=> Could not compare: 
+
+   │   실행: A → B {0:N0} ({1}), A ← B {2:N0} ({3}), 삭제 {4:N0}
+=>    │   to run: A → B {0:N0} ({1}), A ← B {2:N0} ({3}), delete {4:N0}
+
+{0:N0}개 항목을 동기화합니다.\n\nA: {1}\nB: {2}
+=> Synchronize {0:N0} items.\n\nA: {1}\nB: {2}
+
+\n\n{0:N0}개 항목을 지웁니다 (휴지통으로).
+=> \n\n{0:N0} items will be deleted (to the Recycle Bin).
+
+\n네트워크 폴더에는 휴지통이 없어 바로 지워집니다.
+=> \nNetwork folders have no Recycle Bin, so they are deleted permanently.
+
+\n\n더 최신 파일 {0:N0}개를 오래된 파일로 덮어씁니다.
+=> \n\n{0:N0} newer files will be overwritten with older ones.
+
+동기화: 복사 {0:N0}, 삭제 {1:N0}
+=> Sync: copied {0:N0}, deleted {1:N0}
+
+, 실패 {0:N0}
+=> , failed {0:N0}
+
+폴더 비교 · 동기화 (Shift+F2) — 활성 패널(A)과 대상 패널(B) 폴더를 하위까지 비교해\n양쪽 똑같이 / 한쪽 → 반대쪽 최신만 / 한쪽만 남기기. 어느 쪽을 남길지 조언
+=> Folder compare & sync (Shift+F2) — compares the active pane (A) and target pane (B) folders including subfolders:\nmake both identical / one side → other newer only / keep only one side, with advice on which side to keep
+
+폴더 비교: 활성 패널과 대상 패널에 비교할 PC 폴더를 여세요.
+=> Folder compare: open the PC folders to compare in the active and target panes.

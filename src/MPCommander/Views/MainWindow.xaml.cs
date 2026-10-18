@@ -296,6 +296,7 @@ public partial class MainWindow : Window
             case (Key.F6, None): CmdCopyMove(OpKind.Move); break;
             case (Key.F6, Shift):
             case (Key.F2, None): CmdRename(); break;
+            case (Key.F2, Shift): CmdFolderSync(); break;
             case (Key.F7, None): CmdMakeDir(); break;
             case (Key.F7, Alt): CmdSearch(); break;
             case (Key.F7, Ctrl | Alt): CmdEverything(); break;
@@ -393,6 +394,7 @@ public partial class MainWindow : Window
     private void Up_Click(object sender, RoutedEventArgs e) { _ = P.GoUpAsync(); P.FocusList(); }
     private void Refresh_Click(object sender, RoutedEventArgs e) { NetworkHealth.InvalidateAll(); _ = P.RefreshAsync(); P.FocusList(); }
     private void Search_Click(object sender, RoutedEventArgs e) => CmdSearch();
+    private void FolderSync_Click(object sender, RoutedEventArgs e) => CmdFolderSync();
     private void Connections_Click(object sender, RoutedEventArgs e) => CmdConnections();
     private void Unblock_Click(object sender, RoutedEventArgs e) => CmdUnblock();
     private void Pack_Click(object sender, RoutedEventArgs e) => CmdPack();
@@ -632,6 +634,28 @@ public partial class MainWindow : Window
         await RefreshPanelsShowingAsync(PathUtil.Parent(sources[0]), op.TargetDirectory);
         P.FocusList();
     }
+
+    /// <summary>Shift+F2 / 툴바: 활성 패널 폴더(A)와 대상 패널 폴더(B) 비교 · 동기화</summary>
+    public void CmdFolderSync()
+    {
+        var a = P.CurrentPath;
+        var b = _target?.CurrentPath;
+        if (a == null || b == null || _target == P || PathUtil.IsVirtual(a) || PathUtil.IsVirtual(b))
+        {
+            P.FlashStatus(Loc.T("폴더 비교: 활성 패널과 대상 패널에 비교할 PC 폴더를 여세요."));
+            return;
+        }
+        new FolderSyncWindow(this, a, b) { Owner = this }.Show();
+    }
+
+    /// <summary>다른 창(폴더 동기화 등)에서 진행 창과 함께 작업을 돌릴 때</summary>
+    public Task RunOperationAsync(ProgressOperation op) => RunWithProgressAsync(op);
+
+    /// <summary>이 폴더들(과 그 아래)을 보고 있는 패널을 새로고침</summary>
+    public Task RefreshPanelsUnderAsync(params string[] roots)
+        => Task.WhenAll(VisiblePanels
+            .Where(x => x.CurrentPath != null && roots.Any(r => PathUtil.Same(x.CurrentPath, r) || PathUtil.IsUnder(x.CurrentPath, r)))
+            .Select(x => x.RefreshAsync()));
 
     /// <summary>진행 창과 함께 작업 실행. 짧게 끝나면 창을 띄우지 않는다.</summary>
     private async Task RunWithProgressAsync(ProgressOperation op)

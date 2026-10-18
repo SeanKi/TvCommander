@@ -116,6 +116,7 @@ Nothing is written to the program folder, so updating means replacing the progra
 | Five grids | 2 panes / 3 / 4 (2×2) / 6 (2×3) / 8 (2×4) | Ctrl+F2 / F3 / F4 / F6 / F8 |
 | ← → ↑ ⟳ | Back / forward / parent folder / refresh | Alt+← / Alt+→ / Backspace / Ctrl+R |
 | Magnifier | Find files | Alt+F7 |
+| Overlapping folders | **Folder compare & sync** | Shift+F2 |
 | Globe | Remote connections (FTP / WebDAV) | Ctrl+F |
 | Document · chain · text | Copy current folder path / full paths of selection / names | — / Ctrl+Shift+C / — |
 | Folder+ · `C:\` | New folder / terminal here | F7 / F9 |
@@ -201,6 +202,31 @@ Selected items are shown in **red**. With no selection, commands apply to the it
 - The progress window shows per-file and total progress and speed. Short operations finish without it.
 - If progress stops for more than 5 s (slow network etc.) a warning appears, and [Cancel] also breaks blocked I/O.
   (Time spent waiting for your answer in a prompt does not count as a stall.)
+
+---
+
+### Folder compare & sync (Shift+F2)
+
+For bringing two similar folders in line (e.g. a work folder and its backup, PC and NAS). **Shift+F2** or the toolbar's overlapping-folders button — the active pane folder is **A**, the target pane folder is **B** (change them in the window or swap with ⇄).
+
+1. Compares including subfolders and lists only what differs: **only in A / only in B / A newer / B newer / same date, different content**.
+   - Files count as the same when size and modified time match (2 s tolerance). Small files (up to 1 MB) with the same size but a different date are compared by content and treated as the same if identical.
+   - A folder that exists on one side only is shown as one row (file count and size). Names to skip go in **Exclude**, e.g. `.git;.vs;*.tmp`.
+2. The yellow box gives **advice** based on file counts, sizes, and how many items are unique or newer on each side:
+   - if one side contains everything of the other: "**Keep A** (nothing is lost)";
+   - if both sides have unique or newer files: "**make both identical** is recommended — keeping only one side loses *n* items (A has more)"; that mode is pre-selected.
+3. Choose a **sync mode**.
+
+| Mode | What it does |
+|---|---|
+| **Make both identical** | Copies what is only on one side to the other; where both differ, the **newer one** wins. Nothing is deleted |
+| **A → B newer only** / **B → A newer only** | Copies only what the target lacks or where the source is newer. Items only in the target, or newer there, are left alone |
+| **Keep only A** / **Keep only B** | Makes the other side **identical** to the one you keep: differing files are overwritten and items only on the other side go to the **Recycle Bin** |
+
+4. Tick or untick items (Space); right-click to set an item's direction (A → B / A ← B / leave). Double-click shows the file in a pane.
+5. **Synchronize** → confirms what will happen (deletions, newer files being overwritten), runs with the progress window, then compares again to show what is left.
+   - Copies keep the modified time, so they compare as the same next time. Network folders have no Recycle Bin, so deletions there are permanent (the confirmation says so).
+   - "Same date, different content" cannot be decided automatically, so "make both identical" leaves it alone — choose a direction yourself.
 
 ---
 
@@ -512,6 +538,7 @@ Hidden files (Ctrl+H) and font size (Ctrl+= / Ctrl+-) are changed directly on th
 | | Alt+F5 / Alt+F9 | Compress / extract |
 | | Ctrl+Shift+U | Unblock |
 | | Alt+F7 | Find files |
+| | Shift+F2 | Folder compare & sync |
 | | Ctrl+Alt+F7 | Everything search window (current folder) |
 | Navigation | Enter / Backspace | Open / parent folder |
 | | Ctrl+\\ | Root |
