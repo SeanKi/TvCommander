@@ -23,6 +23,15 @@ public partial class TextEditorWindow : Window
     private bool _ready;
     private SearchPanel? _search;
 
+    private int _zoom = 100;
+
+    private void ApplyZoom(int percent)
+    {
+        _zoom = percent;
+        Editor.FontSize = 13 * percent / 100.0;
+        if (ViewZoom.Settings != null) ViewZoom.Settings.ZoomEditor = percent;
+    }
+
     public TextEditorWindow(string path, Action<string>? openExternal)
     {
         InitializeComponent();
@@ -34,6 +43,9 @@ public partial class TextEditorWindow : Window
         Editor.Options.EnableEmailHyperlinks = false;
         Editor.Options.ConvertTabsToSpaces = false;
         Editor.Options.HighlightCurrentLine = true;
+        // Ctrl+휠 확대·축소 (글자 크기)
+        ApplyZoom(ViewZoom.Clamp(ViewZoom.Settings?.ZoomEditor ?? 100));
+        ViewZoom.Attach(Editor, () => _zoom, ApplyZoom, keyTarget: this);
         Editor.TextArea.Caret.PositionChanged += (_, _) => UpdateStatus();
         Editor.TextChanged += (_, _) => UpdateStatus();
         Loaded += async (_, _) => await LoadAsync();

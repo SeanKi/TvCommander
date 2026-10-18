@@ -30,6 +30,14 @@ public sealed class AppSettings
     /// <summary>F4 외부 편집기. 비우면 내장 편집기 (예전 기본값 notepad.exe 도 내장으로 본다)</summary>
     public string Editor { get; set; } = "";
     public bool UseBuiltInEditor => Compat.IsBlank(Editor) || string.Equals(Editor.Trim(), "notepad.exe", StringComparison.OrdinalIgnoreCase);
+    /// <summary>Ctrl+휠 확대·축소 범위 (%). settings.ini 의 ZoomMin / ZoomMax 로 바꿀 수 있다</summary>
+    public int ZoomMin { get; set; } = 75;
+    public int ZoomMax { get; set; } = 200;
+    /// <summary>창 종류별 마지막 확대 비율 (%): 목록(패널·찾기 결과 등), 뷰어, 텍스트 편집기, CSV 편집기</summary>
+    public int ZoomList { get; set; } = 100;
+    public int ZoomViewer { get; set; } = 100;
+    public int ZoomEditor { get; set; } = 100;
+    public int ZoomCsv { get; set; } = 100;
     /// <summary>F9 터미널. "auto" = Windows Terminal 이 있으면 wt, 없으면 cmd</summary>
     public string Terminal { get; set; } = "auto";
     public List<PanelState> Panels { get; set; } = new();
@@ -101,6 +109,12 @@ public sealed class AppSettings
             Put("ShowHidden", ShowHidden);
             Put("Editor", Editor);
             Put("Terminal", Terminal);
+            Put("ZoomMin", ZoomMin);
+            Put("ZoomMax", ZoomMax);
+            Put("ZoomList", ZoomList);
+            Put("ZoomViewer", ZoomViewer);
+            Put("ZoomEditor", ZoomEditor);
+            Put("ZoomCsv", ZoomCsv);
             Put("WindowLeft", WindowLeft.ToString("R", Inv));
             Put("WindowTop", WindowTop.ToString("R", Inv));
             Put("WindowWidth", WindowWidth.ToString("R", Inv));
@@ -155,6 +169,12 @@ public sealed class AppSettings
         a.ShowHidden = Bool("ShowHidden");
         a.Editor = Get("Editor") is { Length: > 0 } ed ? ed : a.Editor;
         a.Terminal = Get("Terminal") is { Length: > 0 } te ? te : a.Terminal;
+        a.ZoomMin = Int("ZoomMin", a.ZoomMin);
+        a.ZoomMax = Int("ZoomMax", a.ZoomMax);
+        a.ZoomList = Int("ZoomList", a.ZoomList);
+        a.ZoomViewer = Int("ZoomViewer", a.ZoomViewer);
+        a.ZoomEditor = Int("ZoomEditor", a.ZoomEditor);
+        a.ZoomCsv = Int("ZoomCsv", a.ZoomCsv);
         a.WindowLeft = Dbl("WindowLeft", double.NaN);
         a.WindowTop = Dbl("WindowTop", double.NaN);
         a.WindowWidth = Dbl("WindowWidth", a.WindowWidth);

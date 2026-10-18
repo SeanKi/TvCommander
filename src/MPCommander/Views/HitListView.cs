@@ -37,8 +37,9 @@ internal sealed class HitListView : FrameworkElement
     private IReadOnlyList<LineHit> _items = Array.Empty<LineHit>();
     private int _top;
     private int _selected = -1;
-    private const double FontSz = 12;
-    private readonly double _rowH;
+    private const double BaseFontSz = 12;
+    private double FontSz = BaseFontSz;
+    private double _rowH;
 
     public ScrollBar? VBar { get; set; }
     /// <summary>사용자가 행을 골랐다 (클릭·키보드)</summary>
@@ -49,8 +50,20 @@ internal sealed class HitListView : FrameworkElement
         Focusable = true;
         FocusVisualStyle = null;
         ClipToBounds = true;
+        MeasureRow();
+    }
+
+    private void MeasureRow()
+    {
         var ft = new FormattedText(Loc.T("0가"), CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Face, FontSz, Brushes.Black, 1.0);
         _rowH = Math.Ceiling(ft.Height + 4);
+    }
+
+    /// <summary>글자 확대 비율 (Ctrl+휠, 1 = 100%)</summary>
+    public double Zoom
+    {
+        get => FontSz / BaseFontSz;
+        set { FontSz = BaseFontSz * value; MeasureRow(); Refresh(); InvalidateVisual(); }
     }
 
     /// <summary>목록 원본 (끝에 덧붙이기만 하는 리스트). 바뀌면 Refresh 만 부르면 된다.</summary>
@@ -113,7 +126,7 @@ internal sealed class HitListView : FrameworkElement
     {
         double w = ActualWidth, h = ActualHeight;
         dc.DrawRectangle(Brushes.White, null, new Rect(0, 0, w, h));
-        const double colLine = 84, colCount = 40;
+        double colLine = 84 * Zoom, colCount = 40 * Zoom;   // 줄 번호·개수 칸도 글자 크기를 따라
         // 머리글
         dc.DrawRectangle(HeaderBrush, null, new Rect(0, 0, w, HeaderH));
         dc.DrawLine(HeaderPen, new Point(0, HeaderH - 0.5), new Point(w, HeaderH - 0.5));
@@ -156,7 +169,7 @@ internal sealed class HitListView : FrameworkElement
         if (x > 0) dc.DrawLine(HeaderPen, new Point(x - 0.5, 2), new Point(x - 0.5, HeaderH - 2));
     }
 
-    private static FormattedText Text(string s, Brush b)
+    private FormattedText Text(string s, Brush b)
         => new(s.Length > 600 ? s.Substring(0, 600) : s, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Face, FontSz, b, 1.0);
 
     // ───────── 입력 ─────────

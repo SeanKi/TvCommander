@@ -23,12 +23,24 @@ public partial class CsvEditorWindow : Window
     private bool _dirty;
     private bool _ready;
 
+    private int _zoom = 100;
+
+    private void ApplyZoom(int percent)
+    {
+        _zoom = percent;
+        Grid.FontSize = 13 * percent / 100.0;   // 목록 글씨(ListFontSize) 대신 이 창만의 크기
+        if (ViewZoom.Settings != null) ViewZoom.Settings.ZoomCsv = percent;
+    }
+
     public CsvEditorWindow(string path)
     {
         InitializeComponent();
         LocUi.Apply(this);   // XAML 글자를 지금 언어로
         _path = path;
         Title = $"{Path.GetFileName(path)} — {Loc.T("CSV 편집")}";
+        // Ctrl+휠 확대·축소 (표 글자)
+        ApplyZoom(ViewZoom.Clamp(ViewZoom.Settings?.ZoomCsv ?? 100));
+        ViewZoom.Attach(Grid, () => _zoom, ApplyZoom, keyTarget: this);
         Loaded += async (_, _) => await LoadAsync();
         Closing += OnClosing;
         PreviewKeyDown += OnWindowKeyDown;

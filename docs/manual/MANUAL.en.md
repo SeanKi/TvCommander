@@ -107,6 +107,10 @@ Nothing is written to the program folder, so updating means replacing the progra
 | Bottom | **Command line** (runs commands in the active pane's folder) |
 | Very bottom | F3–F10 function buttons |
 
+> **Zoom (Ctrl+mouse wheel)**: in the pane lists, the viewer (F3 — text, matching lines, HEX, images), the editor (F4), the CSV editor and the Find files / folder compare lists,
+> **Ctrl+wheel** zooms in or out by 10% and **Ctrl+0** goes back to 100%. The new zoom is shown briefly in the middle of the window.
+> The range is **75% – 200%** — change it with `ZoomMin` / `ZoomMax` in `settings.ini`. The last zoom is remembered per kind of window.
+
 ### Toolbar
 
 ![Toolbar](images/en/00-toolbar.png)
@@ -558,6 +562,7 @@ Hidden files (Ctrl+H) and font size (Ctrl+= / Ctrl+-) are changed directly on th
 | Other | F1 | User manual |
 | | Ctrl+R / Ctrl+H | Refresh / hidden files |
 | | Ctrl+= / Ctrl+- | Larger / smaller font |
+| | Ctrl+wheel / Ctrl+0 | Zoom (75% – 200%) / 100% |
 | | Ctrl+Shift+C | Copy full paths of the selection |
 | | Ctrl+E / F9 | Command line / terminal |
 | | Ctrl+F | Remote connections |

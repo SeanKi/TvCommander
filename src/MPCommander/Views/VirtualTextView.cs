@@ -89,6 +89,21 @@ internal sealed class VirtualTextView : FrameworkElement
         set { _wrap = value; _hOffset = 0; UpdateBars(); InvalidateVisual(); }
     }
 
+    private const double BaseFontSize = 13;
+
+    /// <summary>글자 확대 비율 (Ctrl+휠, 1 = 100%)</summary>
+    public double Zoom
+    {
+        get => _fontSize / BaseFontSize;
+        set
+        {
+            _fontSize = BaseFontSize * value;
+            MeasureFont();
+            UpdateBars();
+            InvalidateVisual();
+        }
+    }
+
     public long LineCount => _lineCount;
     public long TopLine => _top;
     public int VisibleLines => Math.Max(1, (int)(ActualHeight / _lineHeight));

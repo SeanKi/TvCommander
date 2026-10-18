@@ -56,6 +56,20 @@ public partial class ViewerWindow : Window
     private bool _userMoved;
 
     /// <param name="find">처음부터 찾을 말 (파일 찾기의 '포함 텍스트')</param>
+    private int _zoom = 100;
+
+    private void ApplyZoom(int percent)
+    {
+        _zoom = percent;
+        double z = percent / 100.0;
+        TextView.Zoom = z;
+        HitList.Zoom = z;
+        HexBox.FontSize = 13 * z;
+        LineDetail.FontSize = 13 * z;
+        ImageView.LayoutTransform = percent == 100 ? Transform.Identity : new ScaleTransform(z, z);
+        if (ViewZoom.Settings != null) ViewZoom.Settings.ZoomViewer = percent;
+    }
+
     public ViewerWindow(string path, string? find = null, bool caseSensitive = false, bool regex = false)
     {
         InitializeComponent();
@@ -63,6 +77,9 @@ public partial class ViewerWindow : Window
         _path = path;
         _isImage = ImageExtensions.Contains(Path.GetExtension(path));
         Title = Loc.F($"보기 - {Path.GetFileName(path)}");
+        // Ctrl+휠 확대·축소 (본문·찾은 줄·HEX·그림 모두)
+        ApplyZoom(ViewZoom.Clamp(ViewZoom.Settings?.ZoomViewer ?? 100));
+        ViewZoom.Attach(MainGrid, () => _zoom, ApplyZoom, keyTarget: this);
 
         _syncing = true;
         FindBox.Text = find ?? "";

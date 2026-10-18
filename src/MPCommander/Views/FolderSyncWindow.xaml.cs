@@ -26,6 +26,7 @@ public partial class FolderSyncWindow : Window
         PathB.Text = b;
         ExcludeBox.Text = ".git;.vs";
         ModeBoth.IsChecked = true;
+        ViewZoom.Attach(List, () => _host.ListZoom, _host.SetListZoom);   // Ctrl+휠: 목록 글씨 (패널과 같이)
         Loaded += async (_, _) => await CompareAsync();
         Closed += (_, _) => _cts?.Cancel();
     }

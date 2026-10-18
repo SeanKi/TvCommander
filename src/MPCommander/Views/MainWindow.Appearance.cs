@@ -43,9 +43,21 @@ public partial class MainWindow
     {
         level = Compat.Clamp(level, 0, FontLevels.Length - 1);
         _settings.FontLevel = level;
-        Application.Current.Resources["ListFontSize"] = FontLevels[level].Size;
-        FontButton.ToolTip = Loc.F($"목록 글씨 크기: {FontLevels[level].Name} (Ctrl+= / Ctrl+-)");
+        _settings.ZoomList = ViewZoom.Clamp(_settings.ZoomList);
+        // 크기 단계(작게·보통·크게) × Ctrl+휠 확대 비율
+        Application.Current.Resources["ListFontSize"] = Math.Round(FontLevels[level].Size * _settings.ZoomList / 100.0, 1);
+        FontButton.ToolTip = Loc.F($"목록 글씨 크기: {FontLevels[level].Name} (Ctrl+= / Ctrl+-)") +
+                             (_settings.ZoomList != 100 ? Loc.F($", 확대 {_settings.ZoomList}% (Ctrl+휠, Ctrl+0 = 100%)") : "");
     }
+
+    /// <summary>목록(패널·찾기 결과·폴더 비교) Ctrl+휠 확대 비율</summary>
+    public void SetListZoom(int percent)
+    {
+        _settings.ZoomList = ViewZoom.Clamp(percent);
+        ApplyFontLevel(_settings.FontLevel);
+    }
+
+    public int ListZoom => _settings.ZoomList;
 
     private void Font_Click(object sender, RoutedEventArgs e)
     {

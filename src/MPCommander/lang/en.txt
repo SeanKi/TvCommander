@@ -1944,3 +1944,9 @@ A 와 B 가 같은 폴더입니다.
 
 폴더 비교: 활성 패널과 대상 패널에 비교할 PC 폴더를 여세요.
 => Folder compare: open the PC folders to compare in the active and target panes.
+
+{0}%  (범위 {1}% ~ {2}%)
+=> {0}%  (range {1}% – {2}%)
+
+, 확대 {0}% (Ctrl+휠, Ctrl+0 = 100%)
+=> , zoom {0}% (Ctrl+wheel, Ctrl+0 = 100%)

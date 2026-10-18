@@ -128,6 +128,10 @@ tests/IoProbe/         타임아웃·열거 성능 점검용 콘솔
 - 결과에서 Enter / 더블클릭: 패널에서 보기, F3: 뷰어 (포함 텍스트로 찾은 상태).
 - **Ctrl+Alt+F7**: [Everything](https://www.voidtools.com/) 검색 창을 현재 폴더로 연다 (`Everything.exe -path 폴더`). Everything.exe 는 프로그램 폴더 → 실행 중인 프로세스 → 레지스트리(App Paths, 제거 정보) → Program Files 순으로 찾는다.
 
+## 확대·축소 (Ctrl+휠)
+
+- `Views/ViewZoom.cs`: 창마다 `ViewZoom.Attach(요소, 가져오기, 적용)` — Ctrl+휠 10% 씩, Ctrl+0 = 100%, 범위 `settings.ini` 의 `ZoomMin`/`ZoomMax` (기본 75 ~ 200). 뷰어 본문(`VirtualTextView.Zoom`)·찾은 줄(`HitListView.Zoom`)·HEX·그림, AvalonEdit·CSV 표 글자, 목록 글씨(`ListFontSize` × `ZoomList`).
+
 ## 폴더 비교 · 동기화 (Shift+F2)
 
 - `IO/FolderSync.cs`: `FolderCompare.Run` 이 두 폴더를 하위까지 읽어 비교 (크기 + 수정 시각 2초 오차, 크기 같고 1 MB 이하는 내용 비교, 한쪽에만 있는 폴더는 맨 위 하나로 묶음, 제외 이름은 PathMatchSpec).

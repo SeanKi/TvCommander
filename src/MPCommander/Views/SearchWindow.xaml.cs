@@ -75,6 +75,7 @@ public partial class SearchWindow : Window
         _host = host;
         RootBox.Text = root;
         ResultList.ItemsSource = _results;
+        ViewZoom.Attach(ResultList, () => _host.ListZoom, _host.SetListZoom);   // Ctrl+휠: 목록 글씨 (패널과 같이)
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
         _timer.Tick += (_, _) => Pump();
         Loaded += (_, _) => { MaskBox.Focus(); MaskBox.SelectAll(); };

@@ -46,7 +46,9 @@ public partial class MainWindow : Window
         if (MdNotePadPath == null) MdSyncButton.Visibility = Visibility.Collapsed;   // MDNotePad+ 가 없으면 버튼도 없다
         InitToolbarIcons();
         InitCommandLine();
+        ViewZoom.Settings = _settings;   // Ctrl+휠 확대 범위·비율 (모든 보기 창)
         ApplyFontLevel(_settings.FontLevel);
+        ViewZoom.Attach(PanelGrid, () => _settings.ZoomList, SetListZoom);
         RestoreWindowBounds();
 
         Loaded += OnLoaded;
