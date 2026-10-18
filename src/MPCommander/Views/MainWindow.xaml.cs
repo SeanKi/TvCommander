@@ -291,6 +291,7 @@ public partial class MainWindow : Window
         {
             case (Key.F3, None): CmdView(); break;
             case (Key.F4, None): CmdEdit(); break;
+            case (Key.F4, Shift): CmdEdit(external: true); break;
             case (Key.F5, None): CmdCopyMove(OpKind.Copy); break;
             case (Key.F6, None): CmdCopyMove(OpKind.Move); break;
             case (Key.F6, Shift):
@@ -522,16 +523,51 @@ public partial class MainWindow : Window
         new ViewerWindow(local) { Owner = this }.Show();
     }
 
-    public async void CmdEdit()
+    /// <summary>
+    /// F4: CSV·TSV 는 내장 표 편집기, 그 밖의 텍스트는 내장 편집기(AvalonEdit). 설정에 외부 편집기를 적었으면 그것으로.
+    /// Shift+F4 (external): 늘 외부 편집기 (설정이 내장이면 메모장).
+    /// </summary>
+    public async void CmdEdit(bool external = false)
     {
         var it = P.CursorItem;
         if (it == null || it.IsDirectory) return;
+        bool remote = PathUtil.IsVirtual(it.FullPath);
+        // CSV / TSV 는 내장 표 편집기로 (PC 파일만 — 원격은 임시 사본이라 저장해도 돌아가지 않는다)
+        if (!external && !remote && Path.GetExtension(it.Name).ToLowerInvariant() is ".csv" or ".tsv")
+        {
+            new CsvEditorWindow(it.FullPath) { Owner = this }.Show();
+            return;
+        }
         var local = await MaterializeAsync(it.FullPath);
         if (local == null) return;
-        if (PathUtil.IsVirtual(it.FullPath))
+        if (remote)
             P.FlashStatus(Loc.T("원격 파일은 임시 사본으로 열립니다. 수정한 뒤에는 F5 로 다시 복사하세요."));
-        StartProcess(_settings.Editor, Quote(local), Path.GetDirectoryName(local));
+        if (external || !_settings.UseBuiltInEditor)
+        {
+            OpenExternalEditor(local);
+            return;
+        }
+        // 내장 편집기: 바이너리·아주 큰 파일은 열지 않는다
+        try
+        {
+            if (new FileInfo(local).Length > TextFileCodec.MaxEditBytes)
+            {
+                P.FlashStatus(Loc.T("편집기로 열기에는 너무 큰 파일입니다 (64 MB 초과). F3 뷰어나 Shift+F4(외부 편집기)를 쓰세요."));
+                return;
+            }
+            if (TextFileCodec.LooksBinary(local))
+            {
+                P.FlashStatus(Loc.T("텍스트 파일이 아닙니다. F3(HEX 보기)나 Shift+F4(외부 편집기)를 쓰세요."));
+                return;
+            }
+        }
+        catch (Exception ex) { ShowError(ex.Message); return; }
+        new TextEditorWindow(local, OpenExternalEditor) { Owner = this }.Show();
     }
+
+    /// <summary>설정의 외부 편집기 (내장으로 되어 있으면 메모장)</summary>
+    private void OpenExternalEditor(string path)
+        => StartProcess(_settings.UseBuiltInEditor ? "notepad.exe" : _settings.Editor, Quote(path), Path.GetDirectoryName(path));
 
     /// <summary>원격(휴대폰·FTP·WebDAV) 파일이면 임시 폴더로 받아 로컬 경로를 돌려준다. 실패하면 null.</summary>
     private async Task<string?> MaterializeAsync(string path)

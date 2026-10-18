@@ -1,0 +1,54 @@
+﻿<Window x:Class="MPCommander.Views.CsvEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CSV 편집" Width="1100" Height="700" MinWidth="560" MinHeight="300"
+        WindowStartupLocation="CenterOwner" FontFamily="Segoe UI" FontSize="12">
+    <DockPanel>
+        <ToolBarTray DockPanel.Dock="Top" IsLocked="True">
+            <ToolBar>
+                <Button x:Name="SaveButton" Click="Save_Click" ToolTip="저장 (Ctrl+S)" Padding="6,2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE74E;" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="저장"/>
+                    </StackPanel>
+                </Button>
+                <Separator/>
+                <Button Click="InsertRow_Click" ToolTip="선택한 줄 아래에 새 줄 (Ctrl+Enter)" Padding="6,2" Content="줄 추가"/>
+                <Button Click="DeleteRows_Click" ToolTip="선택한 줄 삭제 (Ctrl+Delete)" Padding="6,2" Content="줄 삭제"/>
+                <Separator/>
+                <Button Click="InsertColumn_Click" ToolTip="선택한 칸 오른쪽에 새 열" Padding="6,2" Content="열 추가"/>
+                <Button Click="DeleteColumn_Click" ToolTip="선택한 칸의 열 삭제" Padding="6,2" Content="열 삭제"/>
+                <Separator/>
+                <TextBlock Text="인코딩" VerticalAlignment="Center" Margin="4,0,6,0"/>
+                <ComboBox x:Name="EncodingCombo" Width="150" SelectionChanged="Encoding_Changed"
+                          ToolTip="저장할 인코딩 (읽을 때 알아낸 것이 기본)">
+                    <ComboBoxItem Content="UTF-8"/>
+                    <ComboBoxItem Content="UTF-8 (BOM)"/>
+                    <ComboBoxItem Content="CP949 (한국어 ANSI)"/>
+                </ComboBox>
+                <TextBlock Text="구분자" VerticalAlignment="Center" Margin="12,0,6,0"/>
+                <ComboBox x:Name="DelimiterCombo" Width="90" SelectionChanged="Delimiter_Changed"
+                          ToolTip="저장할 때 쓸 구분자 (읽을 때 알아낸 것이 기본)">
+                    <ComboBoxItem Content=", (쉼표)"/>
+                    <ComboBoxItem Content="; (세미콜론)"/>
+                    <ComboBoxItem Content="탭"/>
+                </ComboBox>
+            </ToolBar>
+        </ToolBarTray>
+
+        <TextBlock x:Name="StatusText" DockPanel.Dock="Bottom" Margin="8,3" TextTrimming="CharacterEllipsis"/>
+
+        <Grid>
+            <DataGrid x:Name="Grid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                      CanUserSortColumns="False" CanUserReorderColumns="False" SelectionUnit="CellOrRowHeader" SelectionMode="Extended"
+                      HeadersVisibility="All" RowHeaderWidth="48" GridLinesVisibility="All"
+                      HorizontalGridLinesBrush="#FFE0E0E0" VerticalGridLinesBrush="#FFE0E0E0"
+                      EnableRowVirtualization="True" EnableColumnVirtualization="True"
+                      VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                      ClipboardCopyMode="ExcludeHeader" FontSize="{DynamicResource ListFontSize}"
+                      LoadingRow="Grid_LoadingRow" PreviewKeyDown="Grid_PreviewKeyDown"/>
+            <TextBlock x:Name="LoadingText" Text="불러오는 중..." HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Foreground="Gray" FontSize="14"/>
+        </Grid>
+    </DockPanel>
+</Window>

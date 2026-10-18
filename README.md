@@ -128,6 +128,16 @@ tests/IoProbe/         타임아웃·열거 성능 점검용 콘솔
 - 결과에서 Enter / 더블클릭: 패널에서 보기, F3: 뷰어 (포함 텍스트로 찾은 상태).
 - **Ctrl+Alt+F7**: [Everything](https://www.voidtools.com/) 검색 창을 현재 폴더로 연다 (`Everything.exe -path 폴더`). Everything.exe 는 프로그램 폴더 → 실행 중인 프로세스 → 레지스트리(App Paths, 제거 정보) → Program Files 순으로 찾는다.
 
+## 편집기 (F4)
+
+- **텍스트 편집기** (`Views/TextEditorWindow`): [AvalonEdit](https://github.com/icsharpcode/AvalonEdit) 6.3 (MIT).
+  NuGet 으로 받아 **실행 파일 안에 리소스로 넣고**(`EmbeddedResource`, `ExcludeAssets="runtime"`), `App.ResolveEmbedded`(AssemblyResolve)가 처음 쓸 때 불러온다 — 배포 파일은 그대로 3개.
+  줄 번호, 문법 색(`HighlightingManager.GetDefinitionByExtension`), SearchPanel 찾기, 바꾸기·줄 이동 막대. 인코딩·줄바꿈 유지, 저장은 임시 파일 → `File.Replace` (`IO/TextFileCodec.cs`).
+- **CSV 편집기** (`Views/CsvEditorWindow`, `IO/CsvDocument.cs`): DataGrid + 줄 객체의 인덱서 바인딩(`[i]`). RFC 4180 파서, 칸마다 '따옴표였는지' 를 기억해 고치지 않은 칸은 바이트 그대로 저장.
+- Shift+F4 = 외부 편집기. 설정 `Editor` 가 비었거나 `notepad.exe`(예전 기본값)면 내장.
+- 라이선스 고지: `docs/THIRD-PARTY-NOTICES.txt` (배포본 `manual\`).
+- 점검: `IoProbe --csv`.
+
 ## 클립보드 (Ctrl+C / Ctrl+X / Ctrl+V)
 
 - 표시한 항목(없으면 커서 항목)을 Windows 표준 형식으로 클립보드에 넣는다 → 탐색기에 붙여넣을 수 있고, 탐색기에서 복사한 파일도 패널에 붙여넣을 수 있다.

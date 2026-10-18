@@ -15,7 +15,7 @@
     <ApplicationIcon>Assets\MP-Commander.ico</ApplicationIcon>
     <AssemblyName>MP-Commander</AssemblyName>
     <RootNamespace>MPCommander</RootNamespace>
-    <Version>1.9.7</Version>
+    <Version>1.9.8</Version>
     <Product>Multi-Pane Commander</Product>
     <AssemblyTitle>MP-Commander</AssemblyTitle>
     <Description>Multi-Pane Commander - multi-panel file manager for Windows</Description>
@@ -24,6 +24,8 @@
   <ItemGroup>
     <!-- 컴파일 시에만 쓰는 최신 C# 지원 코드 (record, required, 범위 연산 등). 실행 파일에 DLL 이 추가되지 않는다. -->
     <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all" />
+    <!-- 내장 텍스트 편집기 (MIT). 실행 파일 안에 넣어 배포 파일은 그대로 3개 (App.EmbeddedAssemblies) -->
+    <PackageReference Include="AvalonEdit" Version="6.3.0.90" GeneratePathProperty="true" ExcludeAssets="runtime" />
     <!-- 4.7.2 참조 어셈블리 (타기팅 팩이 없는 PC 에서도 빌드되게) -->
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
     <None Remove="Assets\MP-Commander-256.png" />
@@ -76,5 +78,7 @@
   <ItemGroup>
     <!-- 언어 팩: 실행 파일 옆 lang\ 폴더로 -->
     <None Include="lang\*.txt" CopyToOutputDirectory="PreserveNewest" />
+    <!-- AvalonEdit 은 실행 파일 안에 (App.ResolveEmbedded 가 불러온다) -->
+    <EmbeddedResource Include="$(PkgAvalonEdit)\lib\net462\ICSharpCode.AvalonEdit.dll" LogicalName="Embedded.ICSharpCode.AvalonEdit.dll" Visible="false" />
   </ItemGroup>
 </Project>

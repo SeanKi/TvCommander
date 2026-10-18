@@ -1,4 +1,4 @@
-# MP-Commander (Multi-Pane Commander) build script
+﻿# MP-Commander (Multi-Pane Commander) build script
 #   .\build.ps1                    Release build (C++ FmCore + WPF app, .NET Framework 4.7.2)
 #   .\build.ps1 -Configuration Debug
 #   .\build.ps1 -Publish           copy the runnable files to .\publish and make a release zip (~0.2 MB)
@@ -38,6 +38,7 @@ if ($Publish) {
     # 사용 설명서 (F1 / 툴바 ? 버튼으로 연다): manual\MANUAL.md + images
     New-Item -ItemType Directory -Force "$out\manual\images" | Out-Null
     Copy-Item "$root\docs\manual\MANUAL*.md" "$out\manual\"
+    Copy-Item "$root\docs\THIRD-PARTY-NOTICES.txt" "$out\manual\"   # AvalonEdit (MIT) 라이선스
     Copy-Item "$root\docs\manual\images\*.png" "$out\manual\images\"
     # 영어 설명서 그림 (MANUAL.en.md)
     if (Test-Path "$root\docs\manual\images\en") {

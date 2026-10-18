@@ -1,0 +1,68 @@
+<Window x:Class="MPCommander.Views.TextEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ae="http://icsharpcode.net/sharpdevelop/avalonedit"
+        Title="편집" Width="1000" Height="720" MinWidth="480" MinHeight="300"
+        WindowStartupLocation="CenterOwner" FontFamily="Segoe UI" FontSize="12">
+    <DockPanel>
+        <ToolBarTray DockPanel.Dock="Top" IsLocked="True">
+            <ToolBar>
+                <Button x:Name="SaveButton" Click="Save_Click" ToolTip="저장 (Ctrl+S)" Padding="6,2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE74E;" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="저장"/>
+                    </StackPanel>
+                </Button>
+                <Separator/>
+                <Button Click="Find_Click" ToolTip="찾기 (Ctrl+F, 다음 F3 / 이전 Shift+F3)" Padding="6,2" Content="찾기"/>
+                <Button Click="Replace_Click" ToolTip="바꾸기 (Ctrl+H)" Padding="6,2" Content="바꾸기"/>
+                <Button Click="GoTo_Click" ToolTip="줄로 이동 (Ctrl+G)" Padding="6,2" Content="줄 이동"/>
+                <Separator/>
+                <ToggleButton x:Name="WrapToggle" Click="Wrap_Click" ToolTip="자동 줄 바꿈" Padding="6,2" Content="줄 바꿈"/>
+                <Separator/>
+                <TextBlock Text="인코딩" VerticalAlignment="Center" Margin="4,0,6,0"/>
+                <ComboBox x:Name="EncodingCombo" Width="120" SelectionChanged="Encoding_Changed" ToolTip="저장할 인코딩 (읽을 때 알아낸 것이 기본)">
+                    <ComboBoxItem Content="UTF-8"/>
+                    <ComboBoxItem Content="UTF-8 (BOM)"/>
+                    <ComboBoxItem Content="CP949"/>
+                    <ComboBoxItem Content="UTF-16 LE"/>
+                    <ComboBoxItem Content="UTF-16 BE"/>
+                </ComboBox>
+                <Separator/>
+                <Button Click="External_Click" ToolTip="설정의 외부 편집기로 열기 (Shift+F4)" Padding="6,2" Content="외부 편집기"/>
+            </ToolBar>
+        </ToolBarTray>
+
+        <!-- 바꾸기 / 줄 이동 줄 (Ctrl+H / Ctrl+G 때만 보임) -->
+        <Border x:Name="ReplaceBar" DockPanel.Dock="Top" Visibility="Collapsed" Padding="6,4" BorderThickness="0,0,0,1"
+                BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="✕" Padding="6,0" Click="CloseBars_Click" ToolTip="닫기 (Esc)"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="찾을 말" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBox x:Name="FindBox" Width="200" Padding="3,1"/>
+                    <TextBlock Text="바꿀 말" VerticalAlignment="Center" Margin="10,0,6,0"/>
+                    <TextBox x:Name="ReplaceBox" Width="200" Padding="3,1"/>
+                    <CheckBox x:Name="ReplaceCase" Content="대소문자 구분" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                    <Button Content="다음 바꾸기" Padding="8,1" Margin="10,0,0,0" Click="ReplaceNext_Click"/>
+                    <Button Content="모두 바꾸기" Padding="8,1" Margin="6,0,0,0" Click="ReplaceAll_Click"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+        <Border x:Name="GoToBar" DockPanel.Dock="Top" Visibility="Collapsed" Padding="6,4" BorderThickness="0,0,0,1"
+                BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="✕" Padding="6,0" Click="CloseBars_Click" ToolTip="닫기 (Esc)"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="GoToLabel" Text="줄 번호" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBox x:Name="GoToBox" Width="100" Padding="3,1" KeyDown="GoToBox_KeyDown"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <TextBlock x:Name="StatusText" DockPanel.Dock="Bottom" Margin="8,3" TextTrimming="CharacterEllipsis"/>
+
+        <ae:TextEditor x:Name="Editor" ShowLineNumbers="True" FontFamily="Consolas, Malgun Gothic" FontSize="13"
+                       HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" WordWrap="False"/>
+    </DockPanel>
+</Window>

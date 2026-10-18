@@ -241,6 +241,24 @@ Options:
 
 ---
 
+### Editor (F4)
+
+**F4** opens the file under the cursor in MP-Commander's own editor (**Shift+F4** always uses the external editor).
+
+- **Text editor** (built on [AvalonEdit](https://github.com/icsharpcode/AvalonEdit)): line numbers, syntax colours by extension (C#, XML, HTML, JS, CSS, PowerShell, Markdown …), word wrap.
+  - **Ctrl+F** find (regex, case, whole word; next F3 / previous Shift+F3), **Ctrl+H** replace (replace next / replace all — one Ctrl+Z undoes it), **Ctrl+G** go to line.
+  - Detects the encoding (UTF-8 / UTF-8 BOM / CP949 / UTF-16) and line endings (CRLF / LF) and **saves them unchanged**. The encoding can be changed on the toolbar.
+  - **Ctrl+S** saves — written to a temporary file first and then swapped in, so a failed save never breaks the original. Closing with unsaved changes asks first.
+  - Files over 64 MB and binary files are not opened (use the F3 viewer or Shift+F4).
+- **CSV editor** (`.csv`, `.tsv`): edit the cells in a grid.
+  - Reads `"..."` quoted cells, `""` and line breaks inside cells, and detects the delimiter (`,` `;` tab) and encoding (UTF-8 / BOM / CP949).
+  - Double-click a cell (or F2) to edit, Enter to commit, **Alt+Enter** for a line break inside the cell. **Delete** clears the selected cells.
+  - **Add row** (Ctrl+Enter) / **Delete row** (Ctrl+Delete) / **Add column** / **Delete column**; **Ctrl+C / Ctrl+V** exchange ranges with Excel.
+  - Cells you did not edit are saved exactly as they were (quoting, line endings, final newline). If some characters cannot be written in CP949 it refuses to save and tells you.
+- Leave **Editor (F4)** in Settings empty for the built-in editors, or enter another program (e.g. `code`, Notepad++) to open F4 there (CSV always opens in the grid editor).
+
+---
+
 ## 7. Find files (Alt+F7)
 
 ![Find files — matches and lines](images/en/04-search.png)
@@ -474,7 +492,7 @@ Open with the gear button on the toolbar.
 | Backup-Copy | Backup location, folder name prefix, restart afterwards |
 | Compress / extract | Default format and level, exclude top folder, a folder per archive, overwrite |
 | Unblock | Include subfolders, file types, all files |
-| Program | F4 editor (Notepad by default), F9 terminal (`auto` = Windows Terminal first) |
+| Program | F4 editor (empty = built-in editor), F9 terminal (`auto` = Windows Terminal first) |
 
 Hidden files (Ctrl+H) and font size (Ctrl+= / Ctrl+-) are changed directly on the toolbar and saved.
 
@@ -484,7 +502,7 @@ Hidden files (Ctrl+H) and font size (Ctrl+= / Ctrl+-) are changed directly on th
 
 | Group | Key | Action |
 |---|---|---|
-| Files | F3 / F4 | View / edit |
+| Files | F3 / F4 / Shift+F4 | View / edit (built-in, CSV in a grid) / external editor |
 | | F5 / F6 | Copy / move (to the target pane) |
 | | Shift+F6, F2 | Rename |
 | | F7 | New folder |

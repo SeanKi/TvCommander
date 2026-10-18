@@ -81,7 +81,7 @@
             <StackPanel>
                 <DockPanel>
                     <TextBlock Text="편집기 (F4)" Style="{StaticResource Label}"/>
-                    <TextBox x:Name="EditorBox" Padding="3,2" ToolTip="예: notepad.exe, code, C:\Program Files\Notepad++\notepad++.exe"/>
+                    <TextBox x:Name="EditorBox" Padding="3,2" ToolTip="비워 두면 내장 편집기 (CSV 는 표 편집기). 외부 편집기를 쓰려면 적으세요 — 예: code, C:\Program Files\Notepad++\notepad++.exe&#x0a;Shift+F4 는 늘 외부 편집기 (비어 있으면 메모장)"/>
                 </DockPanel>
                 <DockPanel>
                     <TextBlock Text="터미널 (F9)" Style="{StaticResource Label}"/>

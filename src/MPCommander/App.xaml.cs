@@ -7,6 +7,28 @@ namespace MPCommander;
 
 public partial class App : Application
 {
+    // 실행 파일 안에 넣은 라이브러리(AvalonEdit)를 처음 쓸 때 리소스에서 불러온다 — 배포 파일을 늘리지 않으려고
+    static App() => AppDomain.CurrentDomain.AssemblyResolve += ResolveEmbedded;
+
+    private static readonly Dictionary<string, System.Reflection.Assembly> Embedded = new(StringComparer.OrdinalIgnoreCase);
+
+    private static System.Reflection.Assembly? ResolveEmbedded(object? sender, ResolveEventArgs args)
+    {
+        var name = new System.Reflection.AssemblyName(args.Name).Name;
+        lock (Embedded)
+        {
+            if (Embedded.TryGetValue(name, out var loaded)) return loaded;
+            using var s = typeof(App).Assembly.GetManifestResourceStream($"Embedded.{name}.dll");
+            if (s == null) return null;
+            var bytes = new byte[s.Length];
+            int read = 0;
+            while (read < bytes.Length) read += s.Read(bytes, read, bytes.Length - read);
+            var asm = System.Reflection.Assembly.Load(bytes);
+            Embedded[name] = asm;
+            return asm;
+        }
+    }
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);

@@ -1566,3 +1566,165 @@ Everything {0} · {1} · {2:0.00}초   │   Enter: 현재 패널에서 보기 �
 
 이 백업에서 복원...\tCtrl+Shift+B
 => Restore from this backup...\tCtrl+Shift+B
+
+CSV 편집
+=> CSV editor
+
+저장 (Ctrl+S)
+=> Save (Ctrl+S)
+
+선택한 줄 아래에 새 줄 (Ctrl+Enter)
+=> New row below the selected one (Ctrl+Enter)
+
+줄 추가
+=> Add row
+
+선택한 줄 삭제 (Ctrl+Delete)
+=> Delete the selected rows (Ctrl+Delete)
+
+줄 삭제
+=> Delete row
+
+선택한 칸 오른쪽에 새 열
+=> New column right of the selected cell
+
+열 추가
+=> Add column
+
+선택한 칸의 열 삭제
+=> Delete the selected cell's column
+
+열 삭제
+=> Delete column
+
+인코딩
+=> Encoding
+
+저장할 인코딩 (읽을 때 알아낸 것이 기본)
+=> Encoding to save with (defaults to the one detected when reading)
+
+CP949 (한국어 ANSI)
+=> CP949 (Korean ANSI)
+
+구분자
+=> Delimiter
+
+저장할 때 쓸 구분자 (읽을 때 알아낸 것이 기본)
+=> Delimiter to save with (defaults to the one detected when reading)
+
+, (쉼표)
+=> , (comma)
+
+; (세미콜론)
+=> ; (semicolon)
+
+탭
+=> Tab
+
+열 수 없습니다: 
+=> Cannot open: 
+
+{0:N0}줄 × {1:N0}열   │   {2}   │   구분자 {3}   │   {4}
+=> {0:N0} rows × {1:N0} columns   │   {2}   │   delimiter {3}   │   {4}
+
+   │   고침 (Ctrl+S 저장)
+=>    │   modified (Ctrl+S to save)
+
+   │   Alt+Enter: 칸 안 줄바꿈, Ctrl+V: 붙여넣기, Delete: 지우기
+=>    │   Alt+Enter: line break in a cell, Ctrl+V: paste, Delete: clear
+
+{0:N0}줄을 삭제할까요?
+=> Delete {0:N0} rows?
+
+{0} 열을 삭제할까요?
+=> Delete column {0}?
+
+저장했습니다: {0}   │   
+=> Saved: {0}   │   
+
+CP949 로 나타낼 수 없는 글자가 있어 저장하지 않았습니다. 인코딩을 UTF-8 로 바꿔 저장하세요.
+=> Not saved: some characters cannot be written in CP949. Change the encoding to UTF-8 and save.
+
+저장하지 못했습니다: 
+=> Could not save: 
+
+{0} 의 고친 내용을 저장할까요?
+=> Save the changes to {0}?
+
+편집
+=> Edit
+
+찾기 (Ctrl+F, 다음 F3 / 이전 Shift+F3)
+=> Find (Ctrl+F, next F3 / previous Shift+F3)
+
+바꾸기 (Ctrl+H)
+=> Replace (Ctrl+H)
+
+바꾸기
+=> Replace
+
+줄로 이동 (Ctrl+G)
+=> Go to line (Ctrl+G)
+
+줄 이동
+=> Go to line
+
+자동 줄 바꿈
+=> Word wrap
+
+줄 바꿈
+=> Wrap
+
+설정의 외부 편집기로 열기 (Shift+F4)
+=> Open in the external editor from Settings (Shift+F4)
+
+외부 편집기
+=> External editor
+
+닫기 (Esc)
+=> Close (Esc)
+
+찾을 말
+=> Find what
+
+바꿀 말
+=> Replace with
+
+다음 바꾸기
+=> Replace next
+
+모두 바꾸기
+=> Replace all
+
+줄 번호
+=> Line number
+
+줄 {0:N0}, 칸 {1:N0}   │   {2:N0}줄   │   {3}
+=> Ln {0:N0}, Col {1:N0}   │   {2:N0} lines   │   {3}
+
+   │   읽기 전용
+=>    │   read-only
+
+줄 번호 (1 – {0:N0})
+=> Line number (1 – {0:N0})
+
+찾는 말이 없습니다.
+=> Not found.
+
+{0:N0}곳을 바꿨습니다.
+=> Replaced {0:N0} occurrences.
+
+고친 내용이 저장되지 않았습니다. 외부 편집기는 저장된 파일을 엽니다. 계속할까요?
+=> The changes are not saved. The external editor opens the saved file. Continue?
+
+읽기 전용 파일이라 저장할 수 없습니다.
+=> The file is read-only and cannot be saved.
+
+편집기로 열기에는 너무 큰 파일입니다 (64 MB 초과). F3 뷰어나 Shift+F4(외부 편집기)를 쓰세요.
+=> Too large to edit (over 64 MB). Use the F3 viewer or Shift+F4 (external editor).
+
+텍스트 파일이 아닙니다. F3(HEX 보기)나 Shift+F4(외부 편집기)를 쓰세요.
+=> Not a text file. Use F3 (HEX view) or Shift+F4 (external editor).
+
+비워 두면 내장 편집기 (CSV 는 표 편집기). 외부 편집기를 쓰려면 적으세요 — 예: code, C:\Program Files\Notepad++\notepad++.exe\nShift+F4 는 늘 외부 편집기 (비어 있으면 메모장)
+=> Leave empty for the built-in editor (CSV opens in the grid editor). Enter an external editor to use it instead — e.g. code, C:\Program Files\Notepad++\notepad++.exe\nShift+F4 always uses the external editor (Notepad when empty)

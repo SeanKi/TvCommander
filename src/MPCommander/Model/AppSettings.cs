@@ -27,7 +27,9 @@ public sealed class AppSettings
     public int ActivePanel { get; set; }
     public bool ShowHidden { get; set; }
     /// <summary>F4 편집기</summary>
-    public string Editor { get; set; } = "notepad.exe";
+    /// <summary>F4 외부 편집기. 비우면 내장 편집기 (예전 기본값 notepad.exe 도 내장으로 본다)</summary>
+    public string Editor { get; set; } = "";
+    public bool UseBuiltInEditor => Compat.IsBlank(Editor) || string.Equals(Editor.Trim(), "notepad.exe", StringComparison.OrdinalIgnoreCase);
     /// <summary>F9 터미널. "auto" = Windows Terminal 이 있으면 wt, 없으면 cmd</summary>
     public string Terminal { get; set; } = "auto";
     public List<PanelState> Panels { get; set; } = new();

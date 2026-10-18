@@ -65,7 +65,7 @@ public partial class SettingsWindow : Window
         _s.UnblockTypes = types.Length > 0 ? types : "exe;dll";
         _s.UnblockAllFiles = UnblockAllCheck.IsChecked == true;
 
-        _s.Editor = Compat.IsBlank(EditorBox.Text) ? "notepad.exe" : EditorBox.Text.Trim();
+        _s.Editor = EditorBox.Text.Trim();   // 비우면 내장 편집기
         _s.Terminal = Compat.IsBlank(TerminalBox.Text) ? "auto" : TerminalBox.Text.Trim();
         DialogResult = true;
     }
