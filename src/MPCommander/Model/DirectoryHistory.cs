@@ -21,7 +21,7 @@ public sealed class DirectoryHistory
         "          SmartHalfLifeDays: 이 일수가 지나면 점수가 절반 (1~365)\n" +
         "          MaxDwellMinutesPerVisit: 한 번 방문에서 인정하는 최대 체류 시간 (1~600)\n" +
         "[Recent], [Stats], [Pinned], [Excluded] 는 프로그램이 관리한다. Stats = 경로|방문수|체류초|마지막방문(UTC)\n" +
-        "[Pinned] = 별표로 올린 폴더, [Excluded] = 별표로 내려 자동 순위에서 뺀 폴더";
+        "[Pinned] = 별표로 올린 폴더 (즐겨찾기 바 순서, 경로|설명), [Excluded] = 별표로 내려 자동 순위에서 뺀 폴더";
     private const int MaxExcluded = 500;
 
     private sealed class Stat
@@ -36,7 +36,8 @@ public sealed class DirectoryHistory
     private readonly IniFile _ini;
     private readonly List<string> _recent = new();
     private readonly Dictionary<string, Stat> _stats = new(StringComparer.OrdinalIgnoreCase);
-    private readonly List<string> _pinned = new();   // 최근에 올린 것이 앞
+    private readonly List<string> _pinned = new();   // 최근에 올린 것이 앞 (즐겨찾기 바 순서)
+    private readonly Dictionary<string, string> _labels = new(StringComparer.OrdinalIgnoreCase);   // 즐겨찾기 설명
     private readonly List<string> _excluded = new();
 
     /// <summary>자주 머문 폴더 목록이 바뀌었을 때 (별표 상태 갱신용)</summary>
@@ -91,7 +92,14 @@ public sealed class DirectoryHistory
         }
 
         foreach (var kv in ini.Section("Pinned"))
-            if (kv.Value.Length > 0 && !h._pinned.Any(p => PathUtil.Same(p, kv.Value))) h._pinned.Add(kv.Value);
+        {
+            // 경로|설명 ('|' 는 경로에 쓸 수 없다). 예전 파일은 경로만
+            var parts = kv.Value.Split(['|'], 2);
+            var path = parts[0];
+            if (path.Length == 0 || h._pinned.Any(p => PathUtil.Same(p, path))) continue;
+            h._pinned.Add(path);
+            if (parts.Length > 1 && parts[1].Trim().Length > 0) h._labels[path] = parts[1].Trim();
+        }
         foreach (var kv in ini.Section("Excluded"))
             if (kv.Value.Length > 0 && !h._excluded.Any(p => PathUtil.Same(p, kv.Value))) h._excluded.Add(kv.Value);
         return h;
@@ -122,7 +130,8 @@ public sealed class DirectoryHistory
 
         var pinned = _ini.Section("Pinned");
         pinned.Clear();
-        for (int i = 0; i < _pinned.Count; i++) pinned.Add(new((i + 1).ToString(), _pinned[i]));
+        for (int i = 0; i < _pinned.Count; i++)
+            pinned.Add(new((i + 1).ToString(), _labels.TryGetValue(_pinned[i], out var label) ? $"{_pinned[i]}|{label}" : _pinned[i]));
 
         var excluded = _ini.Section("Excluded");
         excluded.Clear();
@@ -194,6 +203,7 @@ public sealed class DirectoryHistory
         if (IsSmart(path))
         {
             _pinned.RemoveAll(p => PathUtil.Same(p, path));
+            _labels.Remove(path);
             if (!_excluded.Any(p => PathUtil.Same(p, path))) _excluded.Insert(0, path);
             if (_excluded.Count > MaxExcluded) _excluded.RemoveRange(MaxExcluded, _excluded.Count - MaxExcluded);
             added = false;
@@ -202,11 +212,60 @@ public sealed class DirectoryHistory
         {
             _excluded.RemoveAll(p => PathUtil.Same(p, path));
             _pinned.RemoveAll(p => PathUtil.Same(p, path));
-            _pinned.Insert(0, path);
+            _pinned.Add(path);   // 즐겨찾기 바 끝에 (브라우저처럼)
             added = true;
         }
         Changed?.Invoke();
         return added;
+    }
+
+    // ───────── 즐겨찾기 바 (별표로 올린 폴더) ─────────
+
+    /// <summary>즐겨찾기: 별표로 올린 폴더와 설명 (바에 보이는 순서)</summary>
+    public IReadOnlyList<(string Path, string Label)> Favorites =>
+        _pinned.Select(p => (p, _labels.TryGetValue(p, out var l) ? l : "")).ToList();
+
+    /// <summary>즐겨찾기 고치기: 경로와 설명 (설명이 비면 경로만 보인다)</summary>
+    public void EditFavorite(string oldPath, string newPath, string label)
+    {
+        int i = _pinned.FindIndex(p => PathUtil.Same(p, oldPath));
+        if (i < 0) return;
+        _labels.Remove(oldPath);
+        newPath = newPath.Trim();
+        // 다른 즐겨찾기와 겹치면 그것을 지운다
+        _pinned.RemoveAll(p => !PathUtil.Same(p, oldPath) && PathUtil.Same(p, newPath));
+        i = _pinned.FindIndex(p => PathUtil.Same(p, oldPath));
+        _pinned[i] = newPath;
+        if (label.Trim().Length > 0) _labels[newPath] = label.Trim().Replace("|", "/");
+        _excluded.RemoveAll(p => PathUtil.Same(p, newPath));
+        Changed?.Invoke();
+    }
+
+    /// <summary>즐겨찾기에서 빼기 (자동 순위에는 다시 나올 수 있다)</summary>
+    public void RemoveFavorite(string path)
+    {
+        _pinned.RemoveAll(p => PathUtil.Same(p, path));
+        _labels.Remove(path);
+        Changed?.Invoke();
+    }
+
+    /// <summary>바에서 왼쪽(-1)·오른쪽(+1)으로</summary>
+    public void MoveFavorite(string path, int delta)
+    {
+        int i = _pinned.FindIndex(p => PathUtil.Same(p, path));
+        int j = i + delta;
+        if (i < 0 || j < 0 || j >= _pinned.Count) return;
+        (_pinned[i], _pinned[j]) = (_pinned[j], _pinned[i]);
+        Changed?.Invoke();
+    }
+
+    /// <summary>바 끝에 더하기 (이미 있으면 그대로)</summary>
+    public void AddFavorite(string path)
+    {
+        if (_pinned.Any(p => PathUtil.Same(p, path))) return;
+        _excluded.RemoveAll(p => PathUtil.Same(p, path));
+        _pinned.Add(path);
+        Changed?.Invoke();
     }
 
     /// <summary>최근 폴더 (스마트 목록에 이미 있는 것은 뺀다)</summary>

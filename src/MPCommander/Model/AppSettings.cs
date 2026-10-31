@@ -30,6 +30,10 @@ public sealed class AppSettings
     /// <summary>F4 외부 편집기. 비우면 내장 편집기 (예전 기본값 notepad.exe 도 내장으로 본다)</summary>
     public string Editor { get; set; } = "";
     public bool UseBuiltInEditor => Compat.IsBlank(Editor) || string.Equals(Editor.Trim(), "notepad.exe", StringComparison.OrdinalIgnoreCase);
+    /// <summary>즐겨찾기 바 (툴바 아래) 보이기</summary>
+    public bool ShowFavoritesBar { get; set; } = true;
+    /// <summary>툴바 항목과 순서 (쉼표로, | = 구분선). 비면 기본 구성</summary>
+    public string ToolbarItems { get; set; } = "";
     /// <summary>Ctrl+휠 확대·축소 범위 (%). settings.ini 의 ZoomMin / ZoomMax 로 바꿀 수 있다</summary>
     public int ZoomMin { get; set; } = 75;
     public int ZoomMax { get; set; } = 200;
@@ -109,6 +113,8 @@ public sealed class AppSettings
             Put("ShowHidden", ShowHidden);
             Put("Editor", Editor);
             Put("Terminal", Terminal);
+            Put("ShowFavoritesBar", ShowFavoritesBar);
+            Put("ToolbarItems", ToolbarItems);
             Put("ZoomMin", ZoomMin);
             Put("ZoomMax", ZoomMax);
             Put("ZoomList", ZoomList);
@@ -169,6 +175,8 @@ public sealed class AppSettings
         a.ShowHidden = Bool("ShowHidden");
         a.Editor = Get("Editor") is { Length: > 0 } ed ? ed : a.Editor;
         a.Terminal = Get("Terminal") is { Length: > 0 } te ? te : a.Terminal;
+        a.ShowFavoritesBar = !string.Equals(Get("ShowFavoritesBar"), "False", StringComparison.OrdinalIgnoreCase);
+        a.ToolbarItems = Get("ToolbarItems") ?? "";
         a.ZoomMin = Int("ZoomMin", a.ZoomMin);
         a.ZoomMax = Int("ZoomMax", a.ZoomMax);
         a.ZoomList = Int("ZoomList", a.ZoomList);

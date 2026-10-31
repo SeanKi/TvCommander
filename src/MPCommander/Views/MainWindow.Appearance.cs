@@ -23,7 +23,8 @@ public partial class MainWindow
     /// <summary>패널 배치 아이콘: 행 × 열 칸을 그린 작은 격자</summary>
     private static FrameworkElement LayoutIcon(int rows, int cols)
     {
-        var grid = new UniformGrid { Rows = rows, Columns = cols, Width = 24, Height = 16, Margin = new Thickness(1) };
+        // 칸이 6px 보다 작아지지 않게: 4열(8창)은 넓게 그려 4×2 가 분명히 보이도록
+        var grid = new UniformGrid { Rows = rows, Columns = cols, Width = Math.Max(24, cols * 8), Height = 16, Margin = new Thickness(1) };
         for (int i = 0; i < rows * cols; i++)
         {
             grid.Children.Add(new Border

@@ -18,6 +18,7 @@ internal static class Compat
     public static bool IsEmpty([NotNullWhen(false)] string? s) => string.IsNullOrEmpty(s);
 
     public static int Clamp(int value, int min, int max) => value < min ? min : value > max ? max : value;
+    public static double Clamp(double value, double min, double max) => value < min ? min : value > max ? max : value;
 
     /// <summary>File.Move(src, dst, overwrite: true) 대체. 같은 폴더 안에서 대상이 있으면 교체한다.</summary>
     public static void MoveReplace(string src, string dst)

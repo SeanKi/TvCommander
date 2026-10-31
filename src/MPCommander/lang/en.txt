@@ -1950,3 +1950,90 @@ A 와 B 가 같은 폴더입니다.
 
 , 확대 {0}% (Ctrl+휠, Ctrl+0 = 100%)
 => , zoom {0}% (Ctrl+wheel, Ctrl+0 = 100%)
+
+이동식 디스크
+=> Removable disk
+
+로컬 디스크
+=> Local disk
+
+패널 배치 (2·3·4·6·8창)
+=> Pane layout (2·3·4·6·8 panes)
+
+툴바 사용자 지정...
+=> Customize toolbar...
+
+즐겨찾기 바 보이기
+=> Show favorites bar
+
+즐겨찾기 바 보이기 / 숨기기 — 패널의 ☆ 로 더한 폴더를 툴바 아래에 (브라우저처럼)
+=> Show / hide the favorites bar — folders added with a pane's ☆, shown under the toolbar (like a browser)
+
+툴바 사용자 지정
+=> Customize toolbar
+
+왼쪽은 쓸 수 있는 항목, 오른쪽은 툴바에 보이는 항목입니다 (위에서부터 왼쪽 → 오른쪽 순서). 더블클릭으로도 넣고 뺄 수 있습니다. 숨긴 항목도 단축키로는 그대로 쓸 수 있습니다.
+=> Left: available items; right: items shown on the toolbar (top to bottom = left to right). Double-click also adds or removes. Hidden items still work with their shortcut keys.
+
+기본값으로
+=> Reset to default
+
+쓸 수 있는 항목
+=> Available items
+
+넣기 →
+=> Add →
+
+← 빼기
+=> ← Remove
+
+구분선 넣기
+=> Add separator
+
+툴바
+=> Toolbar
+
+▲ 위로
+=> ▲ Up
+
+▼ 아래로
+=> ▼ Down
+
+──── 구분선 ────
+=> ──── separator ────
+
+{0}\n누르기: 활성 패널에서 열기 · Ctrl+누르기: 대상 패널 · 오른쪽 버튼: 고치기·순서·빼기
+=> {0}\nClick: open in the active pane · Ctrl+click: target pane · Right-click: edit, order, remove
+
+☆ 지금 폴더를 즐겨찾기에 (패널의 ☆ 또는 Ctrl+D)
+=> ☆ Add the current folder (a pane's ☆ or Ctrl+D)
+
+활성 패널의 지금 폴더를 즐겨찾기 바에 더하기
+=> Add the active pane's current folder to the favorites bar
+
+활성 패널에서 열기
+=> Open in the active pane
+
+대상 패널에서 열기
+=> Open in the target pane
+
+이름 · 경로 고치기...
+=> Edit name and path...
+
+◀ 왼쪽으로
+=> ◀ Move left
+
+오른쪽으로 ▶
+=> Move right ▶
+
+즐겨찾기에서 빼기
+=> Remove from favorites
+
+즐겨찾기 고치기
+=> Edit favorite
+
+비워 두면 즐겨찾기 바에 경로만 보입니다
+=> Leave empty to show only the path on the favorites bar
+
+바에 보이는 모양: 
+=> On the bar: 

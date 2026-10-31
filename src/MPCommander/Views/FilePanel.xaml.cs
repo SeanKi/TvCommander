@@ -957,6 +957,37 @@ public partial class FilePanel : UserControl
 
     // ───────────────────────── 드라이브 / 경로 입력 ─────────────────────────
 
+    /// <summary>
+    /// 드라이브 이름 (볼륨 이름). 네트워크 드라이브는 서버에 묻지 않고 연결 정보(레지스트리)의 공유 이름으로
+    /// — 꺼진 서버에서 목록이 멈추지 않게. 이름이 없는 로컬 디스크는 '로컬 디스크'.
+    /// </summary>
+    private static string VolumeName(DriveInfo d)
+    {
+        try
+        {
+            if (d.DriveType == DriveType.Network)
+            {
+                using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey($@"Network\{d.Name.Substring(0, 1)}");
+                if (key?.GetValue("RemotePath") is string unc && unc.StartsWith(@"\\"))
+                {
+                    // \\server\share\folder → "share (\\server)"
+                    var parts = unc.TrimEnd('\\').Substring(2).Split('\\');
+                    return parts.Length >= 2 ? $"{parts[parts.Length - 1]} (\\\\{parts[0]})" : unc;
+                }
+                return Loc.T("네트워크");
+            }
+            if (d.DriveType == DriveType.CDRom && !d.IsReady) return "CD";
+            if (d.IsReady && d.VolumeLabel.Length > 0) return d.VolumeLabel;
+            return d.DriveType switch
+            {
+                DriveType.Removable => Loc.T("이동식 디스크"),
+                DriveType.Fixed => Loc.T("로컬 디스크"),
+                _ => "",
+            };
+        }
+        catch { return ""; }
+    }
+
     private void PopulateDrives()
     {
         _updatingDrives = true;
@@ -965,15 +996,9 @@ public partial class FilePanel : UserControl
             _drives.Clear();
             foreach (var d in DriveInfo.GetDrives())
             {
-                string kind = d.DriveType switch
-                {
-                    DriveType.Network => Loc.T("네트워크"),
-                    DriveType.Removable => Loc.T("이동식"),
-                    DriveType.CDRom => "CD",
-                    _ => "",
-                };
                 var name = d.Name.TrimEnd('\\');
-                _drives.Add(new DriveEntry(name, kind.Length > 0 ? $"{name}  {kind}" : name));
+                var label = VolumeName(d);
+                _drives.Add(new DriveEntry(name, label.Length > 0 ? $"{name}  {label}" : name));
             }
             // 등록된 FTP / WebDAV 연결 (연결 관리: Ctrl+F)
             foreach (var c in RemoteConnections.All)
@@ -1208,39 +1233,6 @@ public partial class FilePanel : UserControl
         }
     }
 
-    private void FileList_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        _dragItem = null;
-        var item = ItemFromSource(e.OriginalSource);
-        if (item == null) return;
-        var mods = Keyboard.Modifiers;
-
-        if (mods == ModifierKeys.Control)
-        {
-            // Double Commander 처럼: 아직 표시한 것이 없을 때 다른 항목을 Ctrl+클릭하면 커서 항목도 함께 표시
-            if (CursorItem is { } cur && cur != item && !_items.Any(i => i.IsMarked)) SetMark(cur, true);
-            SetMark(item, !item.IsMarked);
-            UpdateStatus();
-            SetCursor(_items.IndexOf(item), true);
-            e.Handled = true;
-        }
-        else if (mods == ModifierKeys.Shift)
-        {
-            int from = Math.Max(0, FileList.SelectedIndex), to = _items.IndexOf(item);
-            for (int i = Math.Min(from, to); i <= Math.Max(from, to); i++) SetMark(_items[i], true);
-            UpdateStatus();
-            SetCursor(to, true);
-            e.Handled = true;
-        }
-        else if (e.ClickCount == 1)
-        {
-            _dragStart = e.GetPosition(FileList);
-            _dragItem = item;
-        }
-    }
-
-    private void FileList_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e) => _dragItem = null;
-
     private void FileList_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
     {
         var item = ItemFromSource(e.OriginalSource);
@@ -1249,6 +1241,7 @@ public partial class FilePanel : UserControl
 
     private void FileList_PreviewMouseMove(object sender, MouseEventArgs e)
     {
+        if (LassoMove(e)) return;   // 끌어서 고르기 (FilePanel.Selection.cs)
         if (_dragItem == null || e.LeftButton != MouseButtonState.Pressed) return;
         var pos = e.GetPosition(FileList);
         if (Math.Abs(pos.X - _dragStart.X) < SystemParameters.MinimumHorizontalDragDistance &&

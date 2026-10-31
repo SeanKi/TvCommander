@@ -6,7 +6,7 @@
         <DockPanel>
             <!-- 드라이브 / 경로 -->
             <DockPanel DockPanel.Dock="Top" Margin="0,0,0,2">
-                <ComboBox x:Name="DriveCombo" DockPanel.Dock="Left" Width="92" IsTabStop="False"
+                <ComboBox x:Name="DriveCombo" DockPanel.Dock="Left" Width="140" IsTabStop="False"
                           DisplayMemberPath="Display"
                           DropDownOpened="DriveCombo_DropDownOpened"
                           DropDownClosed="DriveCombo_DropDownClosed"
@@ -144,6 +144,11 @@
                         </GridView>
                     </ListView.View>
                 </ListView>
+
+                <!-- 끌어서 고르기 사각형 (FilePanel.Selection.cs) -->
+                <Canvas IsHitTestVisible="False" ClipToBounds="True">
+                    <Rectangle x:Name="LassoRect" Visibility="Collapsed" Stroke="#FF3399FF" StrokeThickness="1" Fill="#283399FF"/>
+                </Canvas>
 
                 <Border x:Name="LoadingOverlay" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"
                         Background="#F0FFFFFF" BorderBrush="Gray" BorderThickness="1" Padding="14,8" IsHitTestVisible="False">

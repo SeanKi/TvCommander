@@ -113,6 +113,10 @@ Nothing is written to the program folder, so updating means replacing the progra
 
 ### Toolbar
 
+By default the toolbar shows **Find files · Compress · Extract · Unblock · Backup-Copy · Restore · Folder compare** | **Favorites bar · Copy full paths · Remote connections · MDNotePad+ · Manual · Settings**.
+**Right-click the toolbar → Customize toolbar** to add the other items in the table below (pane layouts, back/forward/up/refresh, new folder, terminal, copy path/names, swap panes, hidden files, font size), change the order and add separators.
+Hidden items still work with their shortcut keys. The layout is saved as `ToolbarItems` in `settings.ini`.
+
 ![Toolbar](images/en/00-toolbar.png)
 
 | Icon (left to right) | Function | Shortcut |
@@ -178,10 +182,15 @@ Selected items are shown in **red**. With no selection, commands apply to the it
 |---|---|
 | Select/deselect one by one | **Insert**, **Space**, **Ctrl+click** |
 | Select a range | **Shift+↑↓**, **Shift+click** |
+| Drag to select | **Drag** from outside the name column (size/date columns) or from the empty area below the items — rows inside the box. Hold Ctrl to add |
 | Select / deselect by mask | **Num+** / **Num-** (e.g. `*.log`) |
 | Invert / all | **Num*** / **Ctrl+A** |
 
 > **Ctrl+click** works like Double Commander: when nothing is selected yet, Ctrl+clicking another item also selects the item under the cursor.
+
+> **Click rules** (Double Commander style): with a selection, **clicking an unselected item clears the selection**; clicking a selected item keeps it (so you can drag it).
+> **Shift+click** selects from the last clicked item to there; Shift+clicking again changes the range — clicking back toward the anchor shrinks it.
+> Dragging in the name column still drags files.
 
 > **Folder size (Space)**: selecting a folder with **Space** calculates the total size of all files in it, subfolders included, in the background and shows it in the Size column
 > (a growing running total with `…` while it counts). You can keep working meanwhile; going to another folder stops it.
@@ -489,6 +498,9 @@ Manage connections with **Ctrl+F** or the globe button (add / edit / delete / co
   - Top: **frequent folders** — the 5 folders ranked by time spent and visits (they sink when not visited for a while).
   - Below: recent folders (shared by all panes).
 - **☆ button (Ctrl+D):** **pins** the current folder to the top of the frequent folders. It lights up as a yellow ★ when the folder is in the list; click again to remove it.
+- **Favorites bar**: folders pinned with ☆ appear under the toolbar like browser favorites (show / hide with the favorites-bar button on the toolbar).
+  - Click opens in the active pane, **Ctrl+click** in the target pane. The **＋** at the end adds the current folder.
+  - **Right-click → Edit name and path**: with no name only the path is shown, otherwise `name (path)`. The same menu moves items left / right and removes them.
 
 ---
 

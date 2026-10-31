@@ -45,6 +45,8 @@ public partial class MainWindow : Window
         HiddenToggle.IsChecked = _settings.ShowHidden;
         if (MdNotePadPath == null) MdSyncButton.Visibility = Visibility.Collapsed;   // MDNotePad+ 가 없으면 버튼도 없다
         InitToolbarIcons();
+        InitToolbar();          // 설정의 순서대로 툴바 항목 놓기
+        InitFavoritesBar();     // 툴바 아래 즐겨찾기 바
         InitCommandLine();
         ViewZoom.Settings = _settings;   // Ctrl+휠 확대 범위·비율 (모든 보기 창)
         ApplyFontLevel(_settings.FontLevel);

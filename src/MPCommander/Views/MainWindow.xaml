@@ -76,7 +76,13 @@
             </Popup>
         </Grid>
         <ToolBarTray x:Name="MainToolBarTray" IsLocked="True">
-            <ToolBar>
+            <ToolBarTray.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="툴바 사용자 지정..." Click="CustomizeToolbar_Click"/>
+                    <MenuItem x:Name="FavBarMenuItem" Header="즐겨찾기 바 보이기" IsCheckable="True" Click="FavBarMenu_Click"/>
+                </ContextMenu>
+            </ToolBarTray.ContextMenu>
+            <ToolBar x:Name="MainToolBar">
                 <ToolBar.Resources>
                     <Style TargetType="Button" BasedOn="{StaticResource {x:Static ToolBar.ButtonStyleKey}}">
                         <Setter Property="Focusable" Value="False"/>
@@ -92,50 +98,48 @@
                     </Style>
                 </ToolBar.Resources>
 
-                <!-- 패널 배치: 아이콘은 코드에서 격자 모양으로 그린다 (InitToolbarIcons) -->
-                <RadioButton x:Name="Layout2" GroupName="Layout" Tag="2" Click="Layout_Click" ToolTip="2창 (Ctrl+F2)"/>
-                <RadioButton x:Name="Layout3" GroupName="Layout" Tag="3" Click="Layout_Click" ToolTip="3창 (Ctrl+F3)"/>
-                <RadioButton x:Name="Layout4" GroupName="Layout" Tag="4" Click="Layout_Click" ToolTip="4창 2×2 (Ctrl+F4)"/>
-                <RadioButton x:Name="Layout6" GroupName="Layout" Tag="6" Click="Layout_Click" ToolTip="6창 2×3 (Ctrl+F6)"/>
-                <RadioButton x:Name="Layout8" GroupName="Layout" Tag="8" Click="Layout_Click" ToolTip="8창 2×4 (Ctrl+F8)"/>
-                <Separator/>
-                <Button Click="Back_Click" ToolTip="뒤로 (Alt+←)"><TextBlock Style="{StaticResource Icon}" Text="&#xE72B;"/></Button>
-                <Button Click="Forward_Click" ToolTip="앞으로 (Alt+→)"><TextBlock Style="{StaticResource Icon}" Text="&#xE72A;"/></Button>
-                <Button Click="Up_Click" ToolTip="상위 폴더 (Backspace)"><TextBlock Style="{StaticResource Icon}" Text="&#xE74A;"/></Button>
-                <Button Click="Refresh_Click" ToolTip="새로고침 (Ctrl+R)"><TextBlock Style="{StaticResource Icon}" Text="&#xE72C;"/></Button>
-                <Separator/>
-                <Button Click="Search_Click" ToolTip="파일 찾기 (Alt+F7)"><TextBlock Style="{StaticResource Icon}" Text="&#xE721;"/></Button>
-                <Button Click="FolderSync_Click" ToolTip="폴더 비교 · 동기화 (Shift+F2) — 활성 패널(A)과 대상 패널(B) 폴더를 하위까지 비교해&#x0a;양쪽 똑같이 / 한쪽 → 반대쪽 최신만 / 한쪽만 남기기. 어느 쪽을 남길지 조언"><!-- 겹친 두 폴더: 비교 -->
+                <!-- 항목마다 Uid = 툴바 구성 이름 (MainWindow.Toolbar.cs 가 설정의 순서대로 다시 놓는다).
+                     패널 배치: 아이콘은 코드에서 격자 모양으로 그린다 (InitToolbarIcons) -->
+                <ToggleButton x:Name="FavBarToggle" Uid="favbar" Click="FavBar_Click" ToolTip="즐겨찾기 바 보이기 / 숨기기 — 패널의 ☆ 로 더한 폴더를 툴바 아래에 (브라우저처럼)"><TextBlock Style="{StaticResource Icon}" Text="&#xE728;"/></ToggleButton>
+                <RadioButton x:Name="Layout2" GroupName="Layout" Tag="2" Uid="layouts" Click="Layout_Click" ToolTip="2창 (Ctrl+F2)"/>
+                <RadioButton x:Name="Layout3" GroupName="Layout" Tag="3" Uid="layouts" Click="Layout_Click" ToolTip="3창 (Ctrl+F3)"/>
+                <RadioButton x:Name="Layout4" GroupName="Layout" Tag="4" Uid="layouts" Click="Layout_Click" ToolTip="4창 2×2 (Ctrl+F4)"/>
+                <RadioButton x:Name="Layout6" GroupName="Layout" Tag="6" Uid="layouts" Click="Layout_Click" ToolTip="6창 2×3 (Ctrl+F6)"/>
+                <RadioButton x:Name="Layout8" GroupName="Layout" Tag="8" Uid="layouts" Click="Layout_Click" ToolTip="8창 2×4 (Ctrl+F8)"/>
+                <Button Uid="back" Click="Back_Click" ToolTip="뒤로 (Alt+←)"><TextBlock Style="{StaticResource Icon}" Text="&#xE72B;"/></Button>
+                <Button Uid="forward" Click="Forward_Click" ToolTip="앞으로 (Alt+→)"><TextBlock Style="{StaticResource Icon}" Text="&#xE72A;"/></Button>
+                <Button Uid="up" Click="Up_Click" ToolTip="상위 폴더 (Backspace)"><TextBlock Style="{StaticResource Icon}" Text="&#xE74A;"/></Button>
+                <Button Uid="refresh" Click="Refresh_Click" ToolTip="새로고침 (Ctrl+R)"><TextBlock Style="{StaticResource Icon}" Text="&#xE72C;"/></Button>
+                <Button Uid="search" Click="Search_Click" ToolTip="파일 찾기 (Alt+F7)"><TextBlock Style="{StaticResource Icon}" Text="&#xE721;"/></Button>
+                <Button Uid="foldersync" Click="FolderSync_Click" ToolTip="폴더 비교 · 동기화 (Shift+F2) — 활성 패널(A)과 대상 패널(B) 폴더를 하위까지 비교해&#x0a;양쪽 똑같이 / 한쪽 → 반대쪽 최신만 / 한쪽만 남기기. 어느 쪽을 남길지 조언"><!-- 겹친 두 폴더: 비교 -->
                     <Grid Width="20" Height="18" Margin="1,0">
                         <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="13" Text="&#xED25;" HorizontalAlignment="Left" VerticalAlignment="Top"/>
                         <Rectangle Width="13" Height="11" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0,1"
                                    Fill="{Binding Background, RelativeSource={RelativeSource AncestorType=ToolBar}}"/>
                         <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="13" Text="&#xED25;" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
                     </Grid></Button>
-                <Button Click="Connections_Click" ToolTip="원격 연결 관리 — FTP / FTPS / WebDAV 등록·연결 (Ctrl+F)"><TextBlock Style="{StaticResource Icon}" Text="&#xE774;"/></Button>
-                <Separator/>
-                <Button Click="CopyPath_Click" ToolTip="현재 폴더 경로 복사"><TextBlock Style="{StaticResource Icon}" Text="&#xE8C8;"/></Button>
-                <Button Click="CopyFullPaths_Click" ToolTip="선택 항목 전체 경로 복사 (Ctrl+Shift+C)"><TextBlock Style="{StaticResource Icon}" Text="&#xE71B;"/></Button>
-                <Button Click="CopyNames_Click" ToolTip="선택 항목 이름 복사"><TextBlock Style="{StaticResource Icon}" Text="&#xE8AC;"/></Button>
-                <Separator/>
-                <Button Click="NewFolder_Click" ToolTip="새 폴더 (F7)"><TextBlock Style="{StaticResource Icon}" Text="&#xE8F4;"/></Button>
-                <Button Click="Terminal_Click" ToolTip="여기서 터미널 열기 (F9)"><TextBlock Style="{StaticResource Icon}" Text="&#xE756;"/></Button>
-                <Button Click="BackupCopy_Click" ToolTip="백업 후 복사 (Ctrl+B) — 대상의 같은 이름 파일을 backup\날짜_시각 에 백업한 뒤 복사.&#x0a;실행 중인 프로그램 확인·닫기, 끝나면 다시 실행 (프로그램 업데이트용)"><!-- 폴더 + 시계: 날짜·시각 폴더에 백업 -->
+                <Button Uid="connections" Click="Connections_Click" ToolTip="원격 연결 관리 — FTP / FTPS / WebDAV 등록·연결 (Ctrl+F)"><TextBlock Style="{StaticResource Icon}" Text="&#xE774;"/></Button>
+                <Button Uid="copypath" Click="CopyPath_Click" ToolTip="현재 폴더 경로 복사"><TextBlock Style="{StaticResource Icon}" Text="&#xE8C8;"/></Button>
+                <Button Uid="copyfullpaths" Click="CopyFullPaths_Click" ToolTip="선택 항목 전체 경로 복사 (Ctrl+Shift+C)"><TextBlock Style="{StaticResource Icon}" Text="&#xE71B;"/></Button>
+                <Button Uid="copynames" Click="CopyNames_Click" ToolTip="선택 항목 이름 복사"><TextBlock Style="{StaticResource Icon}" Text="&#xE8AC;"/></Button>
+                <Button Uid="newfolder" Click="NewFolder_Click" ToolTip="새 폴더 (F7)"><TextBlock Style="{StaticResource Icon}" Text="&#xE8F4;"/></Button>
+                <Button Uid="terminal" Click="Terminal_Click" ToolTip="여기서 터미널 열기 (F9)"><TextBlock Style="{StaticResource Icon}" Text="&#xE756;"/></Button>
+                <Button Uid="backup" Click="BackupCopy_Click" ToolTip="백업 후 복사 (Ctrl+B) — 대상의 같은 이름 파일을 backup\날짜_시각 에 백업한 뒤 복사.&#x0a;실행 중인 프로그램 확인·닫기, 끝나면 다시 실행 (프로그램 업데이트용)"><!-- 폴더 + 시계: 날짜·시각 폴더에 백업 -->
                     <Grid Width="20" Height="18" Margin="1,0">
                         <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="16" Text="&#xED25;" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,1,0,0"/>
                         <Ellipse Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                                  Fill="{Binding Background, RelativeSource={RelativeSource AncestorType=ToolBar}}"/>
                         <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="11" FontWeight="Bold" Text="&#xE81C;" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0.5,0.5"/>
                     </Grid></Button>
-                <Button Click="Restore_Click" ToolTip="백업에서 복원 (Ctrl+Shift+B) — backup 아래 날짜 폴더(backup-copy.log 가 있는)에 커서를 두고 누르면&#x0a;기록을 보고 대상 폴더를 백업 전으로 되돌립니다. 지금 파일은 backup\last_one 으로 옮겨 둡니다"><!-- 폴더 + 되돌리기 화살표 -->
+                <Button Uid="restore" Click="Restore_Click" ToolTip="백업에서 복원 (Ctrl+Shift+B) — backup 아래 날짜 폴더(backup-copy.log 가 있는)에 커서를 두고 누르면&#x0a;기록을 보고 대상 폴더를 백업 전으로 되돌립니다. 지금 파일은 backup\last_one 으로 옮겨 둡니다"><!-- 폴더 + 되돌리기 화살표 -->
                     <Grid Width="20" Height="18" Margin="1,0">
                         <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="16" Text="&#xED25;" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,1,0,0"/>
                         <Ellipse Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                                  Fill="{Binding Background, RelativeSource={RelativeSource AncestorType=ToolBar}}"/>
                         <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="11" FontWeight="Bold" Text="&#xE7A7;" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0.5,0.5"/>
                     </Grid></Button>
-                <Button Click="Pack_Click" ToolTip="압축 (Alt+F5) — 표시한 항목을 대상 패널 폴더에 7z 또는 ZIP 으로"><TextBlock Style="{StaticResource Icon}" Text="&#xE7B8;"/></Button>
-                <Button Click="Unpack_Click" ToolTip="압축 풀기 (Alt+F9) — 고른 압축 파일(ZIP·7z·RAR 등, 여러 개 가능)을 대상 패널 폴더에.&#x0a;기본으로 압축 파일마다 그 이름의 폴더를 만든다"><!-- 압축 아이콘(E7B8)의 뚜껑이 열린 모양: 글꼴에 없어 직접 그린다 -->
+                <Button Uid="pack" Click="Pack_Click" ToolTip="압축 (Alt+F5) — 표시한 항목을 대상 패널 폴더에 7z 또는 ZIP 으로"><TextBlock Style="{StaticResource Icon}" Text="&#xE7B8;"/></Button>
+                <Button Uid="unpack" Click="Unpack_Click" ToolTip="압축 풀기 (Alt+F9) — 고른 압축 파일(ZIP·7z·RAR 등, 여러 개 가능)을 대상 패널 폴더에.&#x0a;기본으로 압축 파일마다 그 이름의 폴더를 만든다"><!-- 압축 아이콘(E7B8)의 뚜껑이 열린 모양: 글꼴에 없어 직접 그린다 -->
                     <Canvas Width="16" Height="16" Margin="2,1" VerticalAlignment="Center">
                         <Path Stroke="{Binding (TextElement.Foreground), RelativeSource={RelativeSource Self}}" StrokeThickness="1"
                               Data="M1.5,7.5 H14.5 V15.5 H1.5 Z M4,10.5 H9 M4,12.5 H7"/>
@@ -145,22 +149,29 @@
                         </Path>
                     </Canvas>
                 </Button>
-                <Button Click="Unblock_Click" ToolTip="차단 해제 — 인터넷에서 받은 파일의 차단 표시 지우기 (Ctrl+Shift+U)&#x0a;표시한 파일·폴더, 없으면 현재 폴더. 하위 폴더·파일 형식은 열리는 창에서 설정"><TextBlock Style="{StaticResource Icon}" Text="&#xE785;"/></Button>
-                <Button Click="Swap_Click" ToolTip="활성·대상 패널 경로 교체 (Ctrl+U)"><TextBlock Style="{StaticResource Icon}" Text="&#xE8AB;"/></Button>
-                <ToggleButton x:Name="HiddenToggle" Click="Hidden_Click" ToolTip="숨김 파일 보기 (Ctrl+H)"><TextBlock Style="{StaticResource Icon}" Text="&#xE890;"/></ToggleButton>
-                <Button x:Name="FontButton" Click="Font_Click" ToolTip="목록 글씨 크기 (Ctrl+= / Ctrl+-)"><TextBlock Style="{StaticResource Icon}" Text="&#xE8D2;"/></Button>
-                <Button x:Name="MdSyncButton" Click="MdSync_Click" ToolTip="MDNotePad+ 동기화 모드로 열기 — 커서의 .md 파일(없으면 빈 창)을 저장소·동기화·git 이 있는 전체 모드로 (같은 폴더의 MDNotePad+.exe)"><!-- 문서 + 동기화 -->
+                <Button Uid="unblock" Click="Unblock_Click" ToolTip="차단 해제 — 인터넷에서 받은 파일의 차단 표시 지우기 (Ctrl+Shift+U)&#x0a;표시한 파일·폴더, 없으면 현재 폴더. 하위 폴더·파일 형식은 열리는 창에서 설정"><TextBlock Style="{StaticResource Icon}" Text="&#xE785;"/></Button>
+                <Button Uid="swap" Click="Swap_Click" ToolTip="활성·대상 패널 경로 교체 (Ctrl+U)"><TextBlock Style="{StaticResource Icon}" Text="&#xE8AB;"/></Button>
+                <ToggleButton x:Name="HiddenToggle" Uid="hidden" Click="Hidden_Click" ToolTip="숨김 파일 보기 (Ctrl+H)"><TextBlock Style="{StaticResource Icon}" Text="&#xE890;"/></ToggleButton>
+                <Button x:Name="FontButton" Uid="font" Click="Font_Click" ToolTip="목록 글씨 크기 (Ctrl+= / Ctrl+-)"><TextBlock Style="{StaticResource Icon}" Text="&#xE8D2;"/></Button>
+                <Button x:Name="MdSyncButton" Uid="mdsync" Click="MdSync_Click" ToolTip="MDNotePad+ 동기화 모드로 열기 — 커서의 .md 파일(없으면 빈 창)을 저장소·동기화·git 이 있는 전체 모드로 (같은 폴더의 MDNotePad+.exe)"><!-- 문서 + 동기화 -->
                     <Grid Width="20" Height="18" Margin="1,0">
                         <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="16" Text="&#xE7C3;" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,1,0,0"/>
                         <Ellipse Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                                  Fill="{Binding Background, RelativeSource={RelativeSource AncestorType=ToolBar}}"/>
                         <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="11" FontWeight="Bold" Text="&#xE895;" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0.5,0.5"/>
                     </Grid></Button>
-                <Button Click="Manual_Click" ToolTip="사용 설명서 (F1) — 화면 언어의 설명서를, 같은 폴더에 MDNotePad+.exe 가 있으면 그것으로, 없으면 .md 에 연결된 프로그램으로 엽니다"><TextBlock Style="{StaticResource Icon}" Text="&#xE897;"/></Button>
-                <Button Click="Settings_Click" ToolTip="설정 — 백업 복사, 압축, 차단 해제, 편집기·터미널"><TextBlock Style="{StaticResource Icon}" Text="&#xE713;"/></Button>
+                <Button Uid="manual" Click="Manual_Click" ToolTip="사용 설명서 (F1) — 화면 언어의 설명서를, 같은 폴더에 MDNotePad+.exe 가 있으면 그것으로, 없으면 .md 에 연결된 프로그램으로 엽니다"><TextBlock Style="{StaticResource Icon}" Text="&#xE897;"/></Button>
+                <Button Uid="settings" Click="Settings_Click" ToolTip="설정 — 백업 복사, 압축, 차단 해제, 편집기·터미널"><TextBlock Style="{StaticResource Icon}" Text="&#xE713;"/></Button>
             </ToolBar>
         </ToolBarTray>
         </DockPanel>
+
+        <!-- 즐겨찾기 바: 별표(☆)로 올린 폴더. 누르면 활성 패널에서 열고, 오른쪽 버튼으로 이름·경로 고치기 (MainWindow.Favorites.cs) -->
+        <Border x:Name="FavBar" DockPanel.Dock="Top" BorderThickness="0,0,0,1" Padding="4,1"
+                BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
+                Background="{Binding Background, ElementName=MainToolBarTray}">
+            <WrapPanel x:Name="FavItems" Orientation="Horizontal"/>
+        </Border>
 
         <UniformGrid DockPanel.Dock="Bottom" Rows="1" Margin="2,0,2,2">
             <Button Style="{StaticResource FnButton}" Tag="F3" Click="FnKey_Click" Content="F3 보기"/>
