@@ -101,11 +101,11 @@
                 <!-- 항목마다 Uid = 툴바 구성 이름 (MainWindow.Toolbar.cs 가 설정의 순서대로 다시 놓는다).
                      패널 배치: 아이콘은 코드에서 격자 모양으로 그린다 (InitToolbarIcons) -->
                 <ToggleButton x:Name="FavBarToggle" Uid="favbar" Click="FavBar_Click" ToolTip="즐겨찾기 바 보이기 / 숨기기 — 패널의 ☆ 로 더한 폴더를 툴바 아래에 (브라우저처럼)"><TextBlock Style="{StaticResource Icon}" Text="&#xE728;"/></ToggleButton>
-                <RadioButton x:Name="Layout2" GroupName="Layout" Tag="2" Uid="layouts" Click="Layout_Click" ToolTip="2창 (Ctrl+F2)"/>
-                <RadioButton x:Name="Layout3" GroupName="Layout" Tag="3" Uid="layouts" Click="Layout_Click" ToolTip="3창 (Ctrl+F3)"/>
-                <RadioButton x:Name="Layout4" GroupName="Layout" Tag="4" Uid="layouts" Click="Layout_Click" ToolTip="4창 2×2 (Ctrl+F4)"/>
-                <RadioButton x:Name="Layout6" GroupName="Layout" Tag="6" Uid="layouts" Click="Layout_Click" ToolTip="6창 2×3 (Ctrl+F6)"/>
-                <RadioButton x:Name="Layout8" GroupName="Layout" Tag="8" Uid="layouts" Click="Layout_Click" ToolTip="8창 2×4 (Ctrl+F8)"/>
+                <RadioButton x:Name="Layout2" GroupName="Layout" Tag="2" Uid="layout2" Click="Layout_Click" ToolTip="2창 (Ctrl+F2)"/>
+                <RadioButton x:Name="Layout3" GroupName="Layout" Tag="3" Uid="layout3" Click="Layout_Click" ToolTip="3창 (Ctrl+F3)"/>
+                <RadioButton x:Name="Layout4" GroupName="Layout" Tag="4" Uid="layout4" Click="Layout_Click" ToolTip="4창 2×2 (Ctrl+F4)"/>
+                <RadioButton x:Name="Layout6" GroupName="Layout" Tag="6" Uid="layout6" Click="Layout_Click" ToolTip="6창 2×3 (Ctrl+F6)"/>
+                <RadioButton x:Name="Layout8" GroupName="Layout" Tag="8" Uid="layout8" Click="Layout_Click" ToolTip="8창 2×4 (Ctrl+F8)"/>
                 <Button Uid="back" Click="Back_Click" ToolTip="뒤로 (Alt+←)"><TextBlock Style="{StaticResource Icon}" Text="&#xE72B;"/></Button>
                 <Button Uid="forward" Click="Forward_Click" ToolTip="앞으로 (Alt+→)"><TextBlock Style="{StaticResource Icon}" Text="&#xE72A;"/></Button>
                 <Button Uid="up" Click="Up_Click" ToolTip="상위 폴더 (Backspace)"><TextBlock Style="{StaticResource Icon}" Text="&#xE74A;"/></Button>

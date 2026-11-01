@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -11,16 +11,20 @@ namespace MPCommander.Views;
 ///  - 그냥 클릭: 표시한 것이 있을 때 표시 안 된 항목을 누르면 표시가 모두 사라진다. 표시된 항목을 누르면 그대로 (끌어 옮기기용)
 ///  - Shift+클릭: 마지막으로 누른 항목(기준)부터 거기까지. 다시 Shift+클릭하면 그 범위로 바뀐다 (기준 쪽으로 누르면 줄어든다)
 ///  - Ctrl+클릭: 하나씩 넣고 빼기 (기준도 그 항목으로)
-///  - 끌어서 고르기: 이름 칸 밖(크기·날짜 칸)이나 항목 아래 빈 곳에서 끌면 사각형 안의 줄을 표시한다. Ctrl 을 누르면 더한다.
-///    이름 칸에서 끌면 지금처럼 파일 끌어 놓기.
+///  - Ctrl+Shift+클릭 / Ctrl+Shift+↑↓ (탐색기처럼): 기준부터 거기까지를 지금 표시에 더한다 (다른 표시는 그대로)
+///  - 끌어서 고르기 (탐색기처럼): 마지막 칸 오른쪽 빈 곳이나 항목 아래 빈 곳에서 끌면 사각형 안의 줄을 표시한다. Ctrl 을 누르면 더한다.
+///    거기를 그냥 누르면 표시가 모두 사라진다. 칸 안에서 끌면 지금처럼 파일 끌어 놓기.
 /// </summary>
 public partial class FilePanel
 {
     private int _anchorIndex = -1;                 // Shift+클릭 기준
     private (int From, int To)? _shiftRange;       // 마지막 Shift 범위 (다시 Shift+클릭하면 이것을 바꾼다)
+    private HashSet<FileItem>? _rangeBase;         // Ctrl+Shift 범위를 시작할 때의 표시 (이 위에 범위를 더한다)
+    private (int From, int To) _addRange = (0, -1);
 
     // 끌어서 고르기
-    private bool _lassoPending, _lassoActive;
+    private bool _lassoPending, _lassoActive, _lassoClear;   // _lassoClear: 빈 곳을 그냥 눌렀다 떼면 표시를 지운다
+    private bool _lassoAdd;                                  // 누른 순간 Ctrl → 지금 표시에 더한다
     private Point _lassoStart;
     private int _lassoStartIndex;
     private double _lassoStartOffset;
@@ -41,8 +45,40 @@ public partial class FilePanel
         return null;
     }
 
-    /// <summary>이름 칸 밖(크기·날짜…)을 눌렀는지 — 거기서 끌면 사각형으로 고른다</summary>
-    private bool OutsideNameColumn(Point p) => p.X > NameColumn.ActualWidth + 6;
+    /// <summary>마지막 칸 오른쪽 빈 곳을 눌렀는지 — 탐색기처럼 줄을 고르지 않고, 끌면 사각형으로 고른다</summary>
+    private bool PastLastColumn(Point p) =>
+        FileList.View is GridView gv && p.X + (ListScroll?.HorizontalOffset ?? 0) > gv.Columns.Sum(c => c.ActualWidth) + 6;
+
+    /// <summary>Ctrl+Shift+↑↓: 기준부터 index 까지를 지금 표시에 더한다. 이어서 누르면 그 범위만 바뀐다 (처음 표시는 그대로)</summary>
+    private void AddRangeTo(int index)
+    {
+        if (index < 0 || index >= _items.Count) return;
+        if (_rangeBase == null)
+        {
+            _rangeBase = _items.Where(i => i.IsMarked).ToHashSet();
+            _addRange = (0, -1);
+            if (_anchorIndex < 0 || _anchorIndex >= _items.Count) _anchorIndex = Math.Max(0, FileList.SelectedIndex);
+        }
+        var range = (Math.Min(_anchorIndex, index), Math.Max(_anchorIndex, index));
+        for (int i = _addRange.From; i <= _addRange.To && i < _items.Count; i++)
+            if (i < range.Item1 || i > range.Item2) SetMark(_items[i], _rangeBase.Contains(_items[i]));
+        for (int i = range.Item1; i <= range.Item2; i++) SetMark(_items[i], true);
+        _addRange = range;
+        _shiftRange = null;
+    }
+
+    /// <summary>Ctrl+Shift+↑↓: 커서를 옮기며 범위를 더한다 (처음 누를 때 커서가 기준)</summary>
+    private void AddRangeByKey(int delta)
+    {
+        if (_items.Count == 0) return;
+        if (_rangeBase == null) _anchorIndex = Math.Max(0, FileList.SelectedIndex);
+        MoveCursor(delta);
+        AddRangeTo(FileList.SelectedIndex);
+        UpdateStatus();
+    }
+
+    /// <summary>다른 키를 누르면 Ctrl+Shift 범위를 끝낸다 (다음 Ctrl+Shift 는 새 기준에서)</summary>
+    private void EndRangeAdd() => _rangeBase = null;
 
     private void FileList_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
@@ -51,8 +87,24 @@ public partial class FilePanel
         var pos = e.GetPosition(FileList);
         if (IsOnScrollBarOrHeader(e.OriginalSource as DependencyObject)) return;
         var item = ItemFromSource(e.OriginalSource);
+        if (item != null && PastLastColumn(pos)) item = null;   // 마지막 칸 오른쪽 = 빈 곳
         var mods = Keyboard.Modifiers;
         int index = item != null ? _items.IndexOf(item) : -1;
+
+        if (item != null && mods == (ModifierKeys.Control | ModifierKeys.Shift))
+        {
+            // 더하기만 한다: 기준부터 거기까지 표시, 이미 표시한 것은 어떤 경우에도 지우지 않는다
+            EndRangeAdd();
+            int from = _anchorIndex >= 0 && _anchorIndex < _items.Count ? _anchorIndex : Math.Max(0, FileList.SelectedIndex);
+            for (int i = Math.Min(from, index); i <= Math.Max(from, index); i++) SetMark(_items[i], true);
+            _anchorIndex = from;
+            _shiftRange = null;
+            UpdateStatus();
+            SetCursor(index, true);
+            e.Handled = true;
+            return;
+        }
+        EndRangeAdd();
 
         if (item != null && mods == ModifierKeys.Control)
         {
@@ -82,14 +134,16 @@ public partial class FilePanel
             e.Handled = true;
             return;
         }
-        if (mods is not (ModifierKeys.None or ModifierKeys.Control)) return;
+        if (mods is not (ModifierKeys.None or ModifierKeys.Control) && !(item == null && mods == (ModifierKeys.Control | ModifierKeys.Shift))) return;
 
-        // 끌어서 고르기 준비: 항목 아래 빈 곳, 또는 이름 칸 밖 (Ctrl = 더하기)
-        if (item == null || OutsideNameColumn(pos))
+        // 끌어서 고르기 준비: 항목 아래나 마지막 칸 오른쪽 빈 곳 (Ctrl = 더하기 — 누른 순간의 키로 정한다)
+        if (item == null)
         {
             _lassoPending = true;
+            _lassoAdd = (mods & ModifierKeys.Control) != 0;
+            _lassoClear = mods == ModifierKeys.None && e.ClickCount == 1;
             _lassoStart = pos;
-            _lassoStartIndex = item != null ? index : IndexAt(pos);
+            _lassoStartIndex = IndexAt(pos);
             _lassoStartOffset = ListScroll?.VerticalOffset ?? 0;
         }
         if (item == null || mods != ModifierKeys.None || e.ClickCount != 1)
@@ -102,11 +156,8 @@ public partial class FilePanel
         if (!item.IsMarked && _items.Any(i => i.IsMarked)) ClearMarks();
         _anchorIndex = index;
         _shiftRange = null;
-        if (!_lassoPending)
-        {
-            _dragStart = pos;
-            _dragItem = item;
-        }
+        _dragStart = pos;
+        _dragItem = item;
     }
 
     private static bool IsOnScrollBarOrHeader(DependencyObject? d)
@@ -145,7 +196,9 @@ public partial class FilePanel
     private void FileList_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         _dragItem = null;
+        bool clickedEmpty = _lassoPending && !_lassoActive && _lassoClear;
         _lassoPending = false;
+        if (clickedEmpty && _items.Any(i => i.IsMarked)) ClearMarks();
         if (!_lassoActive) return;
         _lassoActive = false;
         FileList.ReleaseMouseCapture();
@@ -167,14 +220,18 @@ public partial class FilePanel
             if (Math.Abs(pos.X - _lassoStart.X) < SystemParameters.MinimumHorizontalDragDistance &&
                 Math.Abs(pos.Y - _lassoStart.Y) < SystemParameters.MinimumVerticalDragDistance) return true;
             if (_items.Count == 0 || _lassoStartIndex < 0) { _lassoPending = false; return true; }
-            _lassoActive = true;
             _dragItem = null;
-            FileList.CaptureMouse();
-            _lassoBase = Keyboard.Modifiers == ModifierKeys.Control ? _items.Where(i => i.IsMarked).ToHashSet() : new HashSet<FileItem>();
-            if (Keyboard.Modifiers != ModifierKeys.Control) ClearMarks();
+            // 끄는 동안 Ctrl 을 떼어도 지우지 않는다 (누른 순간 Ctrl 이었으면 더하기)
+            _lassoBase = _lassoAdd ? _items.Where(i => i.IsMarked).ToHashSet() : new HashSet<FileItem>();
+            if (!_lassoAdd) ClearMarks();
             _lassoRange = (0, -1);
             _shiftRange = null;
+            _rangeBase = null;
             _anchorIndex = _lassoStartIndex;
+            _lassoActive = true;
+            // 상태를 다 정한 뒤에 잡는다: CaptureMouse 는 그 자리에서 MouseMove 를 한 번 더 일으켜 이 함수로 다시 들어온다
+            // (먼저 잡으면 지난번 끌기의 범위·기준으로 되돌려 이전 표시가 풀렸다)
+            FileList.CaptureMouse();
         }
 
         // 가장자리에 닿으면 굴린다
@@ -186,11 +243,10 @@ public partial class FilePanel
         }
         int cur = IndexAt(pos);
         if (cur < 0) return true;
-        var range = (Math.Min(_lassoStartIndex, cur), Math.Max(_lassoStartIndex, cur));
-        // 바뀐 부분만: 빠진 줄은 원래대로, 새로 든 줄은 표시
+        var range = (Math.Min(_lassoStartIndex, cur), Math.Max(_lassoStartIndex, cur));        // 바뀐 부분만: 빠진 줄은 원래대로, 든 줄은 표시 — Ctrl 이면 탐색기처럼 반전 (이미 표시된 것은 풀린다)
         for (int i = _lassoRange.From; i <= _lassoRange.To && i < _items.Count; i++)
             if (i < range.Item1 || i > range.Item2) SetMark(_items[i], _lassoBase.Contains(_items[i]));
-        for (int i = range.Item1; i <= range.Item2; i++) SetMark(_items[i], true);
+        for (int i = range.Item1; i <= range.Item2; i++) SetMark(_items[i], !_lassoBase.Contains(_items[i]));
         _lassoRange = range;
         UpdateStatus();
 

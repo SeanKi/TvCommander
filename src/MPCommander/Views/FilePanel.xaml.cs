@@ -1157,6 +1157,16 @@ public partial class FilePanel : UserControl
                 UpdateStatus();
                 MoveCursor(key == Key.Down ? +1 : -1);
                 break;
+            case Key.Up or Key.Down when mods == (ModifierKeys.Control | ModifierKeys.Shift):
+                AddRangeByKey(key == Key.Down ? +1 : -1);   // 탐색기처럼 범위를 더한다
+                break;
+            case Key.Up or Key.Down when mods == ModifierKeys.Control:
+                MoveCursor(key == Key.Down ? +1 : -1);      // 탐색기처럼 표시는 그대로 두고 커서만 (ListView 기본은 포커스만 옮겨 커서와 어긋난다)
+                break;
+            case Key.Space when mods == ModifierKeys.Control:
+                if (CursorItem is { } cs) SetMark(cs, !cs.IsMarked);   // 탐색기처럼 커서 항목만 넣고 빼기
+                UpdateStatus();
+                break;
             case Key.Add when mods == ModifierKeys.None:
                 MarkByMask(true);
                 break;
@@ -1177,6 +1187,8 @@ public partial class FilePanel : UserControl
                 handled = false;
                 break;
         }
+        if (key is not (Key.LeftShift or Key.RightShift or Key.LeftCtrl or Key.RightCtrl) &&
+            !(key is Key.Up or Key.Down && mods == (ModifierKeys.Control | ModifierKeys.Shift))) EndRangeAdd();
         if (handled) e.Handled = true;
         else if (key is not (Key.LeftShift or Key.RightShift)) ResetQuickIfStale(force: key is Key.Up or Key.Down or Key.Home or Key.End or Key.PageUp or Key.PageDown);
     }
@@ -1228,6 +1240,7 @@ public partial class FilePanel : UserControl
     {
         if (sender is ListViewItem { DataContext: FileItem it } && e.ChangedButton == MouseButton.Left)
         {
+            if (PastLastColumn(e.GetPosition(FileList))) return;   // 마지막 칸 오른쪽 빈 곳은 열지 않는다
             OpenItem(it);
             e.Handled = true;
         }

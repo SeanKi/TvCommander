@@ -10,9 +10,11 @@ namespace MPCommander.Views;
 /// </summary>
 public partial class MainWindow
 {
-    /// <summary>기본 구성: 자주 쓰는 작업 | 즐겨찾기 바 · 경로 복사 · 원격 · MDNotePad+ · 설명서 · 설정</summary>
+    /// <summary>기본 구성: 패널 배치 | 뒤로 · 앞으로 · 위 · 새로고침 | 자주 쓰는 작업 | 즐겨찾기 바 · 경로 복사 · 원격 · MDNotePad+ · 설명서 · 설정</summary>
     public static readonly string[] DefaultToolbar =
     [
+        "layout2", "layout3", "layout6", "layout8", "|",
+        "back", "forward", "up", "refresh", "|",
         "search", "pack", "unpack", "unblock", "backup", "restore", "foldersync", "|",
         "favbar", "copyfullpaths", "connections", "mdsync", "manual", "settings",
     ];
@@ -35,7 +37,9 @@ public partial class MainWindow
     /// <summary>지금 툴바 순서 (설정이 비었거나 알 수 없는 것만 있으면 기본)</summary>
     public List<string> ToolbarOrder()
     {
-        var ids = _settings.ToolbarItems.SplitTrim(',').Where(id => id == "|" || _toolItems.ContainsKey(id)).ToList();
+        var ids = _settings.ToolbarItems.SplitTrim(',')
+            .SelectMany(id => id == "layouts" ? ["layout2", "layout3", "layout4", "layout6", "layout8"] : new[] { id })   // 예전 설정: 배치 묶음
+            .Where(id => id == "|" || _toolItems.ContainsKey(id)).ToList();
         return ids.Any(id => id != "|") ? ids : DefaultToolbar.ToList();
     }
 
@@ -61,7 +65,6 @@ public partial class MainWindow
     /// <summary>항목 이름 (사용자 지정 창): 도구 설명의 첫 부분</summary>
     public string ToolbarItemName(string id)
     {
-        if (id == "layouts") return Loc.T("패널 배치 (2·3·4·6·8창)");
         if (!_toolItems.TryGetValue(id, out var els) || els[0] is not FrameworkElement fe) return id;
         var tip = fe.ToolTip as string ?? id;
         var cut = tip.IndexOfAny(['\n', '—']);

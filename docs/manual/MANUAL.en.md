@@ -113,8 +113,8 @@ Nothing is written to the program folder, so updating means replacing the progra
 
 ### Toolbar
 
-By default the toolbar shows **Find files · Compress · Extract · Unblock · Backup-Copy · Restore · Folder compare** | **Favorites bar · Copy full paths · Remote connections · MDNotePad+ · Manual · Settings**.
-**Right-click the toolbar → Customize toolbar** to add the other items in the table below (pane layouts, back/forward/up/refresh, new folder, terminal, copy path/names, swap panes, hidden files, font size), change the order and add separators.
+By default the toolbar shows **2·3·6·8 panes** | **Back · Forward · Up · Refresh** | **Find files · Compress · Extract · Unblock · Backup-Copy · Restore · Folder compare** | **Favorites bar · Copy full paths · Remote connections · MDNotePad+ · Manual · Settings**.
+**Right-click the toolbar → Customize toolbar** to add the other items in the table below (4 panes, new folder, terminal, copy path/names, swap panes, hidden files, font size), change the order and add separators.
 Hidden items still work with their shortcut keys. The layout is saved as `ToolbarItems` in `settings.ini`.
 
 ![Toolbar](images/en/00-toolbar.png)
@@ -180,9 +180,11 @@ Selected items are shown in **red**. With no selection, commands apply to the it
 
 | Action | How |
 |---|---|
-| Select/deselect one by one | **Insert**, **Space**, **Ctrl+click** |
-| Select a range | **Shift+↑↓**, **Shift+click** |
-| Drag to select | **Drag** from outside the name column (size/date columns) or from the empty area below the items — rows inside the box. Hold Ctrl to add |
+| Select/deselect one by one | **Insert** (toggle and move down), **Space**, **Ctrl+Space**, **Ctrl+click** |
+| Select a range | **Shift+↑↓** (toggle while moving), **Shift+click** |
+| Move the cursor only | **Ctrl+↑↓** — the selection stays (like Explorer) |
+| Add a range | **Ctrl+Shift+click** — adds from the anchor (last click) to there; never removes anything. **Ctrl+Shift+↑↓** — grows or shrinks a range from the cursor (the earlier selection stays) |
+| Drag to select | **Drag** from the empty area right of the last column (attributes) or below the items — rows inside the box. Hold Ctrl to **toggle** like Explorer (unselected rows in the box are selected, selected ones are deselected, rows outside stay). A plain click there clears the selection |
 | Select / deselect by mask | **Num+** / **Num-** (e.g. `*.log`) |
 | Invert / all | **Num*** / **Ctrl+A** |
 
@@ -190,7 +192,8 @@ Selected items are shown in **red**. With no selection, commands apply to the it
 
 > **Click rules** (Double Commander style): with a selection, **clicking an unselected item clears the selection**; clicking a selected item keeps it (so you can drag it).
 > **Shift+click** selects from the last clicked item to there; Shift+clicking again changes the range — clicking back toward the anchor shrinks it.
-> Dragging in the name column still drags files.
+> Dragging inside the columns (name, size, date…) drags files. The area right of the last column does not select the row and a double-click there opens nothing (like Explorer).
+> The first **Ctrl+click** (with nothing selected) also selects the cursor item. Ctrl+drag is decided by Ctrl at the moment you press the button, so you may release Ctrl while dragging.
 
 > **Folder size (Space)**: selecting a folder with **Space** calculates the total size of all files in it, subfolders included, in the background and shows it in the Size column
 > (a growing running total with `…` while it counts). You can keep working meanwhile; going to another folder stops it.
@@ -568,7 +571,10 @@ Hidden files (Ctrl+H) and font size (Ctrl+= / Ctrl+-) are changed directly on th
 | | Ctrl+← / Ctrl+→ | Open the folder under the cursor in the side pane |
 | | Ctrl+U | Swap active and target paths |
 | | Ctrl+F2 / F3 / F4 / F6 / F8 | 2 / 3 / 4 / 6 / 8 panes |
-| Selection | Insert, Space, Ctrl+click | One at a time (Space on a folder also calculates its size) |
+| Selection | Insert, Space, Ctrl+Space, Ctrl+click | One at a time (Space on a folder also calculates its size) |
+| | Ctrl+Shift+↑↓, Ctrl+Shift+click | Add a range |
+| | Ctrl+↑↓ | Move the cursor only |
+| | Drag in an empty area (Ctrl: toggle) | Box selection |
 | | Shift+↑↓, Shift+click | Range |
 | | Num+ / Num- / Num* / Ctrl+A | Select by mask / deselect / invert / all |
 | Other | F1 | User manual |
