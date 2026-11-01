@@ -8,7 +8,7 @@ Double Commander 스타일의 멀티 패널(2·3·4·6·8창) 파일 매니저. 
 
 ## 소프트웨어 엔지니어를 위한 종합 선물 세트
 
-빠른 현장 작업에 맞춘 파일 관리자입니다. **설치 없이** 압축을 풀고 `MP-Commander.exe` 를 실행하면 됩니다 — [최신 버전 받기](https://github.com/SeanKi/TvCommander/releases/latest)
+빠른 현장 작업에 맞게 설계된 파일 관리자입니다. **설치 없이** 압축을 풀고 `MP-Commander.exe` 를 실행하면 됩니다 — [최신 버전 받기](https://github.com/SeanKi/TvCommander/releases/latest)
 
 ![MP-Commander 기본 화면](docs/manual/images/01-main-2pane.png)
 
