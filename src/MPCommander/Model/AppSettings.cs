@@ -34,6 +34,10 @@ public sealed class AppSettings
     public bool ShowFavoritesBar { get; set; } = true;
     /// <summary>툴바 항목과 순서 (쉼표로, | = 구분선). 비면 기본 구성</summary>
     public string ToolbarItems { get; set; } = "";
+    /// <summary>복사·이동 진행 창의 상세 기록(로그) 보이기. 보이면 끝난 뒤에도 창이 남는다</summary>
+    public bool ShowOperationLog { get; set; } = true;
+    /// <summary>작은 파일을 동시에 복사할 개수. 0 = 자동 (SSD·네트워크 8, HDD 1)</summary>
+    public int CopyThreads { get; set; }
     /// <summary>Ctrl+휠 확대·축소 범위 (%). settings.ini 의 ZoomMin / ZoomMax 로 바꿀 수 있다</summary>
     public int ZoomMin { get; set; } = 75;
     public int ZoomMax { get; set; } = 200;
@@ -115,6 +119,8 @@ public sealed class AppSettings
             Put("Terminal", Terminal);
             Put("ShowFavoritesBar", ShowFavoritesBar);
             Put("ToolbarItems", ToolbarItems);
+            Put("ShowOperationLog", ShowOperationLog);
+            Put("CopyThreads", CopyThreads);
             Put("ZoomMin", ZoomMin);
             Put("ZoomMax", ZoomMax);
             Put("ZoomList", ZoomList);
@@ -177,6 +183,8 @@ public sealed class AppSettings
         a.Terminal = Get("Terminal") is { Length: > 0 } te ? te : a.Terminal;
         a.ShowFavoritesBar = !string.Equals(Get("ShowFavoritesBar"), "False", StringComparison.OrdinalIgnoreCase);
         a.ToolbarItems = Get("ToolbarItems") ?? "";
+        a.ShowOperationLog = !string.Equals(Get("ShowOperationLog"), "False", StringComparison.OrdinalIgnoreCase);
+        a.CopyThreads = Compat.Clamp(Int("CopyThreads", 0), 0, 32);
         a.ZoomMin = Int("ZoomMin", a.ZoomMin);
         a.ZoomMax = Int("ZoomMax", a.ZoomMax);
         a.ZoomList = Int("ZoomList", a.ZoomList);

@@ -36,6 +36,8 @@ public abstract class ProgressOperation
     }
 
     public abstract string Title { get; }
+    /// <summary>상세 기록 (진행 창의 상세 보기 + 날짜별 로그 파일). 기록하지 않는 작업은 null</summary>
+    public OperationLog? Log { get; protected set; }
     public bool IsCancelled => Volatile.Read(ref _cancel[0]) != 0;
 
     public Func<ConflictInfo, ConflictChoice> AskConflict { get; set; } = _ => ConflictChoice.Skip;
@@ -98,9 +100,9 @@ public abstract class ProgressOperation
                 ThrowIfCancelled();
                 switch (AskError(path, ex.Message))
                 {
-                    case ErrorChoice.Retry: Touch(); continue;
-                    case ErrorChoice.Skip: Errors++; Touch(); return false;
-                    default: Cancel(); throw new OperationCanceledException();
+                    case ErrorChoice.Retry: Log?.Add(Loc.T("재시도"), path, ex.Message); Touch(); continue;
+                    case ErrorChoice.Skip: Errors++; Log?.Add(Loc.T("오류"), path, ex.Message); Touch(); return false;
+                    default: Log?.Add(Loc.T("오류"), path, ex.Message); Cancel(); throw new OperationCanceledException();
                 }
             }
         }
@@ -109,6 +111,7 @@ public abstract class ProgressOperation
     protected void ReportError(string path, string message)
     {
         Errors++;
+        Log?.Add(Loc.T("오류"), path, message);
         if (AskError(path, message) == ErrorChoice.Cancel)
         {
             Cancel();

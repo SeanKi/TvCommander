@@ -218,6 +218,15 @@ Selected items are shown in **red**. With no selection, commands apply to the it
 - The progress window shows per-file and total progress and speed. Short operations finish without it.
 - If progress stops for more than 5 s (slow network etc.) a warning appears, and [Cancel] also breaks blocked I/O.
   (Time spent waiting for your answer in a prompt does not count as a stall.)
+- **Small files are copied in parallel** (PC↔PC, under 1 MB). For small files the fixed cost per file (open, create, antivirus scan) dominates,
+  so doing several at once is about 3× faster on an SSD (e.g. 5,000 files of 4 KB: 5.2 s → 1.7 s), and much more over a network (NAS, shares).
+  - The number of parallel copies follows the disk: 8 for SSD and network, 1 for HDD and USB sticks (seeking makes parallel slower), 4 if unknown.
+    Set it with `CopyThreads` in `settings.ini` (0 = automatic, 1 = one by one as before).
+  - Large files, phone/FTP/WebDAV and moves within one drive (just a rename) still go one by one with progress.
+  - Files that already exist at the target or fail are collected and asked about one by one at the end. Answer **Overwrite all** and the rest are overwritten in parallel again.
+- **Detailed log**: turn on **Show detailed log** at the bottom of the progress window to see one line per file (copied, moved, overwrote, skipped, error).
+  The window then stays open after the job with a summary (files, skipped, errors, time, speed) — close it with [Close]. Turn it off to close right away as before (setting `ShowOperationLog`).
+  - The same log is written to `%APPDATA%\MP-Commander\logs\date.log` and deleted after **7 days**. The **Log folder** button opens it.
 
 ---
 

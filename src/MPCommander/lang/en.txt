@@ -2037,3 +2037,54 @@ A 와 B 가 같은 폴더입니다.
 
 바에 보이는 모양: 
 => On the bar: 
+
+상세 기록 보기
+=> Show detailed log
+
+파일마다 한 줄씩 기록을 보입니다. 켜 두면 작업이 끝나도 창이 남아 결과를 볼 수 있습니다.
+=> Shows one line per file. While it is on, the window stays open after the job so you can review the result.
+
+로그 폴더
+=> Log folder
+
+날짜별 로그 파일이 있는 폴더 (7일 보관)
+=> Folder with the daily log files (kept for 7 days)
+
+취소했습니다
+=> Cancelled
+
+끝났습니다 (건너뛴 항목이 있습니다)
+=> Done (some items were skipped)
+
+끝났습니다
+=> Done
+
+재시도
+=> Retry
+
+덮어씀
+=> Overwrote
+
+건너뜀
+=> Skipped
+
+대상에 이미 있음
+=> already exists at the target
+
+끝
+=> Done
+
+{0}: {1:N0}개 항목 → {2}
+=> {0}: {1:N0} items → {2}
+
+: 파일 {0:N0} / {1:N0},  {2},  건너뜀 {3:N0},  오류 {4:N0},  {5:N1}초 ({6:N0}개/s, {7}/s)
+=> : files {0:N0} / {1:N0},  {2},  skipped {3:N0},  errors {4:N0},  {5:N1} s ({6:N0} files/s, {7}/s)
+
+방식: 작은 파일 {0:N0}개를 동시에 {1}개씩, 나머지 {2:N0}개는 차례로  (원본 {3}, 대상 {4})
+=> Method: {0:N0} small files {1} at a time, the other {2:N0} one by one  (source {3}, target {4})
+
+이미 있거나 실패한 {0:N0}개는 차례로 다시 처리합니다
+=> {0:N0} files that already exist or failed are processed again one by one
+
+모두 덮어쓰기: 남은 {0:N0}개를 동시에 덮어씁니다
+=> Overwrite all: overwriting the remaining {0:N0} at once

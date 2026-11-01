@@ -49,6 +49,9 @@ public partial class MainWindow : Window
         InitFavoritesBar();     // 툴바 아래 즐겨찾기 바
         InitCommandLine();
         ViewZoom.Settings = _settings;   // Ctrl+휠 확대 범위·비율 (모든 보기 창)
+        ProgressWindow.ShowDetails = _settings.ShowOperationLog;   // 복사·이동 진행 창의 상세 기록
+        ProgressWindow.DetailsChanged = v => { _settings.ShowOperationLog = v; SaveSettings(); };
+        FileOperation.ThreadSetting = _settings.CopyThreads;       // 작은 파일 동시 복사 개수 (0 = 자동)
         ApplyFontLevel(_settings.FontLevel);
         ViewZoom.Attach(PanelGrid, () => _settings.ZoomList, SetListZoom);
         RestoreWindowBounds();

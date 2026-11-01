@@ -1,7 +1,7 @@
 ﻿<Window x:Class="MPCommander.Views.ProgressWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Width="560" SizeToContent="Height" ResizeMode="NoResize" ShowInTaskbar="False"
+        Width="640" SizeToContent="Height" ResizeMode="NoResize" ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner" FontFamily="Segoe UI" FontSize="12">
     <StackPanel Margin="14">
         <TextBlock x:Name="PhaseText" FontWeight="SemiBold"/>
@@ -10,7 +10,17 @@
         <TextBlock x:Name="TotalText" Margin="0,10,0,3"/>
         <ProgressBar x:Name="TotalBar" Height="14" Maximum="1"/>
         <TextBlock x:Name="StallText" Foreground="Firebrick" Margin="0,8,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
-        <Button x:Name="CancelButton" Content="취소" Style="{StaticResource DialogButton}" HorizontalAlignment="Right"
-                Margin="0,12,0,0" Click="Cancel_Click"/>
+        <!-- 상세 기록: 파일마다 한 줄 (같은 내용이 %APPDATA%\MP-Commander\logs 에 날짜별로, 7일 보관) -->
+        <ListBox x:Name="LogList" Height="240" Margin="0,10,0,0" Visibility="Collapsed"
+                 FontFamily="Consolas, Malgun Gothic" FontSize="11.5"
+                 VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
+        <DockPanel Margin="0,12,0,0" LastChildFill="False">
+            <Button x:Name="CancelButton" DockPanel.Dock="Right" Content="취소" Style="{StaticResource DialogButton}" Click="Cancel_Click"/>
+            <CheckBox x:Name="DetailsCheck" DockPanel.Dock="Left" Content="상세 기록 보기" VerticalAlignment="Center"
+                      Click="Details_Click" ToolTip="파일마다 한 줄씩 기록을 보입니다. 켜 두면 작업이 끝나도 창이 남아 결과를 볼 수 있습니다."/>
+            <Button x:Name="LogFolderButton" DockPanel.Dock="Left" Content="로그 폴더" Margin="12,0,0,0" Padding="8,2"
+                    Click="LogFolder_Click" ToolTip="날짜별 로그 파일이 있는 폴더 (7일 보관)"/>
+        </DockPanel>
     </StackPanel>
 </Window>
