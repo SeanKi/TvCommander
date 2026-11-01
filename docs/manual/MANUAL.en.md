@@ -6,6 +6,37 @@
 
 ![MP-Commander main window](images/en/01-main-2pane.png)
 
+## A complete toolkit for software engineers
+
+Features built for fast work on site:
+
+- **Many folders on one screen** — 2 to 8 panes ([chapter 2](#2-pane-layouts-active-and-target-pane))
+- **Backup before copy · Restore** ([chapter 10](#10-backup-copy))
+  - No separate backup step: files about to be overwritten are copied to a backup folder automatically, and a running program is started again afterwards.
+  - Restore straight from the backup folder in one step.
+- **Unblocking downloaded files** ([chapter 9](#9-unblock-files-downloaded-from-the-internet))
+  - Files from the internet — DLLs especially — can silently fail to load. Blocked files show a lock in the list, and many can be unblocked at once.
+- **Markdown (.md) and CSV viewing / editing** ([chapter 6](#6-viewer-f3-and-finding-text-in-a-file))
+  - An alternative on machines where Office is hard to use: view and edit .md and .csv directly (MDNotePad+ integration, built-in CSV editor).
+- **Folder favorites** ([favorites](#2-favorites--your-folders-one-click-away))
+  - Register the folders you use often and jump to them with one click.
+- **Large log files** ([chapter 6](#6-viewer-f3-and-finding-text-in-a-file))
+  - Opens big files fast and shows all of the text at once.
+  - Opens files in shared mode, so it never blocks the program writing the log (tools like klogg can block log creation).
+- **Folder compare & sync** ([chapter 5](#5-file-operations--copy-move-delete-rename))
+  - Compare similar folders and copy one way or both ways (sync).
+- **Fast file and folder search** ([chapter 7](#7-find-files-altf7))
+  - **Search by file content**: tools like Double Commander make you pick an encoding and miss documents in other encodings;
+    here any encoding (UTF-8 / Korean ANSI / UTF-16) is found in one pass, Korean text included.
+  - **Integrated with Everything**, which finds any file on every drive instantly, and opens the result in the pane.
+- **FastCopy** ([feature 1](#1-fast-copy--auto-fastcopy))
+  - Fixes slow copying of many small files. **Use Auto FastCopy** is on by default and copies up to about 3× faster
+    (2 KB × 20,000 files: 21.7 s → 6.7 s). You can turn it off.
+- **More conveniences**
+  - WebDAV / FTP / FTPS built in ([chapter 11](#11-remote-connections--ftp--ftps--webdav))
+  - On laptops, a share that is unreachable after a network change rarely freezes the app with "Not responding" (common in Double Commander) ([chapter 16](#16-auto-refresh-and-freeze-protection))
+  - Small for what it does — 3 files (about 1.5 MB), no installation
+
 ---
 
 ## Contents
@@ -49,7 +80,7 @@
 ### Installation
 
 There is no installer. Unzip the release package (`MP-Commander-1.11.x-win-x64.zip`) anywhere and run `MP-Commander.exe`.
-Three files are all it needs (about 0.4 MB):
+Three files are all it needs (about 1.5 MB):
 
 | File | Purpose |
 |---|---|
@@ -140,7 +171,7 @@ When you replace a program or data with new files, the **old files that would be
 | Search | Find files (Alt+F7), toolbar search box (Everything integration) |
 | Phones and remote | Android phones (USB), FTP / FTPS / WebDAV like ordinary folders |
 | Network work that never freezes | Slow or broken shares do not hang the window, and stuck operations can be cancelled |
-| Portable and light | 3 files (about 0.4 MB), settings in `%APPDATA%`. English / Korean |
+| Portable and light | 3 files (about 1.5 MB), settings in `%APPDATA%`. English / Korean |
 
 ---
 
@@ -389,6 +420,8 @@ Type a file or folder name in the search box at the right end of the toolbar. Wh
 - **Enter** — shows the top item in the **current pane**: a file opens its folder with the cursor on it, a folder is opened.
   (Pressing Enter right after typing searches first, then goes there.)
 - **↑ ↓ / PgUp PgDn** — pick from the list while the cursor stays in the box. Double-click works too. **Esc** closes the list (press again to clear the box and go back to the pane).
+- After it closes, **clicking the box again or coming back to it** (or ↓) shows the list again — the same results if the text is unchanged, otherwise a new search.
+- Drag **either bottom corner** of the list (the grip) to change its width and height. The size is remembered (`SearchPopupWidth` / `SearchPopupHeight`).
 - Order: exact name → names starting with the text → folders → shorter paths (up to 500).
   **Click a column header** (Name, Folder, Size, Date) to sort ascending, click again for descending (▲ ▼). After sorting, Enter goes to the top item.
 - Everything's syntax works as is: space = and, `|` = or, `*` `?`, `ext:pdf`, `folder:`, `size:>100mb` etc. The Recycle Bin is left out.

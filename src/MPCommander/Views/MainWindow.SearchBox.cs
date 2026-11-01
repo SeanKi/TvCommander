@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -42,6 +43,7 @@ public sealed class QuickResult
 /// 툴바 검색 상자: 입력하는 대로(0.3초 멈추면) Everything 으로 모든 드라이브에서 찾아 아래로 펼치고,
 /// Enter 면 맨 위(또는 ↑↓ 로 고른) 항목을 현재 패널에서 보여 준다.
 /// Everything 이 실행 중이 아니면 Enter 는 파일 찾기 창(현재 패널 폴더 아래, 그 이름으로)을 연다.
+/// 닫힌 뒤 상자에 다시 포커스가 가면(클릭·↓) 다시 펼치고, 아래 양쪽 모서리를 끌어 크기를 바꾼다 (설정에 남는다).
 /// </summary>
 public partial class MainWindow
 {
@@ -50,6 +52,70 @@ public partial class MainWindow
     private int _quickGeneration;
     private string? _quickResultsFor;   // 지금 목록이 어떤 말로 찾은 것인지
     private Task? _quickRunning;
+    private bool _quickNoReopen;        // 목록에서 Esc 로 닫고 상자로 돌아올 때는 다시 펼치지 않는다
+
+    private void InitSearchPopupSize()
+    {
+        SearchPopup.Width = _settings.SearchPopupWidth;
+        SearchResults.MaxHeight = _settings.SearchPopupHeight;
+        // 남는 너비는 폴더 칸에
+        var cols = ((GridView)SearchResults.View).Columns;
+        cols[1].Width = Math.Max(120, SearchPopup.Width - cols[0].Width - cols[2].Width - cols[3].Width - 30);
+    }
+
+    private void SearchBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        if (_quickNoReopen) { _quickNoReopen = false; return; }
+        // 클릭으로 온 포커스면 버튼을 뗄 때 펼친다 (누른 동안은 TextBox 가 마우스를 잡아 팝업이 바로 닫힌다)
+        if (Mouse.LeftButton == MouseButtonState.Pressed) return;
+        ReopenQuickResults();
+    }
+
+    private void SearchBox_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        // 이미 포커스가 있던 상자를 눌러도 다시 펼친다
+        ReopenQuickResults();
+    }
+
+    /// <summary>닫힌 목록을 다시 펼친다: 같은 말로 찾은 결과가 있으면 그대로, 아니면 다시 찾는다</summary>
+    private void ReopenQuickResults()
+    {
+        var text = SearchBox.Text.Trim();
+        if (SearchPopup.IsOpen || text.Length == 0) return;
+        if (string.Equals(_quickResultsFor, text, StringComparison.Ordinal) && SearchResults.Items.Count > 0)
+            SearchPopup.IsOpen = true;
+        else
+            _quickRunning = QuickSearchAsync();
+    }
+
+    // ── 모서리 손잡이로 크기 바꾸기: 왼쪽은 오른쪽 끝을, 오른쪽은 왼쪽 끝을 고정 ──
+    private void SearchGrip_DragDelta(object sender, DragDeltaEventArgs e)
+    {
+        bool left = sender == SearchGripLeft;
+        double old = SearchPopup.Width;
+        double w = Compat.Clamp(old + (left ? -e.HorizontalChange : e.HorizontalChange), 400, SystemParameters.VirtualScreenWidth);
+        SearchPopup.Width = w;
+        if (left) SearchPopup.HorizontalOffset -= w - old;   // 지금 오른쪽 끝을 그대로
+        var folder = ((GridView)SearchResults.View).Columns[1];
+        folder.Width = Math.Max(80, folder.Width + (w - old));
+
+        double h = double.IsNaN(SearchResults.Height) ? SearchResults.ActualHeight : SearchResults.Height;
+        h = Compat.Clamp(h + e.VerticalChange, 80, SystemParameters.VirtualScreenHeight);
+        SearchResults.Height = h;        // 끄는 동안(그리고 열려 있는 동안)은 그 높이로
+        SearchResults.MaxHeight = h;
+    }
+
+    private void SearchGrip_DragCompleted(object sender, DragCompletedEventArgs e)
+    {
+        _settings.SearchPopupWidth = (int)SearchPopup.Width;
+        _settings.SearchPopupHeight = (int)SearchResults.MaxHeight;
+        SaveSettings();
+    }
+
+    private void SearchPopup_Closed(object? sender, EventArgs e)
+    {
+        SearchResults.Height = double.NaN;   // 다음엔 결과가 적으면 줄어든다 (최대 높이는 남는다)
+    }
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {
@@ -94,6 +160,10 @@ public partial class MainWindow
             case Key.Down when SearchPopup.IsOpen && SearchResults.Items.Count > 0:
                 e.Handled = true;
                 MoveQuickSelection(+1);
+                break;
+            case Key.Down when !SearchPopup.IsOpen && SearchBox.Text.Trim().Length > 0:
+                e.Handled = true;
+                ReopenQuickResults();
                 break;
             case Key.Up when SearchPopup.IsOpen && SearchResults.Items.Count > 0:
                 e.Handled = true;
@@ -185,6 +255,7 @@ public partial class MainWindow
             case Key.Escape:
                 e.Handled = true;
                 SearchPopup.IsOpen = false;
+                _quickNoReopen = !SearchBox.IsKeyboardFocusWithin;
                 SearchBox.Focus();
                 break;
             case Key.Up when SearchResults.SelectedIndex <= 0:

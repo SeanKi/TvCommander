@@ -10,13 +10,13 @@ Double Commander 스타일의 멀티 패널(2·3·4·6·8창) 파일 매니저. 
 
 ```powershell
 .\build.ps1                 # Release 빌드 (C++ FmCore → WPF 앱)
-.\build.ps1 -Publish        # .\publish 에 실행 파일 3개 복사 (약 0.4 MB)
+.\build.ps1 -Publish        # .\publish 에 실행 파일 3개 복사 (약 1.5 MB)
 ```
 
 - 빌드에 필요: Visual Studio 2022 (C++ 데스크톱 워크로드), .NET SDK (8 이상, 빌드 도구로만 사용)
 - Visual Studio 에서는 `MP-Commander.sln` 을 열고 x64 로 빌드 (FmCore 가 먼저 빌드됨)
 - FmCore 는 정적 CRT(/MT) 로 빌드되어 VC++ 재배포 패키지가 필요 없다
-- 배포본: `MP-Commander.exe` + `MP-Commander.exe.config` + `FmCore.dll` 세 파일(약 0.4 MB)을 같은 폴더에 두면 끝.
+- 배포본: `MP-Commander.exe` + `MP-Commander.exe.config` + `FmCore.dll` 세 파일(약 1.5 MB)을 같은 폴더에 두면 끝.
   사용 설명서는 `manual\` 폴더(MANUAL.md + 화면 캡처)로 함께 들어 있다 (없어도 실행에는 상관없고, F1 은 GitHub 의 설명서를 연다)
 - 실행 환경: .NET Framework 4.7.2 가 기본 내장된 Windows 10 1803 이후(LTSC 2019 포함)·Windows 11 은 추가 설치 없음.
   그보다 오래된 Windows 10 은 .NET Framework 4.7.2 이상 설치 필요.

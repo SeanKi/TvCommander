@@ -29,17 +29,39 @@
         <Grid DockPanel.Dock="Right" Width="280" Margin="6,3,8,3" VerticalAlignment="Center">
             <TextBox x:Name="SearchBox" Padding="22,3,4,3" VerticalContentAlignment="Center"
                      PreviewKeyDown="SearchBox_PreviewKeyDown" TextChanged="SearchBox_TextChanged"
+                     GotKeyboardFocus="SearchBox_GotKeyboardFocus" PreviewMouseLeftButtonUp="SearchBox_PreviewMouseLeftButtonUp"
                      ToolTip="파일·폴더 이름 찾기 — 입력하는 대로 Everything 이 모든 드라이브에서 찾아 아래에 펼칩니다&#x0a;Enter: 맨 위(또는 ↑↓ 로 고른) 항목을 현재 패널에서 보기 — 파일은 그 폴더를 열고 커서를, 폴더는 그 안으로&#x0a;(Everything 문법: 공백 = 그리고, | = 또는, * ?, ext:pdf, folder: 등)&#x0a;Everything 이 실행 중이 아니면 Enter 는 파일 찾기 창(현재 패널 폴더)을 엽니다"/>
             <TextBlock Style="{StaticResource Glyph}" Text="&#xE721;" FontSize="12" Foreground="Gray" IsHitTestVisible="False"
                        HorizontalAlignment="Left" Margin="7,0,0,0"/>
             <TextBlock x:Name="SearchHint" Text="찾기 (Everything) — Enter: 현재 패널로" Foreground="Gray" IsHitTestVisible="False"
                        VerticalAlignment="Center" Margin="24,0,4,0" TextTrimming="CharacterEllipsis"/>
             <Popup x:Name="SearchPopup" PlacementTarget="{Binding ElementName=SearchBox}" Placement="Bottom" StaysOpen="False"
-                   Width="800" Opened="SearchPopup_Opened">
+                   Width="800" Opened="SearchPopup_Opened" Closed="SearchPopup_Closed">
                 <Border BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}" BorderThickness="1"
                         Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}">
                     <DockPanel>
-                        <TextBlock x:Name="SearchPopupStatus" DockPanel.Dock="Bottom" Margin="6,3" Foreground="Gray" TextTrimming="CharacterEllipsis"/>
+                        <!-- 맨 아래 줄: 상태 + 양쪽 모서리 손잡이 (끌어서 너비·높이 바꾸기) -->
+                        <DockPanel DockPanel.Dock="Bottom">
+                            <Thumb x:Name="SearchGripLeft" DockPanel.Dock="Left" Width="14" Height="14" Cursor="SizeNESW"
+                                   DragDelta="SearchGrip_DragDelta" DragCompleted="SearchGrip_DragCompleted"
+                                   ToolTip="끌어서 목록 크기 바꾸기">
+                                <Thumb.Template>
+                                    <ControlTemplate TargetType="Thumb">
+                                        <Border Background="Transparent"><Path Stroke="Gray" StrokeThickness="1" Data="M 2,1 L 13,12 M 2,6 L 8,12 M 2,10 L 4,12"/></Border>
+                                    </ControlTemplate>
+                                </Thumb.Template>
+                            </Thumb>
+                            <Thumb x:Name="SearchGripRight" DockPanel.Dock="Right" Width="14" Height="14" Cursor="SizeNWSE"
+                                   DragDelta="SearchGrip_DragDelta" DragCompleted="SearchGrip_DragCompleted"
+                                   ToolTip="끌어서 목록 크기 바꾸기">
+                                <Thumb.Template>
+                                    <ControlTemplate TargetType="Thumb">
+                                        <Border Background="Transparent"><Path Stroke="Gray" StrokeThickness="1" Data="M 12,1 L 1,12 M 12,6 L 6,12 M 12,10 L 10,12"/></Border>
+                                    </ControlTemplate>
+                                </Thumb.Template>
+                            </Thumb>
+                            <TextBlock x:Name="SearchPopupStatus" Margin="6,3" Foreground="Gray" TextTrimming="CharacterEllipsis"/>
+                        </DockPanel>
                         <ListView x:Name="SearchResults" MaxHeight="420" BorderThickness="0" FontSize="{DynamicResource ListFontSize}"
                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                                   PreviewKeyDown="SearchResults_PreviewKeyDown" MouseDoubleClick="SearchResults_MouseDoubleClick"

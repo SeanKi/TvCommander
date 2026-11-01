@@ -2106,3 +2106,6 @@ Auto FastCopy 끔
 
 방식: {0:N0}개를 하나씩 — {1}
 => Method: {0:N0} files one by one — {1}
+
+끌어서 목록 크기 바꾸기
+=> Drag to resize the list
