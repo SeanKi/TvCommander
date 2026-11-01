@@ -6,9 +6,11 @@
     <StackPanel Margin="14">
         <TextBlock x:Name="PromptText" TextWrapping="Wrap"/>
         <TextBox x:Name="InputBox" Margin="0,6,0,0" Padding="3,2"/>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
-            <Button Content="확인" IsDefault="True" Style="{StaticResource DialogButton}" Click="Ok_Click"/>
-            <Button Content="취소" IsCancel="True" Style="{StaticResource DialogButton}"/>
-        </StackPanel>
+        <DockPanel Margin="0,14,0,0" LastChildFill="False">
+            <Button DockPanel.Dock="Right" Content="취소" IsCancel="True" Style="{StaticResource DialogButton}"/>
+            <Button DockPanel.Dock="Right" Content="확인" IsDefault="True" Style="{StaticResource DialogButton}" Click="Ok_Click"/>
+            <!-- 선택 사항 (예: 복사의 FastCopy 모드). 쓰지 않으면 숨김 -->
+            <CheckBox x:Name="OptionCheck" DockPanel.Dock="Left" VerticalAlignment="Center" Visibility="Collapsed"/>
+        </DockPanel>
     </StackPanel>
 </Window>

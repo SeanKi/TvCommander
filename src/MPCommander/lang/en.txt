@@ -2080,11 +2080,29 @@ A 와 B 가 같은 폴더입니다.
 : 파일 {0:N0} / {1:N0},  {2},  건너뜀 {3:N0},  오류 {4:N0},  {5:N1}초 ({6:N0}개/s, {7}/s)
 => : files {0:N0} / {1:N0},  {2},  skipped {3:N0},  errors {4:N0},  {5:N1} s ({6:N0} files/s, {7}/s)
 
-방식: 작은 파일 {0:N0}개를 동시에 {1}개씩, 나머지 {2:N0}개는 차례로  (원본 {3}, 대상 {4})
-=> Method: {0:N0} small files {1} at a time, the other {2:N0} one by one  (source {3}, target {4})
-
 이미 있거나 실패한 {0:N0}개는 차례로 다시 처리합니다
 => {0:N0} files that already exist or failed are processed again one by one
 
 모두 덮어쓰기: 남은 {0:N0}개를 동시에 덮어씁니다
 => Overwrite all: overwriting the remaining {0:N0} at once
+
+Auto FastCopy 사용
+=> Use Auto FastCopy
+
+상황에 따라 FastCopy 를 씁니다: 작은 파일(1 MB 미만)이 8개 이상이고 SSD·네트워크일 때만 여러 개를 동시에 복사합니다 (SSD 약 3배, 네트워크는 더). HDD·USB 메모리, 큰 파일, 휴대폰·FTP 는 하나씩. 끄면 언제나 예전처럼 하나씩 — 속도 비교용. 끌어 놓기·붙여넣기에도 같은 값을 씁니다.
+=> Uses FastCopy only when it helps: small files (under 1 MB) are copied several at a time only when there are 8 or more and the disks are SSD or network (about 3x on an SSD, more over a network). HDDs, USB sticks, large files and phone/FTP go one by one. Turn it off to always copy one by one as before — for comparing speed. Drag and drop and paste use the same choice.
+
+Auto FastCopy 끔
+=> Auto FastCopy off
+
+디스크가 동시 복사에 맞지 않음 (원본 {0}, 대상 {1})
+=> the disks do not suit parallel copying (source {0}, target {1})
+
+작은 파일이 {0:N0}개뿐
+=> only {0:N0} small files
+
+방식: Auto FastCopy — 작은 파일 {0:N0}개를 동시에 {1}개씩, 나머지 {2:N0}개는 차례로  (원본 {3}, 대상 {4})
+=> Method: Auto FastCopy — {0:N0} small files {1} at a time, the other {2:N0} one by one  (source {3}, target {4})
+
+방식: {0:N0}개를 하나씩 — {1}
+=> Method: {0:N0} files one by one — {1}

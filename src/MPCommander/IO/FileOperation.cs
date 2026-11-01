@@ -29,8 +29,14 @@ public sealed class FileOperation : ProgressOperation
     /// <summary>이보다 작은 파일은 동시 복사 (큰 파일은 차례로, 진행률을 보이며)</summary>
     private const long SmallFileLimit = 1024 * 1024;
 
+    /// <summary>작은 파일이 이보다 적으면 동시 복사를 하지 않는다 (몇 개는 하나씩 해도 금방이고, 진행률이 보인다)</summary>
+    private const int MinParallelFiles = 8;
+
     /// <summary>동시 복사 개수 (설정 CopyThreads). 0 = 디스크 종류에 따라 자동</summary>
     public static int ThreadSetting { get; set; }
+
+    /// <summary>Auto FastCopy 사용 (도움이 될 때만 작은 파일 동시 복사). 끄면 예전처럼 파일마다 확인하며 하나씩 — 속도 비교용</summary>
+    public bool FastMode { get; set; } = true;
 
     private readonly IReadOnlyList<string> _sources;
     private readonly string _destination;
@@ -168,10 +174,18 @@ public sealed class FileOperation : ProgressOperation
         // 작은 PC 파일은 동시에, 나머지(큰 파일·휴대폰·FTP·같은 볼륨 이동)는 차례로
         var files = work.Where(w => !w.IsDir).ToList();
         string firstSrc = files.Count > 0 ? files[0].Src : targetDir;
-        int threads = ThreadSetting > 0 ? ThreadSetting : DiskKind.AutoThreads(firstSrc, targetDir);
+        // Auto FastCopy: 도움이 될 때만 — 작은 PC 파일이 충분히 많고, 디스크가 동시 복사에 맞을 때 (HDD·USB 메모리는 하나씩)
+        int threads = !FastMode ? 1 : ThreadSetting > 0 ? ThreadSetting : DiskKind.AutoThreads(firstSrc, targetDir);
         var small = threads > 1 ? files.Where(CanCopyInParallel).ToList() : new List<WorkItem>();
+        string why = !FastMode ? Loc.T("Auto FastCopy 끔")
+                   : threads <= 1 ? Loc.F($"디스크가 동시 복사에 맞지 않음 (원본 {DiskKind.Of(firstSrc)}, 대상 {DiskKind.Of(targetDir)})")
+                   : small.Count < MinParallelFiles ? Loc.F($"작은 파일이 {small.Count:N0}개뿐")
+                   : "";
+        if (why.Length > 0) small.Clear();
         var later = new List<WorkItem>();
-        Log!.Add(Loc.F($"방식: 작은 파일 {small.Count:N0}개를 동시에 {threads}개씩, 나머지 {files.Count - small.Count:N0}개는 차례로  (원본 {DiskKind.Of(firstSrc)}, 대상 {DiskKind.Of(targetDir)})"));
+        Log!.Add(why.Length == 0
+            ? Loc.F($"방식: Auto FastCopy — 작은 파일 {small.Count:N0}개를 동시에 {threads}개씩, 나머지 {files.Count - small.Count:N0}개는 차례로  (원본 {DiskKind.Of(firstSrc)}, 대상 {DiskKind.Of(targetDir)})")
+            : Loc.F($"방식: {files.Count:N0}개를 하나씩 — {why}"));
         if (small.Count > 0) CopyInParallel(small, threads, later, overwrite: false);
         ProcessLater(later, threads);
         var smallSet = new HashSet<WorkItem>(small);

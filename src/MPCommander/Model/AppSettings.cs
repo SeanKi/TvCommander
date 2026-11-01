@@ -38,6 +38,8 @@ public sealed class AppSettings
     public bool ShowOperationLog { get; set; } = true;
     /// <summary>작은 파일을 동시에 복사할 개수. 0 = 자동 (SSD·네트워크 8, HDD 1)</summary>
     public int CopyThreads { get; set; }
+    /// <summary>Auto FastCopy 사용 (도움이 될 때만 작은 파일 동시 복사). 끄면 예전처럼 하나씩 (복사 창에서 고른다)</summary>
+    public bool AutoFastCopy { get; set; } = true;
     /// <summary>Ctrl+휠 확대·축소 범위 (%). settings.ini 의 ZoomMin / ZoomMax 로 바꿀 수 있다</summary>
     public int ZoomMin { get; set; } = 75;
     public int ZoomMax { get; set; } = 200;
@@ -121,6 +123,7 @@ public sealed class AppSettings
             Put("ToolbarItems", ToolbarItems);
             Put("ShowOperationLog", ShowOperationLog);
             Put("CopyThreads", CopyThreads);
+            Put("AutoFastCopy", AutoFastCopy);
             Put("ZoomMin", ZoomMin);
             Put("ZoomMax", ZoomMax);
             Put("ZoomList", ZoomList);
@@ -185,6 +188,7 @@ public sealed class AppSettings
         a.ToolbarItems = Get("ToolbarItems") ?? "";
         a.ShowOperationLog = !string.Equals(Get("ShowOperationLog"), "False", StringComparison.OrdinalIgnoreCase);
         a.CopyThreads = Compat.Clamp(Int("CopyThreads", 0), 0, 32);
+        a.AutoFastCopy = !string.Equals(Get("AutoFastCopy"), "False", StringComparison.OrdinalIgnoreCase);
         a.ZoomMin = Int("ZoomMin", a.ZoomMin);
         a.ZoomMax = Int("ZoomMax", a.ZoomMax);
         a.ZoomList = Int("ZoomList", a.ZoomList);

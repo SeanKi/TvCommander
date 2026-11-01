@@ -613,8 +613,13 @@ public partial class MainWindow : Window
         string title = kind == OpKind.Copy ? Loc.T("복사") : Loc.T("이동");
         string what = items.Count == 1 ? $"'{items[0].Name}'" : Loc.F($"{items.Count}개 항목");
         var targetPath = _target?.CurrentPath ?? src.CurrentPath;
-        var dest = InputDialog.Show(this, title, Loc.F($"{what}을(를) 다음 위치로 {title}:"), PathUtil.WithSlash(targetPath));
+        bool fast = _settings.AutoFastCopy;
+        var dest = InputDialog.Show(this, title, Loc.F($"{what}을(를) 다음 위치로 {title}:"), PathUtil.WithSlash(targetPath),
+            Loc.T("Auto FastCopy 사용"),
+            Loc.T("상황에 따라 FastCopy 를 씁니다: 작은 파일(1 MB 미만)이 8개 이상이고 SSD·네트워크일 때만 여러 개를 동시에 복사합니다 (SSD 약 3배, 네트워크는 더). HDD·USB 메모리, 큰 파일, 휴대폰·FTP 는 하나씩. 끄면 언제나 예전처럼 하나씩 — 속도 비교용. 끌어 놓기·붙여넣기에도 같은 값을 씁니다."),
+            ref fast);
         if (Compat.IsBlank(dest)) { src.FocusList(); return; }
+        if (fast != _settings.AutoFastCopy) { _settings.AutoFastCopy = fast; SaveSettings(); }
 
         await RunFileOperationAsync(kind, items.Select(i => i.FullPath).ToList(), dest, src);
     }
@@ -634,7 +639,7 @@ public partial class MainWindow : Window
             if (!ok) { ShowError(new HostUnreachableException(host!).Message); return; }
         }
 
-        var op = new FileOperation(kind, sources, destination) { RenameCopiesInSameFolder = renameCopiesInSameFolder };
+        var op = new FileOperation(kind, sources, destination) { RenameCopiesInSameFolder = renameCopiesInSameFolder, FastMode = _settings.AutoFastCopy };
         await RunWithProgressAsync(op);
 
         if (!op.IsCancelled) sourcePanel?.ClearMarks();

@@ -1,6 +1,6 @@
 # MP-Commander User Manual
 
-**Multi-Pane Commander 1.8** — a Double Commander–style file manager with 2, 3, 4, 6 or 8 panes
+**Multi-Pane Commander 1.11** — a Double Commander–style file manager with 2, 3, 4, 6 or 8 panes
 
 [한국어 설명서](MANUAL.md)
 
@@ -11,6 +11,7 @@
 ## Contents
 
 - [Getting started](#getting-started)
+- [Key features](#key-features) — Auto FastCopy · favorites · Backup-Copy and Restore
 - **Part 1 — Features**
   1. [Screen layout](#1-screen-layout)
   2. [Pane layouts, active and target pane](#2-pane-layouts-active-and-target-pane)
@@ -47,7 +48,7 @@
 
 ### Installation
 
-There is no installer. Unzip the release package (`MP-Commander-1.8.x-win-x64.zip`) anywhere and run `MP-Commander.exe`.
+There is no installer. Unzip the release package (`MP-Commander-1.11.x-win-x64.zip`) anywhere and run `MP-Commander.exe`.
 Three files are all it needs (about 0.4 MB):
 
 | File | Purpose |
@@ -88,6 +89,58 @@ Language packs are plain text files such as `lang\en.txt` in the program folder,
 `%APPDATA%\MP-Commander\` — window position, pane folders and options (`settings.ini`), folder history (`MP-Commander.ini`),
 remote connections (`connections.ini`, passwords encrypted).
 Nothing is written to the program folder, so updating means replacing the program files.
+
+---
+
+## Key features
+
+### 1. Fast copy — Auto FastCopy
+
+Copying many small files is slow not because of the amount of data but because of the **fixed cost per file** (open, create, antivirus scan).
+MP-Commander looks at the job and copies **small files (under 1 MB) several at a time**.
+
+| Example (NVMe SSD) | One by one | Auto FastCopy |
+|---|---|---|
+| 5,000 files of 4 KB | 5.2 s | **1.7 s** |
+| 20,000 files of 2 KB | 21.7 s | **6.7 s** |
+
+- **Only when it helps**: 8 or more small files on SSDs or network drives. HDDs, USB sticks, large files and phone/FTP are copied one by one with progress.
+- The gain is even bigger over a network (NAS, shared folders).
+- Turn it on or off with **Use Auto FastCopy** in the copy dialog (F5/F6) — handy for comparing speed.
+- **Detailed log**: see what happened to each file (copied, overwrote, skipped, error) in the progress window; the same log is kept per day for 7 days.
+
+→ [5. File operations](#5-file-operations--copy-move-delete-rename)
+
+### 2. Favorites — your folders one click away
+
+- **Favorites bar**: folder buttons under the toolbar, like a web browser. Click opens in the active pane, **Ctrl+click** in the target pane.
+- **☆ (Ctrl+D)** adds the current folder; right-click to give it a name and it shows as `name (path)`. Reorder or remove from the same menu.
+- **Folder history (Alt+↓)**: **frequent folders** ranked by time spent and visits, plus recent folders.
+
+→ [15. Folder history and the favorite star](#15-folder-history-and-the-favorite-star)
+
+### 3. Backup-Copy and Restore — safe updates
+
+When you replace a program or data with new files, the **old files that would be overwritten are backed up first** (**Ctrl+B**).
+
+- Only the files to be overwritten go to `backup\date_time\` with the same folder structure, and `backup-copy.log` records what was done. A file whose backup failed is not overwritten.
+- Programs using the target files are found, **closed, and started again after the copy**. Running exe/dll files can also be replaced by moving the old one aside.
+- **Restore (Ctrl+Shift+B)**: pick a backup folder to put the old files back as recorded and move away the files that were new.
+  The state just before restoring is kept in `backup\last_one`, so a restore can be undone too.
+
+→ [10. Backup-Copy](#10-backup-copy) · [A. Deploying a program update safely](#a-deploying-a-program-update-safely-backup-and-rollback)
+
+### 4. More
+
+| Feature | What it does |
+|---|---|
+| Many folders on one screen | 2, 3, 4, 6 or 8 panes, active and target pane. Double Commander–style keys plus Explorer-style selection (Ctrl+Shift, drag in empty space) |
+| Huge files open instantly | A 300 MB log opens in about 0.2 s, with search through the whole file (regex). F4 text and CSV editor |
+| Folder compare and sync | Shows only what differs between two folders and advises which side to keep (Shift+F2) |
+| Search | Find files (Alt+F7), toolbar search box (Everything integration) |
+| Phones and remote | Android phones (USB), FTP / FTPS / WebDAV like ordinary folders |
+| Network work that never freezes | Slow or broken shares do not hang the window, and stuck operations can be cancelled |
+| Portable and light | 3 files (about 0.4 MB), settings in `%APPDATA%`. English / Korean |
 
 ---
 
@@ -218,11 +271,12 @@ Selected items are shown in **red**. With no selection, commands apply to the it
 - The progress window shows per-file and total progress and speed. Short operations finish without it.
 - If progress stops for more than 5 s (slow network etc.) a warning appears, and [Cancel] also breaks blocked I/O.
   (Time spent waiting for your answer in a prompt does not count as a stall.)
-- **Small files are copied in parallel** (PC↔PC, under 1 MB). For small files the fixed cost per file (open, create, antivirus scan) dominates,
+- **Auto FastCopy** — small files are copied in parallel when it helps (PC↔PC, under 1 MB). Toggle it with **Use Auto FastCopy** in the copy/move dialog (F5/F6) (on by default, remembered — drag and drop and paste use the same choice). For small files the fixed cost per file (open, create, antivirus scan) dominates,
   so doing several at once is about 3× faster on an SSD (e.g. 5,000 files of 4 KB: 5.2 s → 1.7 s), and much more over a network (NAS, shares).
   - The number of parallel copies follows the disk: 8 for SSD and network, 1 for HDD and USB sticks (seeking makes parallel slower), 4 if unknown.
     Set it with `CopyThreads` in `settings.ini` (0 = automatic, 1 = one by one as before).
-  - Large files, phone/FTP/WebDAV and moves within one drive (just a rename) still go one by one with progress.
+  - Large files, phone/FTP/WebDAV, moves within one drive (just a rename) and fewer than 8 small files still go one by one with progress.
+  - Turn it off to always copy one by one as before — for comparing speed (e.g. 20,000 files of 2 KB: off 21.7 s / on 6.7 s). The first log line (Method) tells which way was used.
   - Files that already exist at the target or fail are collected and asked about one by one at the end. Answer **Overwrite all** and the rest are overwritten in parallel again.
 - **Detailed log**: turn on **Show detailed log** at the bottom of the progress window to see one line per file (copied, moved, overwrote, skipped, error).
   The window then stays open after the job with a summary (files, skipped, errors, time, speed) — close it with [Close]. Turn it off to close right away as before (setting `ShowOperationLog`).
