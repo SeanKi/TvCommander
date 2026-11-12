@@ -83,6 +83,32 @@ internal sealed class VirtualTextView : FrameworkElement
         }
     }
 
+    /// <summary>
+    /// 같은 파일을 다시 연 원본으로 바꾼다 (새로 고침): 보던 위치·가로 위치·선택은 그대로 (줄 수에 맞춰 줄임).
+    /// </summary>
+    public void ReplaceSource(TextFileSource value)
+    {
+        long top = _top;
+        double h = _hOffset;
+        var (anchor, caret, current) = (_anchor, _caret, Current);
+        if (_source != null) _source.BlockLoaded -= OnBlockLoaded;
+        _source = value;
+        _source.BlockLoaded += OnBlockLoaded;
+        _lineCount = -1;
+        Refresh();
+        _top = Math.Max(0, Math.Min(top, Math.Max(0, _lineCount - 1)));
+        _hOffset = h;
+        _anchor = anchor; _caret = caret; Current = current;
+        UpdateBars();
+        InvalidateVisual();
+    }
+
+    /// <summary>마지막 줄이 화면에 보이는가 (tail -f 처럼 끝을 따라가기 판단)</summary>
+    public bool ShowsEnd => _lineCount <= 0 || _top + VisibleLines >= _lineCount;
+
+    /// <summary>끝으로 (마지막 줄이 화면 아래에)</summary>
+    public void ScrollToEnd() => ScrollTo(_lineCount - VisibleLines + 1);
+
     public bool Wrap
     {
         get => _wrap;
@@ -131,7 +157,14 @@ internal sealed class VirtualTextView : FrameworkElement
     public void Refresh()
     {
         long n = _source?.Status.LineCount ?? 0;
-        if (n != _lineCount) { _lineCount = n; UpdateBars(); InvalidateVisual(); }
+        if (n == _lineCount) return;
+        long old = _lineCount;
+        int oldDigits = Math.Max(old, 1).ToString("N0", CultureInfo.InvariantCulture).Length;
+        _lineCount = n;
+        UpdateBars();
+        // 다시 그리기는 화면에 걸칠 때만: 늘어난/줄어든 줄이 보이는 범위에 있거나, 줄 번호 칸 폭이 바뀔 때
+        bool digitsChanged = Math.Max(n, 1).ToString("N0", CultureInfo.InvariantCulture).Length != oldDigits;
+        if (old < 0 || digitsChanged || Math.Min(old, n) < _top + VisibleLines + 1) InvalidateVisual();
     }
 
     // 줄 번호 칸: 천 단위 쉼표까지 포함한 가장 긴 번호 + 여백

@@ -53,8 +53,9 @@ internal sealed unsafe class TextFileSource : IDisposable
         _loader.Start();
     }
 
-    /// <summary>앞부분으로 인코딩을 판별하고 색인을 시작한다 (작업 스레드에서 부를 것 — 파일을 연다)</summary>
-    public static TextFileSource Open(string path)
+    /// <summary>앞부분으로 인코딩을 판별하고 색인을 시작한다 (작업 스레드에서 부를 것 — 파일을 연다).
+    /// forced 를 주면 그 인코딩으로 (BOM 은 그 인코딩의 BOM 일 때만 건너뛴다)</summary>
+    public static TextFileSource Open(string path, Encoding? forced = null)
     {
         byte[] head;
         using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1 << 16))
@@ -64,6 +65,11 @@ internal sealed unsafe class TextFileSource : IDisposable
             while (read < head.Length) { int n = fs.Read(head, read, head.Length - read); if (n == 0) break; read += n; }
         }
         var enc = TextMatchCount.DetectEncoding(head, out int bom);
+        if (forced != null)
+        {
+            if (forced.CodePage != enc.CodePage) bom = 0;
+            enc = forced;
+        }
         int unit = enc is UnicodeEncoding ? 2 : 1;
         int be = enc.CodePage == 1201 ? 1 : 0;
         var h = NativeMethods.FmTextOpen(path, unit, be, bom);
@@ -79,6 +85,32 @@ internal sealed unsafe class TextFileSource : IDisposable
         }
     }
 
+    /// <summary>
+    /// 파일 끝에 덧붙은 부분만 이어서 색인한다 (앞 줄들의 위치·캐시는 그대로).
+    /// 반환: 1 = 이어서 색인 시작, 0 = 늘지 않음 / 아직 색인 중, -1 = 파일이 줄어 다시 열어야 함
+    /// </summary>
+    public int Append()
+    {
+        long lastLine = Math.Max(0, Status.LineCount - 1);
+        int r = Native(h => NativeMethods.FmTextAppend(h), 0);
+        if (r == 1) InvalidateFrom(lastLine);   // 마지막 줄은 길어졌을 수 있다
+        return r;
+    }
+
+    /// <summary>line 이 들어 있는 블록부터 끝까지 캐시를 버린다</summary>
+    public void InvalidateFrom(long line)
+    {
+        long first = Math.Max(0, line) / BlockLines;
+        lock (_cacheLock)
+        {
+            foreach (var b in _cache.Keys.Where(b => b >= first).ToList())
+            {
+                _cache.Remove(b);
+                _lru.Remove(b);
+            }
+        }
+    }
+
     /// <summary>캐시에 있으면 그 줄, 없으면 null (읽기를 요청해 둔다)</summary>
     public string? TryGetLine(long line)
     {
@@ -89,7 +121,10 @@ internal sealed unsafe class TextFileSource : IDisposable
             {
                 Touch(block);
                 int i = (int)(line - block * BlockLines);
-                return i < lines.Length ? lines[i] : "";
+                if (i < lines.Length) return lines[i];
+                // 색인이 그 뒤로 늘어난 블록 (읽을 때는 줄이 덜 있었다) — 버리고 다시 읽는다
+                _cache.Remove(block);
+                _lru.Remove(block);
             }
             if (_requested.Add(block)) _requests.Add(block);
         }
@@ -103,7 +138,7 @@ internal sealed unsafe class TextFileSource : IDisposable
         string[] lines;
         lock (_cacheLock)
         {
-            if (_cache.TryGetValue(block, out var cached)) { Touch(block); lines = cached; goto have; }
+            if (_cache.TryGetValue(block, out var cached) && line - block * BlockLines < cached.Length) { Touch(block); lines = cached; goto have; }
         }
         lines = ReadBlock(block);
         Store(block, lines);
@@ -203,7 +238,11 @@ internal sealed unsafe class TextFileSource : IDisposable
     {
         lock (_cacheLock)
         {
-            if (_cache.ContainsKey(block)) return;
+            if (_cache.TryGetValue(block, out var had))
+            {
+                if (had.Length >= lines.Length) return;
+                _lru.Remove(block);   // 더 많이 읽힌 것으로 바꾼다
+            }
             _cache[block] = lines;
             _lru.AddFirst(block);
             while (_lru.Count > MaxCachedBlocks)

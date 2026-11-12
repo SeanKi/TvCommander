@@ -103,7 +103,8 @@ struct TextFile {
     }
 };
 
-void IndexThread(std::shared_ptr<TextFile> t)
+// from: 색인을 시작할 위치 (처음 = start, 덧붙은 부분만 = 지난번 끝)
+void IndexThread(std::shared_ptr<TextFile> t, int64_t from)
 {
     SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_BELOW_NORMAL);   // UI 가 먼저
     HANDLE h = OpenShared(t->path);
@@ -118,12 +119,14 @@ void IndexThread(std::shared_ptr<TextFile> t)
 
     std::vector<uint8_t> buf(kBlock);
     std::vector<int64_t> found;
-    int64_t pos = t->start;
-    bool first = true;
+    int64_t pos = std::max(t->start, from);
+    bool first = pos == t->start;
     while (!t->cancel && pos < size.QuadPart) {
         // 첫 읽기는 작게: 첫 화면에 필요한 줄을 바로 내놓는다
         DWORD want = DWORD(std::min<int64_t>(first ? (256 << 10) : kBlock, size.QuadPart - pos));
         first = false;
+        if (t->unit == 2 && want < 2)
+            break;
         DWORD read = 0;
         if (!ReadAt(h, pos, buf.data(), want, &read)) {
             t->error = int(GetLastError());
@@ -354,7 +357,7 @@ FM_API void* FM_CALL FmTextOpen(const wchar_t* path, int unit, int bigEndian, in
                                 nullptr, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, nullptr);
     if (t->readHandle == INVALID_HANDLE_VALUE)
         return nullptr;
-    std::thread(IndexThread, t).detach();
+    std::thread(IndexThread, t, t->start).detach();
     return new Handle{ t };
 }
 
@@ -365,6 +368,29 @@ FM_API void FM_CALL FmTextClose(void* text)
     auto* h = static_cast<Handle*>(text);
     h->file->cancel = true;   // 색인 스레드는 shared_ptr 로 버티다 스스로 끝난다
     delete h;
+}
+
+FM_API int FM_CALL FmTextAppend(void* text)
+{
+    if (!text)
+        return 0;
+    auto t = static_cast<Handle*>(text)->file;
+    if (!t->done || t->cancel)
+        return 0;   // 아직 색인 중 — 끝나고 다시
+    LARGE_INTEGER size{};
+    {
+        std::lock_guard<std::mutex> lk(t->readMutex);
+        if (!GetFileSizeEx(t->readHandle, &size))
+            return 0;
+    }
+    const int64_t old = t->fileSize;
+    if (size.QuadPart < old)
+        return -1;   // 줄었다 — 처음부터 다시 열어야
+    if (size.QuadPart == old)
+        return 0;
+    t->done = false;
+    std::thread(IndexThread, t, int64_t(t->indexed)).detach();
+    return 1;
 }
 
 FM_API int FM_CALL FmTextGetStatus(void* text, FmTextStatus* st)

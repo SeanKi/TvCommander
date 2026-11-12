@@ -4,8 +4,14 @@
         xmlns:local="clr-namespace:MPCommander.Views"
         Width="1000" Height="780" WindowStartupLocation="CenterOwner" FontFamily="Segoe UI" FontSize="12">
     <DockPanel>
-        <Border DockPanel.Dock="Bottom" Padding="6,3" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
-            <TextBlock x:Name="InfoText" TextTrimming="CharacterEllipsis"/>
+        <Border DockPanel.Dock="Bottom" Padding="6,1" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+            <DockPanel>
+                <!-- 인코딩 직접 고르기 (글자가 깨질 때) -->
+                <ComboBox x:Name="EncodingBox" DockPanel.Dock="Right" Width="200" Margin="6,1,0,1" Focusable="False"
+                          MaxDropDownHeight="560" SelectionChanged="EncodingBox_SelectionChanged"
+                          ToolTip="문자 인코딩 — 글자가 깨지면 직접 고르세요. 고른 것은 프로그램을 끌 때까지 이 파일에 기억됩니다."/>
+                <TextBlock x:Name="InfoText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+            </DockPanel>
         </Border>
 
         <!-- 찾기 막대: F3 다음 / Shift+F3 이전 / Ctrl+F 여기로 -->
@@ -14,6 +20,14 @@
                 Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
             <DockPanel>
                 <TextBlock Text="찾기" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <!-- 오른쪽 끝: 새로 고침 · Auto (파일이 바뀌면 자동) -->
+                <CheckBox x:Name="AutoCheck" DockPanel.Dock="Right" Content="Auto" VerticalAlignment="Center" Margin="6,0,0,0"
+                          Focusable="False" Checked="AutoCheck_Changed" Unchecked="AutoCheck_Changed"
+                          ToolTip="파일이 바뀌면 자동으로 새로 고침. 끝에 덧붙기만 했으면 덧붙은 부분만 읽고 찾으며, 끝을 보고 있었으면 끝을 따라갑니다 (tail -f)."/>
+                <Button x:Name="ReloadButton" DockPanel.Dock="Right" Padding="5,1" Margin="4,0,0,0" Focusable="False" Click="Reload_Click"
+                        ToolTip="새로 고침 (F5) — 파일을 다시 읽습니다. 보던 위치는 그대로">
+                    <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="13" Text="&#xE72C;" VerticalAlignment="Center"/>
+                </Button>
                 <Button DockPanel.Dock="Right" Content="다음 ▼" Padding="8,1" Margin="4,0,0,0" Focusable="False" Click="Next_Click" ToolTip="다음 (F3 / Enter)"/>
                 <Button DockPanel.Dock="Right" Content="이전 ▲" Padding="8,1" Margin="4,0,0,0" Focusable="False" Click="Prev_Click" ToolTip="이전 (Shift+F3)"/>
                 <CheckBox x:Name="RegexCheck" DockPanel.Dock="Right" Content="정규식" VerticalAlignment="Center" Margin="10,0,4,0"

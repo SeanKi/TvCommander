@@ -49,6 +49,8 @@ public sealed class AppSettings
     /// <summary>창 종류별 마지막 확대 비율 (%): 목록(패널·찾기 결과 등), 뷰어, 텍스트 편집기, CSV 편집기</summary>
     public int ZoomList { get; set; } = 100;
     public int ZoomViewer { get; set; } = 100;
+    /// <summary>뷰어: 파일이 바뀌면 자동으로 새로 고침 (Auto)</summary>
+    public bool ViewerAutoReload { get; set; }
     public int ZoomEditor { get; set; } = 100;
     public int ZoomCsv { get; set; } = 100;
     /// <summary>F9 터미널. "auto" = Windows Terminal 이 있으면 wt, 없으면 cmd</summary>
@@ -133,6 +135,7 @@ public sealed class AppSettings
             Put("ZoomMax", ZoomMax);
             Put("ZoomList", ZoomList);
             Put("ZoomViewer", ZoomViewer);
+            Put("ViewerAutoReload", ViewerAutoReload);
             Put("ZoomEditor", ZoomEditor);
             Put("ZoomCsv", ZoomCsv);
             Put("WindowLeft", WindowLeft.ToString("R", Inv));
@@ -200,6 +203,7 @@ public sealed class AppSettings
         a.ZoomMax = Int("ZoomMax", a.ZoomMax);
         a.ZoomList = Int("ZoomList", a.ZoomList);
         a.ZoomViewer = Int("ZoomViewer", a.ZoomViewer);
+        a.ViewerAutoReload = Bool("ViewerAutoReload");
         a.ZoomEditor = Int("ZoomEditor", a.ZoomEditor);
         a.ZoomCsv = Int("ZoomCsv", a.ZoomCsv);
         a.WindowLeft = Dbl("WindowLeft", double.NaN);

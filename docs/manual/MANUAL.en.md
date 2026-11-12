@@ -145,7 +145,7 @@ MP-Commander looks at the job and copies **small files (under 1 MB) several at a
 ### 2. Favorites — your folders one click away
 
 - **Favorites bar**: folder buttons under the toolbar, like a web browser. Click opens in the active pane, **Ctrl+click** in the target pane.
-- **☆ (Ctrl+D)** adds the current folder; right-click to give it a name and it shows as `name (path)`. Reorder or remove from the same menu.
+- **☆ (Ctrl+D)** adds the current folder; right-click to give it a name and the bar shows **only the name** (the path appears on mouse-over). Reorder or remove from the same menu.
 - **Folder history (Alt+↓)**: **frequent folders** ranked by time spent and visits, plus recent folders.
 
 → [15. Folder history and the favorite star](#15-folder-history-and-the-favorite-star)
@@ -197,8 +197,8 @@ When you replace a program or data with new files, the **old files that would be
 
 ### Toolbar
 
-By default the toolbar shows **2·3·6·8 panes** | **Back · Forward · Up · Refresh** | **Find files · Compress · Extract · Unblock · Backup-Copy · Restore · Folder compare** | **Favorites bar · Copy full paths · Remote connections · MDNotePad+ · Manual · Settings**.
-**Right-click the toolbar → Customize toolbar** to add the other items in the table below (4 panes, new folder, terminal, copy path/names, swap panes, hidden files, font size), change the order and add separators.
+By default the toolbar shows **2·3·4·6·8 panes** | **Back · Forward · Up · Refresh** | **Find files · Compress · Extract · Unblock · Backup-Copy · Restore · Folder compare** | **Favorites bar · Copy full paths · Remote connections · MDNotePad+ · Manual · Settings**.
+**Right-click the toolbar → Customize toolbar** to add the other items in the table below (new folder, terminal, copy path/names, swap panes, hidden files, font size), change the order and add separators.
 Hidden items still work with their shortcut keys. The layout is saved as `ToolbarItems` in `settings.ini`.
 
 ![Toolbar](images/en/00-toolbar.png)
@@ -234,7 +234,7 @@ Hidden items still work with their shortcut keys. The layout is saved as `Toolba
 - **Target pane** (orange border and `Target` label): the **default destination** of copy (F5), move (F6), compress, extract and Backup-Copy.
   - The target is the previously active pane. With 2 panes it is always the other one.
   - **Ctrl+Shift+number** pins the target (e.g. always send to pane 4 in a 4-pane layout).
-- Switch panes: **Tab / Shift+Tab** next/previous, **Ctrl+1–8** a specific pane.
+- Switch panes: **Tab / Shift+Tab** next/previous, **Ctrl+Tab** back and forth between the active and target pane (left ↔ right with 2 panes), **Ctrl+1–8** a specific pane.
 - **Ctrl+← / Ctrl+→**: open the folder under the cursor in the pane to the left/right.
 - **Ctrl+U**: swap the active and target pane paths.
 
@@ -249,7 +249,7 @@ The layout, folders, sorting and window size are saved on exit and restored next
 | Open a folder / run a file | **Enter** or double-click |
 | Parent folder | **Backspace**, the `..` item, the `..` button next to the path, Ctrl+PgUp |
 | Root | **Ctrl+\\**, the `\` button next to the path (top of a drive, share, FTP/WebDAV connection or phone) |
-| Type a path | Path box (Ctrl+L), then Enter. Environment variables like `%TEMP%` work |
+| Type a path | Path box (Ctrl+L), then Enter. Environment variables like `%TEMP%` work. Typing just **`\\server\`** lists that server's **shares** (`..` goes back to the share list). If it can't be opened, the text stays in the box so you can fix it and press Enter again (Esc = revert) |
 | Drive | Drive list at the top-left of a pane, **Alt+F1 / Alt+F2** |
 | Back / forward | **Alt+← / Alt+→**, the mouse back/forward buttons (active pane only) |
 | Quick search | Type in the list to jump to the item starting with those letters (keep typing within 1.5 s) |
@@ -349,6 +349,11 @@ For bringing two similar folders in line (e.g. a work folder and its backup, PC 
 > **Markdown (.md)** files open in MDNotePad+ when `MDNotePad+.exe` is in the same folder (otherwise in this viewer).
 
 - **Text:** encoding detected automatically (UTF-8 / UTF-16 / Korean ANSI). Line numbers on the left.
+- **Choose the encoding:** if characters look broken, pick one in the box at the right of the status bar — the file is read again at the same position and the search is redone.
+  Unicode (UTF-8 · UTF-16 LE/BE), Korean (EUC-KR/CP949 · Johab), Japanese (Shift-JIS · EUC-JP · ISO-2022-JP), Chinese (GBK · GB18030 · Big5),
+  Western · Central European · Cyrillic (incl. KOI8) · Greek · Turkish · Hebrew · Arabic · Baltic · Vietnamese · Thai · DOS (437/850).
+  In auto mode it shows `Auto (detected)`. The choice is remembered for that file until the program closes.
+  A file that opened as HEX because it looked binary (e.g. UTF-16 without a BOM) shows as text once you pick an encoding.
 - **Any file size opens at once** (a 300 MB log in about 0.2 s). Only the visible lines are read and drawn; the line index is built in the background
   (`indexing n%` in the status bar, then the total line count). The scroll bar reaches **the whole file**, beginning to end (Ctrl+Home / Ctrl+End).
 - **Character selection and copy:** drag or Shift+click, then **Ctrl+C**. Double-click selects a word (and shows the whole line below); **Ctrl+A** selects everything.
@@ -356,6 +361,13 @@ For bringing two similar folders in line (e.g. a work folder and its backup, PC 
 - **HEX:** **H** switches text ↔ HEX (first 512 KB). Binary files open as HEX automatically.
 - **Images:** jpg, png, bmp, gif, tif, ico, webp.
 - **W:** toggle word wrap. **Esc** (or F3 when there is nothing to find) closes the viewer.
+- **Reload · Auto (follow a log):** the **↻ button** at the right end of the find bar (or **F5**) reads the file again, keeping your line position and selection.
+  Turn on **Auto** next to it to reload automatically when the file changes (the setting is remembered).
+  - Only the size and modified time are checked, once a second, so it is cheap (network files too).
+  - **If text was only appended** (a log), just the new part is indexed and searched, and new matches are added to the end of the list. Even a multi-GB log follows instantly.
+  - **If you were at the end, it follows the end** (like `tail -f`). If you scrolled up to read, the view stays put and only the scroll bar grows.
+  - If the beginning changed (overwritten, log rotated) the file is reopened, staying at the same line number; only the search is redone.
+  - The end of the status bar shows the last reload, e.g. `↻ 15:37:41 appended / reloaded`.
 
 ### Finding text in the file
 
@@ -365,6 +377,8 @@ For bringing two similar folders in line (e.g. a work folder and its backup, PC 
 3. The current match is marked with an **orange box** in the text, and the view scrolls to it.
 4. The top right shows **current position / matches · lines**, e.g. `3 / 44 matches · 44 lines` (for the whole file).
 5. The pane below lists **every matching line** with its line number and count, matches in yellow. Picking a line moves the text there.
+   - **Copy many lines at once**: **Ctrl+click** one by one, **Shift+click / Shift+↑↓** for a range, **drag**, **Ctrl+A** for all → **Ctrl+C** copies the **whole** selected lines.
+     **Ctrl+Shift+C** adds line numbers (tab-separated — two columns when pasted into Excel). Also on the right-click menu.
 6. Under it the **whole selected line** is shown word-wrapped (even a very long log line is fully visible).
 7. Drag the boundaries between the panes to resize them.
 
@@ -595,11 +609,15 @@ Manage connections with **Ctrl+F** or the globe button (add / edit / delete / co
 
 - **Alt+↓** or the 🕘 button next to the path: the folder history menu.
   - Top: **frequent folders** — the 5 folders ranked by time spent and visits (they sink when not visited for a while).
-  - Below: recent folders (shared by all panes).
+  - Below: **recent folders** (shared by all panes) — in the **order you last left them**, with when, e.g. `3 min ago`.
+    **Only folders you stayed in for 20 s or more** are added (folders you just passed through, like going up and straight into another folder, are left out to keep the list clean).
+    **Folders open right now in other panes** are listed first as `open · pane 3 · for 12 min` (so you can pick them before you ever leave them).
+    The folders open when you quit are added too. Change the minimum at the bottom of the menu under **Recent folders**
+    (all folders · 5 s · 10 s · 20 s · 30 s · 1 min · 2 min · 5 min; `RecentMinSeconds` in `MP-Commander.ini` takes 0–3600 s).
 - **☆ button (Ctrl+D):** **pins** the current folder to the top of the frequent folders. It lights up as a yellow ★ when the folder is in the list; click again to remove it.
 - **Favorites bar**: folders pinned with ☆ appear under the toolbar like browser favorites (show / hide with the favorites-bar button on the toolbar).
   - Click opens in the active pane, **Ctrl+click** in the target pane. The **＋** at the end adds the current folder.
-  - **Right-click → Edit name and path**: with no name only the path is shown, otherwise `name (path)`. The same menu moves items left / right and removes them.
+  - **Right-click → Edit name and path**: with no name the path is shown, otherwise **only the name** (the path on mouse-over). The same menu moves items left / right and removes them.
 
 ---
 
@@ -663,6 +681,7 @@ Hidden files (Ctrl+H) and font size (Ctrl+= / Ctrl+-) are changed directly on th
 | | Alt+F1 / Alt+F2 | Drive list |
 | | Ctrl+L | Path box |
 | Panes | Tab / Shift+Tab | Next / previous pane |
+| | Ctrl+Tab | Active ↔ target pane (left ↔ right with 2 panes) |
 | | Ctrl+1–8 / Ctrl+Shift+1–8 | Go to pane / pin as target pane |
 | | Ctrl+← / Ctrl+→ | Open the folder under the cursor in the side pane |
 | | Ctrl+U | Swap active and target paths |

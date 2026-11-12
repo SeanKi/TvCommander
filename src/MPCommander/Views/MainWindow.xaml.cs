@@ -78,6 +78,20 @@ public partial class MainWindow : Window
     private FilePanel P => _active ?? _panels[0];
     private IEnumerable<FilePanel> VisiblePanels => _panels.Take(_panelCount);
 
+    /// <summary>
+    /// 폴더 히스토리용: 보이는 다른 창들에 지금 열려 있는 폴더 (except 의 지금 폴더는 빼고, 같은 폴더는 한 번).
+    /// 창 번호는 1부터, 오래 머문 것부터.
+    /// </summary>
+    public IReadOnlyList<(string Path, int PanelNo, TimeSpan Visit)> OpenFolders(FilePanel except)
+        => VisiblePanels
+            .Select((p, i) => (Panel: p, No: i + 1))
+            .Where(x => x.Panel != except && x.Panel.CurrentPath is { } cur && !PathUtil.Same(cur, except.CurrentPath))
+            .GroupBy(x => x.Panel.CurrentPath!, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.OrderByDescending(x => x.Panel.VisitTime).First())
+            .Select(x => (x.Panel.CurrentPath!, x.No, x.Panel.VisitTime))
+            .OrderByDescending(x => x.Item3)
+            .ToList();
+
     // ───────────────────────── 시작 / 종료 ─────────────────────────
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -98,7 +112,7 @@ public partial class MainWindow : Window
     private void OnClosing(object? sender, CancelEventArgs e)
     {
         SaveSettings();
-        foreach (var p in _panels) p.FlushDwell();
+        foreach (var p in _panels) { p.FlushDwell(); p.RecordCurrentAsRecent(); }
         _history.Save();
         _searchWindow?.Close();
     }
@@ -288,6 +302,14 @@ public partial class MainWindow : Window
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
+        // Ctrl+Tab: 활성 ↔ 대상 패널 왔다 갔다 (2창이면 왼쪽 ↔ 오른쪽). 입력 칸에 있어도
+        if (e.Key == Key.Tab && (Keyboard.Modifiers & ModifierKeys.Control) != 0 && (Keyboard.Modifiers & ModifierKeys.Alt) == 0)
+        {
+            if (_target != null && _target != _active) ActivatePanel(_target);
+            else FocusPanelByOffset((Keyboard.Modifiers & ModifierKeys.Shift) != 0 ? -1 : +1);
+            e.Handled = true;
+            return;
+        }
         if (Keyboard.FocusedElement is TextBox or ComboBox or ComboBoxItem) return;
 
         var key = e.Key == Key.System ? e.SystemKey : e.Key;

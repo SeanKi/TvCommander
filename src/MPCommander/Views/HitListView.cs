@@ -19,6 +19,7 @@ internal sealed class LineHit
 /// <summary>
 /// 찾은 줄 목록 (직접 그리는 가상 목록). 수십만 줄을 붙여도 보이는 행만 그리므로
 /// 찾는 중에 목록이 다시 만들어지거나 깜박이지 않고, 선택·스크롤 위치도 그대로다.
+/// 여러 줄 선택: Ctrl+클릭 하나씩, Shift+클릭·Shift+↑↓ 범위, 끌기, Ctrl+A 모두 (복사는 뷰어가 한다).
 /// </summary>
 internal sealed class HitListView : FrameworkElement
 {
@@ -31,12 +32,15 @@ internal sealed class HitListView : FrameworkElement
     private static readonly Brush HitBrush = Frozen(new SolidColorBrush(Color.FromRgb(0xFF, 0xF0, 0x40)));
     private static readonly Brush SelBrush = Frozen(new SolidColorBrush(Color.FromRgb(0xCC, 0xE4, 0xFF)));
     private static readonly Brush SelInactiveBrush = Frozen(new SolidColorBrush(Color.FromRgb(0xE4, 0xE4, 0xE4)));
+    private static readonly Pen CursorPen = FrozenPen(new Pen(new SolidColorBrush(Color.FromRgb(0x33, 0x77, 0xDD)), 1));
     private static Brush Frozen(Brush b) { b.Freeze(); return b; }
     private static Pen FrozenPen(Pen p) { p.Freeze(); return p; }
 
     private IReadOnlyList<LineHit> _items = Array.Empty<LineHit>();
     private int _top;
-    private int _selected = -1;
+    private int _selected = -1;                   // 커서 (본문이 따라가는 줄)
+    private int _anchor = -1;                     // Shift 범위의 기준
+    private readonly HashSet<int> _sel = new();   // 선택한 행들
     private const double BaseFontSz = 12;
     private double FontSz = BaseFontSz;
     private double _rowH;
@@ -70,13 +74,34 @@ internal sealed class HitListView : FrameworkElement
     public IReadOnlyList<LineHit> Items
     {
         get => _items;
-        set { _items = value; _top = 0; _selected = -1; Refresh(); }
+        set { _items = value; _top = 0; _selected = -1; _anchor = -1; _sel.Clear(); Refresh(); }
     }
 
     public int SelectedIndex
     {
         get => _selected;
-        set { _selected = value; EnsureVisible(value); InvalidateVisual(); }
+        set
+        {
+            // 프로그램이 고른 줄 (F3 다음 찾기 등): 여러 줄 선택은 풀고 그 줄 하나로
+            _selected = value; _anchor = value; _sel.Clear();
+            if (value >= 0) _sel.Add(value);
+            EnsureVisible(value); InvalidateVisual();
+        }
+    }
+
+    /// <summary>선택한 행 번호 (위에서부터)</summary>
+    public List<int> SelectedRows()
+    {
+        var rows = _sel.Where(i => i < _items.Count).ToList();
+        rows.Sort();
+        return rows;
+    }
+
+    public void SelectAll()
+    {
+        _sel.Clear();
+        for (int i = 0; i < _items.Count; i++) _sel.Add(i);
+        InvalidateVisual();
     }
 
     private double HeaderH => _rowH + 2;
@@ -85,6 +110,7 @@ internal sealed class HitListView : FrameworkElement
     /// <summary>항목 수가 늘었을 때: 스크롤 막대와 화면만 갱신 (선택·스크롤 위치 유지)</summary>
     public void Refresh()
     {
+        if (_sel.Count > 0) _sel.RemoveWhere(i => i >= _items.Count);   // 끝의 줄이 빠졌을 수 있다 (파일 새로 고침)
         UpdateBar();
         InvalidateVisual();
     }
@@ -140,7 +166,8 @@ internal sealed class HitListView : FrameworkElement
         for (int i = _top; i < count && y < h; i++)
         {
             var it = _items[i];
-            if (i == _selected) dc.DrawRectangle(focused ? SelBrush : SelInactiveBrush, null, new Rect(0, y, w, _rowH));
+            if (_sel.Contains(i)) dc.DrawRectangle(focused ? SelBrush : SelInactiveBrush, null, new Rect(0, y, w, _rowH));
+            if (i == _selected && focused && _sel.Count > 1) dc.DrawRectangle(null, CursorPen, new Rect(0.5, y + 0.5, w - 1, _rowH - 1));
 
             var num = Text((it.Line + 1).ToString("N0", CultureInfo.InvariantCulture), GrayText);
             dc.DrawText(num, new Point(colLine - 8 - num.Width, y + 2));
@@ -174,24 +201,74 @@ internal sealed class HitListView : FrameworkElement
 
     // ───────── 입력 ─────────
 
-    private void Choose(int i)
+    /// <summary>행 고르기. Shift = 기준부터 범위 (Ctrl+Shift 는 지금 선택에 더함), Ctrl = 하나 넣고 빼기</summary>
+    private void Choose(int i, ModifierKeys mods = ModifierKeys.None)
     {
         if (_items.Count == 0) return;
         i = Math.Max(0, Math.Min(_items.Count - 1, i));
+        bool shift = (mods & ModifierKeys.Shift) != 0, ctrl = (mods & ModifierKeys.Control) != 0;
+        if (shift)
+        {
+            if (_anchor < 0 || _anchor >= _items.Count) _anchor = _selected >= 0 ? _selected : i;
+            if (!ctrl) _sel.Clear();
+            for (int k = Math.Min(_anchor, i); k <= Math.Max(_anchor, i); k++) _sel.Add(k);
+        }
+        else if (ctrl)
+        {
+            if (!_sel.Remove(i)) _sel.Add(i);
+            _anchor = i;
+        }
+        else
+        {
+            _sel.Clear(); _sel.Add(i);
+            _anchor = i;
+        }
         _selected = i;
         EnsureVisible(i);
         InvalidateVisual();
         RowChosen?.Invoke(i);
     }
 
+    private int RowAt(double y) => y < HeaderH ? -1 : _top + (int)((y - HeaderH) / _rowH);
+
+    private bool _dragging;
+
     protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
     {
         Focus();
-        double y = e.GetPosition(this).Y;
-        if (y < HeaderH) return;
-        int i = _top + (int)((y - HeaderH) / _rowH);
-        if (i < _items.Count) Choose(i);
+        int i = RowAt(e.GetPosition(this).Y);
+        if (i < 0) return;
+        if (i < _items.Count)
+        {
+            Choose(i, Keyboard.Modifiers);
+            // 끌어서 범위 선택 (Ctrl 로 넣고 뺀 경우는 끌지 않는다)
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == 0) { _dragging = true; CaptureMouse(); }
+        }
         e.Handled = true;
+    }
+
+    protected override void OnMouseMove(MouseEventArgs e)
+    {
+        if (!_dragging || e.LeftButton != MouseButtonState.Pressed) return;
+        double y = e.GetPosition(this).Y;
+        // 위·아래 끝을 넘으면 굴리면서 넓힌다
+        if (y < HeaderH) ScrollTo(_top - 1);
+        else if (y > ActualHeight) ScrollTo(_top + 1);
+        int i = Math.Max(0, Math.Min(_items.Count - 1, RowAt(Math.Max(HeaderH, Math.Min(ActualHeight - 1, y)))));
+        if (i != _selected) Choose(i, ModifierKeys.Shift);
+    }
+
+    protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
+    {
+        if (_dragging) { _dragging = false; ReleaseMouseCapture(); }
+    }
+
+    protected override void OnMouseRightButtonDown(MouseButtonEventArgs e)
+    {
+        // 선택 밖을 누르면 그 줄 하나로 (선택 안이면 그대로 두고 메뉴만)
+        Focus();
+        int i = RowAt(e.GetPosition(this).Y);
+        if (i >= 0 && i < _items.Count && !_sel.Contains(i)) Choose(i);
     }
 
     protected override void OnMouseWheel(MouseWheelEventArgs e)
@@ -207,14 +284,15 @@ internal sealed class HitListView : FrameworkElement
     {
         int page = Math.Max(1, VisibleRows - 1);
         int cur = _selected < 0 ? _top - 1 : _selected;
+        var mods = Keyboard.Modifiers & ModifierKeys.Shift;   // Shift+↑↓ 는 범위 넓히기
         switch (e.Key)
         {
-            case Key.Down: Choose(cur + 1); break;
-            case Key.Up: Choose(Math.Max(0, cur - 1)); break;
-            case Key.PageDown: Choose(cur + page); break;
-            case Key.PageUp: Choose(cur - page); break;
-            case Key.Home: Choose(0); break;
-            case Key.End: Choose(_items.Count - 1); break;
+            case Key.Down: Choose(cur + 1, mods); break;
+            case Key.Up: Choose(Math.Max(0, cur - 1), mods); break;
+            case Key.PageDown: Choose(cur + page, mods); break;
+            case Key.PageUp: Choose(cur - page, mods); break;
+            case Key.Home: Choose(0, mods); break;
+            case Key.End: Choose(_items.Count - 1, mods); break;
             default: return;
         }
         e.Handled = true;

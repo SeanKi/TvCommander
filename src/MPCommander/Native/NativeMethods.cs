@@ -133,6 +133,7 @@ internal static unsafe class NativeMethods
     [DllImport(Dll, CharSet = CharSet.Unicode)] public static extern IntPtr FmTextOpen(string path, int unit, int bigEndian, long dataStart);
     [DllImport(Dll)] public static extern void FmTextClose(IntPtr text);
     [DllImport(Dll)] public static extern int FmTextGetStatus(IntPtr text, out FmTextStatus status);
+    [DllImport(Dll)] public static extern int FmTextAppend(IntPtr text);
     [DllImport(Dll)] public static extern int FmTextLineOffsets(IntPtr text, long first, int count, long* offsets);
     [DllImport(Dll)] public static extern long FmTextLineOfOffset(IntPtr text, long offset);
     [DllImport(Dll)] public static extern int FmTextRead(IntPtr text, long offset, int length, byte* buffer);

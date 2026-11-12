@@ -147,12 +147,6 @@ public partial class FilePanel : UserControl
             ShowError(ex.Message, null);
             return false;
         }
-        if (PathUtil.IsServerOnly(full))
-        {
-            ShowError(Loc.T(@"공유 폴더 이름까지 입력하세요. (예: \\server\share)"), null);
-            return false;
-        }
-
         HashSet<string>? marks = null;
         int oldIndex = FileList.SelectedIndex;
         if (keepState)
@@ -237,7 +231,8 @@ public partial class FilePanel : UserControl
     public Task GoUpAsync()
     {
         if (CurrentPath == null) return Task.CompletedTask;
-        var parent = PathUtil.Parent(CurrentPath);
+        // 공유의 맨 위(\\서버\공유)에서는 그 서버의 공유 목록으로
+        var parent = PathUtil.Parent(CurrentPath) ?? PathUtil.ServerOfShareRoot(CurrentPath);
         return parent == null ? Task.CompletedTask : NavigateAsync(parent, PathUtil.LastSegment(CurrentPath));
     }
 
@@ -289,7 +284,7 @@ public partial class FilePanel : UserControl
 
     private void ApplyItems(List<FileItem> items, string? focusName, HashSet<string>? marks, int fallbackIndex)
     {
-        if (!PathUtil.IsRoot(CurrentPath!)) items.Add(FileItem.CreateParent(CurrentPath!));
+        if (!PathUtil.IsRoot(CurrentPath!) || PathUtil.ServerOfShareRoot(CurrentPath!) != null) items.Add(FileItem.CreateParent(CurrentPath!));
         items.Sort(_comparer);
 
         _fileCount = _dirCount = _markedFiles = _markedDirs = 0;
@@ -315,7 +310,15 @@ public partial class FilePanel : UserControl
         int idx = focusName != null ? items.FindIndex(i => string.Equals(i.Name, focusName, StringComparison.OrdinalIgnoreCase)) : -1;
         if (idx < 0) idx = Compat.Clamp(fallbackIndex, 0, Math.Max(0, items.Count - 1));
         bool typing = Keyboard.FocusedElement is TextBox or ComboBox or ComboBoxItem;   // 경로 입력·명령줄 입력 중
-        SetCursor(idx, _host.ActivePanel == this && !typing);
+        // 뷰어 등 다른 창이 활성이면 키보드 포커스를 가져오지 않는다 (가져오면 그 창이 비활성이 되어 메뉴·팝업이 닫힌다).
+        // 대신 창 안의 논리 포커스만 옮겨 두어, 메인 창으로 돌아오면 목록에 포커스가 간다.
+        var window = Window.GetWindow(this);
+        bool windowActive = window?.IsActive == true;
+        bool wantFocus = _host.ActivePanel == this && !typing;
+        SetCursor(idx, wantFocus && windowActive);
+        if (wantFocus && !windowActive && window != null && idx >= 0 && idx < FileList.Items.Count
+            && FileList.ItemContainerGenerator.ContainerFromIndex(idx) is ListViewItem lvi)
+            FocusManager.SetFocusedElement(window, lvi);
         UpdateStatus();
     }
 
@@ -336,12 +339,28 @@ public partial class FilePanel : UserControl
         var history = _host.History;
         if (oldPath != null)
         {
+            var visit = CurrentVisit();
             EndDwell(oldPath);
-            history.AddRecent(oldPath);
+            history.AddRecent(oldPath, visit);   // 잠깐 스친 폴더는 넣지 않는다
         }
+        _visitStart = Compat.TickCount64;
         history.RecordVisit(newPath);
         if (_shownInLayout) _dwellStart = Compat.TickCount64;
         history.Save();
+    }
+
+    private long _visitStart;   // 지금 폴더에 들어온 때 (최근 폴더 기준용 — 체류 시간은 FlushDwell 로 끊겨도 이것은 이어진다)
+
+    /// <summary>지금 폴더에 들어와 지금까지 머문 시간 (이번 방문)</summary>
+    private TimeSpan CurrentVisit() => _visitStart == 0 ? TimeSpan.Zero : TimeSpan.FromMilliseconds(Compat.TickCount64 - _visitStart);
+
+    /// <summary>지금 폴더에 머문 시간 (이번 방문)</summary>
+    public TimeSpan VisitTime => CurrentVisit();
+
+    /// <summary>프로그램을 끌 때: 지금 폴더도 기준 이상 머물렀으면 최근 폴더에 (다음에 켜도 순서가 이어지게)</summary>
+    public void RecordCurrentAsRecent()
+    {
+        if (CurrentPath != null) _host.History.AddRecent(CurrentPath, CurrentVisit());
     }
 
     private void EndDwell(string path)
@@ -408,7 +427,7 @@ public partial class FilePanel : UserControl
         FlushDwell();   // 지금 폴더의 체류 시간도 점수에 반영
         var history = _host.History;
         var smart = history.GetSmart();
-        var recent = history.GetRecent(smart.Select(s => s.Path));
+        var recent = history.GetRecent();
 
         var menu = new ContextMenu
         {
@@ -453,10 +472,39 @@ public partial class FilePanel : UserControl
             menu.Items.Add(new Separator());
         }
 
+        // 다른 창에 지금 열려 있는 폴더 (아직 떠나지 않아 최근 목록에는 없다) — 최근 폴더 맨 위에, 오래 머문 것부터
+        var open = _host.OpenFolders(this);
+        recent = recent.Where(r => !open.Any(o => PathUtil.Same(o.Path, r.Path))).ToList();
+
         menu.Items.Add(Title(Loc.F($"최근 폴더 ({recent.Count}/{history.MaxHistory})")));
-        if (recent.Count == 0)
+        if (recent.Count == 0 && open.Count == 0)
             menu.Items.Add(new MenuItem { Header = new TextBlock { Text = Loc.T("(없음)") }, IsEnabled = false });
-        foreach (var p in recent) menu.Items.Add(Entry(p, null));
+        foreach (var (path, panelNo, visit) in open)
+            menu.Items.Add(Entry(path, Loc.F($"열려 있음 · {panelNo}번 창 · {FormatDwell(visit.TotalSeconds)}째")));
+        foreach (var r in recent) menu.Items.Add(Entry(r.Path, r.LeftUtc == DateTime.MinValue ? null : FormatAgo(DateTime.UtcNow - r.LeftUtc)));
+
+        // 최근 폴더에 넣는 기준 (이 시간 이상 머문 폴더만)
+        menu.Items.Add(new Separator());
+        var min = new MenuItem { Header = new TextBlock { Text = Loc.F($"최근 폴더 기준: {MinText(history.RecentMinSeconds)}") } };
+        foreach (int sec in new[] { 0, 5, 10, 20, 30, 60, 120, 300 })
+        {
+            var opt = new MenuItem
+            {
+                Header = new TextBlock { Text = MinText(sec) },
+                IsCheckable = true,
+                IsChecked = sec == history.RecentMinSeconds,
+            };
+            opt.Click += (_, _) =>
+            {
+                chosen = true;
+                history.RecentMinSeconds = sec;
+                history.Save();
+                FlashStatus(Loc.F($"최근 폴더 기준: {MinText(sec)}"));
+                FocusList();
+            };
+            min.Items.Add(opt);
+        }
+        menu.Items.Add(min);
 
         menu.Items.Add(new Separator());
         var clear = new MenuItem { Header = new TextBlock { Text = Loc.T("히스토리 지우기...") } };
@@ -482,6 +530,19 @@ public partial class FilePanel : UserControl
         menu.Closed += (_, _) => { if (!chosen) FocusList(); };
         menu.IsOpen = true;
     }
+
+    private static string MinText(int seconds) => seconds == 0 ? Loc.T("모든 폴더 (기준 없음)")
+        : seconds < 60 ? Loc.F($"{seconds}초 이상 머문 폴더") : Loc.F($"{seconds / 60}분 이상 머문 폴더");
+
+    /// <summary>"방금" / "3분 전" / "2시간 전" / "어제" / "5일 전"</summary>
+    private static string FormatAgo(TimeSpan ago) => ago.TotalSeconds switch
+    {
+        < 60 => Loc.T("방금"),
+        < 3600 => Loc.F($"{(int)ago.TotalMinutes}분 전"),
+        < 86400 => Loc.F($"{(int)ago.TotalHours}시간 전"),
+        < 2 * 86400 => Loc.T("어제"),
+        _ => Loc.F($"{(int)ago.TotalDays}일 전"),
+    };
 
     private static string FormatDwell(double seconds) => seconds switch
     {
@@ -681,6 +742,7 @@ public partial class FilePanel : UserControl
     {
         var path = CurrentPath;
         if (path == null) return;
+        if (PathUtil.IsServerOnly(path)) { _freeText = ""; UpdateStatus(); return; }
         try
         {
             if (PathUtil.IsVirtual(path))
@@ -755,6 +817,7 @@ public partial class FilePanel : UserControl
             StartPolling(RemotePollMs);
             return;
         }
+        if (PathUtil.IsServerOnly(path)) return;   // 공유 목록은 지켜보지 않는다 (F5/Ctrl+R 로 새로고침)
 
         bool network;
         try
@@ -1091,7 +1154,13 @@ public partial class FilePanel : UserControl
             e.Handled = true;
             var text = PathBox.Text;
             FocusList();
-            if (!await NavigateAsync(text)) PathBox.Text = CurrentPath ?? text;
+            if (!await NavigateAsync(text) && !string.IsNullOrWhiteSpace(text))
+            {
+                // 실패해도 입력한 경로를 남겨 두고 고쳐 다시 Enter 할 수 있게 (Esc = 지금 폴더로 되돌리기)
+                PathBox.Text = text;
+                PathBox.Focus();
+                PathBox.CaretIndex = text.Length;
+            }
         }
         else if (e.Key == Key.Escape)
         {

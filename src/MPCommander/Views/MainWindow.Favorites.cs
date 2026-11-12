@@ -40,7 +40,8 @@ public partial class MainWindow
         ApplyFavoritesBarVisibility();
     }
 
-    public static string FavoriteText(string path, string label) => label.Length > 0 ? $"{label} ({path})" : path;
+    /// <summary>바에 보이는 글: 이름을 붙였으면 이름만 (경로는 마우스를 올리면), 아니면 경로</summary>
+    public static string FavoriteText(string path, string label) => label.Length > 0 ? label : path;
 
     private void RebuildFavoritesBar()
     {
@@ -60,7 +61,7 @@ public partial class MainWindow
             {
                 Content = content,
                 Tag = path,
-                ToolTip = Loc.F($"{path}\n누르기: 활성 패널에서 열기 · Ctrl+누르기: 대상 패널 · 오른쪽 버튼: 고치기·순서·빼기"),
+                ToolTip = (label.Length > 0 ? label + "\n" : "") + Loc.F($"{path}\n누르기: 활성 패널에서 열기 · Ctrl+누르기: 대상 패널 · 오른쪽 버튼: 고치기·순서·빼기"),
                 Padding = new Thickness(6, 2, 6, 2),
                 Margin = new Thickness(0, 1, 2, 1),
                 Focusable = false,

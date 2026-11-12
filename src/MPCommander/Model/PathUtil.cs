@@ -31,6 +31,8 @@ public static class PathUtil
         if (IsVirtual(baseDir) && !Path.IsPathRooted(p)) return NormalizeVirtual(baseDir + "/" + p);
 
         if (p.Length == 2 && p[1] == ':') p += "\\";
+        // "\\서버" / "\\서버\" = 그 서버의 공유 목록 (GetFullPath 는 공유 이름이 없으면 예외)
+        if (IsServerOnly(p) && p.Substring(2).Trim('\\', '/').Length > 0) return @"\\" + p.Substring(2).Trim('\\', '/');
         if (!Path.IsPathRooted(p) && baseDir != null) p = Path.Combine(baseDir, p);
         return TrimEnd(Path.GetFullPath(p));
     }
@@ -71,6 +73,7 @@ public static class PathUtil
 
     public static string? Parent(string p)
     {
+        if (IsServerOnly(p)) return null;   // 공유 목록이 맨 위
         if (!IsVirtual(p)) return Path.GetDirectoryName(TrimEnd(p));
         var t = TrimEnd(p);
         int idx = t.LastIndexOf('/');
@@ -95,6 +98,7 @@ public static class PathUtil
     /// <summary>"C:\a" → "C:\", "\\srv\share\a" → "\\srv\share", "ftp://서버/a" → "ftp://서버"</summary>
     public static string Root(string p)
     {
+        if (IsServerOnly(p)) return TrimEnd(p);
         if (!IsVirtual(p)) return Path.GetPathRoot(p) ?? p;
         var t = TrimEnd(p);
         int idx = t.IndexOf('/', PrefixLength(t));
@@ -120,6 +124,14 @@ public static class PathUtil
 
     public static bool SameVolume(string a, string b)
         => string.Equals(TrimEnd(Root(a)), TrimEnd(Root(b)), StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>"\\server\share" (공유의 맨 위) 이면 "\\server", 아니면 null — 공유 목록으로 올라갈 때</summary>
+    public static string? ServerOfShareRoot(string p)
+    {
+        if (!p.StartsWith(@"\\") || p.StartsWith(@"\\?\") || p.StartsWith(@"\\.\")) return null;
+        var parts = TrimEnd(p).Substring(2).Split('\\');
+        return parts.Length == 2 && parts[0].Length > 0 && parts[1].Length > 0 ? @"\\" + parts[0] : null;
+    }
 
     /// <summary>"\\server" 처럼 공유 이름이 빠진 UNC 경로</summary>
     public static bool IsServerOnly(string p)

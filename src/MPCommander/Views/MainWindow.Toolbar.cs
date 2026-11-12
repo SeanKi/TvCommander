@@ -13,7 +13,7 @@ public partial class MainWindow
     /// <summary>기본 구성: 패널 배치 | 뒤로 · 앞으로 · 위 · 새로고침 | 자주 쓰는 작업 | 즐겨찾기 바 · 경로 복사 · 원격 · MDNotePad+ · 설명서 · 설정</summary>
     public static readonly string[] DefaultToolbar =
     [
-        "layout2", "layout3", "layout6", "layout8", "|",
+        "layout2", "layout3", "layout4", "layout6", "layout8", "|",
         "back", "forward", "up", "refresh", "|",
         "search", "pack", "unpack", "unblock", "backup", "restore", "foldersync", "|",
         "favbar", "copyfullpaths", "connections", "mdsync", "manual", "settings",

@@ -142,7 +142,14 @@
                     </Grid></Button>
                 <Button Uid="connections" Click="Connections_Click" ToolTip="원격 연결 관리 — FTP / FTPS / WebDAV 등록·연결 (Ctrl+F)"><TextBlock Style="{StaticResource Icon}" Text="&#xE774;"/></Button>
                 <Button Uid="copypath" Click="CopyPath_Click" ToolTip="현재 폴더 경로 복사"><TextBlock Style="{StaticResource Icon}" Text="&#xE8C8;"/></Button>
-                <Button Uid="copyfullpaths" Click="CopyFullPaths_Click" ToolTip="선택 항목 전체 경로 복사 (Ctrl+Shift+C)"><TextBlock Style="{StaticResource Icon}" Text="&#xE71B;"/></Button>
+                <!-- 경로 복사: 복사(겹친 두 장) + 오른쪽 아래 작은 사슬 (Double Commander 의 복사 아이콘과 링크 사이) -->
+                <Button Uid="copyfullpaths" Click="CopyFullPaths_Click" ToolTip="선택 항목 전체 경로 복사 (Ctrl+Shift+C)">
+                    <Grid Width="20" Height="18" Margin="1,0">
+                        <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="15" Text="&#xE8C8;" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,1,0,0"/>
+                        <Ellipse Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                 Fill="{Binding Background, RelativeSource={RelativeSource AncestorType=ToolBar}}"/>
+                        <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="10" FontWeight="Bold" Text="&#xE71B;" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,1,1"/>
+                    </Grid></Button>
                 <Button Uid="copynames" Click="CopyNames_Click" ToolTip="선택 항목 이름 복사"><TextBlock Style="{StaticResource Icon}" Text="&#xE8AC;"/></Button>
                 <Button Uid="newfolder" Click="NewFolder_Click" ToolTip="새 폴더 (F7)"><TextBlock Style="{StaticResource Icon}" Text="&#xE8F4;"/></Button>
                 <Button Uid="terminal" Click="Terminal_Click" ToolTip="여기서 터미널 열기 (F9)"><TextBlock Style="{StaticResource Icon}" Text="&#xE756;"/></Button>

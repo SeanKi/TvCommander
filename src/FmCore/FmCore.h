@@ -149,6 +149,8 @@ typedef struct FmTextStatus {
 FM_API void*   FM_CALL FmTextOpen(const wchar_t* path, int unit, int bigEndian, int64_t dataStart);
 FM_API void    FM_CALL FmTextClose(void* text);
 FM_API int     FM_CALL FmTextGetStatus(void* text, FmTextStatus* status);
+// 파일 끝에 덧붙은 부분만 이어서 색인 (앞부분 줄 위치는 그대로). 반환: 1 = 이어서 색인 시작, 0 = 늘지 않음/아직 색인 중, -1 = 줄었음(다시 열 것)
+FM_API int     FM_CALL FmTextAppend(void* text);
 // first 줄부터 최대 count 줄의 시작 위치와, 마지막 줄의 끝(다음 줄 시작)을 offsets[0..n] 에 채운다. 반환: n (줄 수)
 FM_API int     FM_CALL FmTextLineOffsets(void* text, int64_t first, int count, int64_t* offsets);
 // 바이트 위치가 속한 줄 번호 (0부터, 색인된 범위 안에서)

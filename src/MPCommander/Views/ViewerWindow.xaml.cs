@@ -90,6 +90,7 @@ public partial class ViewerWindow : Window
         HitList.Items = _hits;
         HitList.VBar = HitBar;
         HitList.RowChosen += i => _ = SelectAsync(i, 0, userAction: true);
+        HitList.ContextMenu = HitListMenu();
         TextView.VBar = VBar;
         TextView.HBar = HBar;
         TextView.Highlighter = HighlightLine;
@@ -104,6 +105,8 @@ public partial class ViewerWindow : Window
         _findTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         _findTimer.Tick += (_, _) => { _findTimer.Stop(); StartSearch(); };
 
+        InitReload();
+        InitEncodingBox();
         Loaded += async (_, _) => await LoadAsync();
         Closed += (_, _) => Shutdown();
         PreviewKeyDown += OnKey;
@@ -119,6 +122,7 @@ public partial class ViewerWindow : Window
     {
         _poll.Stop();
         _findTimer.Stop();
+        _watch?.Stop();
         StopSearch();
         _source?.Dispose();
         _source = null;
@@ -136,11 +140,12 @@ public partial class ViewerWindow : Window
                 if (TryShowImage(data, length)) return;
             }
             var (head, _) = await GuardedIo.RunAsync(ctx => ReadHead(_path, 64 * 1024, ctx), 5000, _path);
-            if (LooksBinary(head)) { await ShowHexAsync(); return; }
+            if (_forcedCodePage == null && LooksBinary(head)) { await ShowHexAsync(); await RememberSnapAsync(); return; }
 
             // 줄 색인은 C++ 백그라운드 스레드가 만들고, 첫 줄들은 바로 보인다
-            _source = await GuardedIo.RunAsync(_ => TextFileSource.Open(_path), 5000, _path);
-            _encodingName = _source.EncodingName;
+            var forced = ForcedEncoding;
+            _source = await GuardedIo.RunAsync(_ => TextFileSource.Open(_path, forced), 5000, _path);
+            ShowEncoding(_source.Encoding);
             TextView.Source = _source;
             TextArea.Visibility = Visibility.Visible;
             StateText.Visibility = Visibility.Collapsed;
@@ -148,6 +153,8 @@ public partial class ViewerWindow : Window
             _poll.Start();
             Poll();
             if (FindBox.Text.Length > 0) StartSearch();
+            await RememberSnapAsync();
+            StartWatch();
         }
         catch (Exception ex)
         {
@@ -187,6 +194,7 @@ public partial class ViewerWindow : Window
             ImageScroll.Visibility = Visibility.Visible;
             StateText.Visibility = Visibility.Collapsed;
             FindBar.Visibility = Visibility.Collapsed;
+            EncodingBox.Visibility = Visibility.Collapsed;
             InfoText.Text = Loc.F($"{_path}   │   {bmp.PixelWidth} × {bmp.PixelHeight}   │   {PathUtil.FormatSize(length)}   │   Esc 닫기");
             return true;
         }
@@ -228,10 +236,12 @@ public partial class ViewerWindow : Window
     {
         if (_source == null) return;
         TextView.Refresh();
+        PollAppend();
         var st = _source.Status;
         var indexing = st.Done == 0 ? Loc.F($"   │   색인 중 {(st.FileSize > 0 ? st.IndexedBytes * 100 / st.FileSize : 0)}%") : "";
         InfoText.Text = Loc.F($"{_path}   │   {PathUtil.FormatSize(st.FileSize)}   │   {_encodingName}   │   {st.LineCount:N0}줄{indexing}")
-                      + Loc.T("   │   Ctrl+F 찾기  F3 다음  Shift+F3 이전   Ctrl+C 복사   H: HEX   W: 줄 바꿈   Esc: 닫기");
+                      + (_reloadNote.Length > 0 ? "   │   " + _reloadNote : "")
+                      + Loc.T("   │   Ctrl+F 찾기  F3 다음  Shift+F3 이전   Ctrl+C 복사   F5 새로 고침   H: HEX   W: 줄 바꿈   Esc: 닫기");
         FlushHits();
     }
 
@@ -636,6 +646,54 @@ public partial class ViewerWindow : Window
         catch { }
     }
 
+    private System.Windows.Controls.ContextMenu HitListMenu()
+    {
+        var menu = new System.Windows.Controls.ContextMenu();
+        System.Windows.Controls.MenuItem Item(string header, string gesture, Action act)
+        {
+            var mi = new System.Windows.Controls.MenuItem { Header = header, InputGestureText = gesture };
+            mi.Click += (_, _) => act();
+            menu.Items.Add(mi);
+            return mi;
+        }
+        var copy = Item(Loc.T("고른 줄 복사"), "Ctrl+C", () => CopyHits(false));
+        var copyNum = Item(Loc.T("줄 번호와 함께 복사 (탭으로 나눔)"), "Ctrl+Shift+C", () => CopyHits(true));
+        menu.Items.Add(new System.Windows.Controls.Separator());
+        Item(Loc.T("모두 고르기"), "Ctrl+A", HitList.SelectAll);
+        menu.Opened += (_, _) => copy.IsEnabled = copyNum.IsEnabled = HitList.SelectedRows().Count > 0;
+        return menu;
+    }
+
+    /// <summary>찾은 줄 목록에서 고른 줄들을 줄 전체로 복사 (파일에서 다시 읽는다 — 목록은 앞부분만 가지고 있다)</summary>
+    private async void CopyHits(bool withLineNumbers)
+    {
+        var rows = HitList.SelectedRows();
+        if (rows.Count == 0) return;
+        var hits = rows.Select(i => _hits[i]).ToList();
+        var source = _source;
+        var text = await Task.Run(() =>
+        {
+            var sb = new StringBuilder();
+            foreach (var h in hits)
+            {
+                if (sb.Length >= MaxCopyChars) break;
+                if (sb.Length > 0) sb.Append("\r\n");
+                if (withLineNumbers) sb.Append((h.Line + 1).ToString(System.Globalization.CultureInfo.InvariantCulture)).Append('\t');
+                string line;
+                try { line = source?.GetLineSync(h.Line) ?? h.Preview; }
+                catch { line = h.Preview; }
+                sb.Append(line);
+            }
+            return sb.Length > MaxCopyChars ? sb.ToString(0, MaxCopyChars) : sb.ToString();
+        });
+        try
+        {
+            Clipboard.SetText(text);
+            FindCount.Text = Loc.F($"{hits.Count:N0}줄 ({text.Length:N0}자) 복사함");
+        }
+        catch { }
+    }
+
     private static bool LooksBinary(byte[] d)
     {
         if (d.Length >= 2 && ((d[0] == 0xFF && d[1] == 0xFE) || (d[0] == 0xFE && d[1] == 0xFF))) return false;
@@ -686,6 +744,15 @@ public partial class ViewerWindow : Window
                 FindBox.SelectAll();
                 e.Handled = true;
                 break;
+            // 찾은 줄 목록: 고른 줄들 복사 (Ctrl+Shift+C 는 줄 번호와 함께), Ctrl+A 모두 고르기
+            case Key.C when (mods == ModifierKeys.Control || mods == (ModifierKeys.Control | ModifierKeys.Shift)) && Keyboard.FocusedElement == HitList:
+                CopyHits(withLineNumbers: mods != ModifierKeys.Control);
+                e.Handled = true;
+                break;
+            case Key.A when mods == ModifierKeys.Control && Keyboard.FocusedElement == HitList:
+                HitList.SelectAll();
+                e.Handled = true;
+                break;
             case Key.C when mods == ModifierKeys.Control && textMode && !typing && Keyboard.FocusedElement is not System.Windows.Controls.RichTextBox:
                 CopySelection();
                 e.Handled = true;
@@ -702,6 +769,10 @@ public partial class ViewerWindow : Window
                 break;   // 찾기 칸에 입력 중인 글자
             case Key.H when !_isImage || _source != null:
                 if (_hex) ShowText(); else _ = ShowHexAsync();
+                e.Handled = true;
+                break;
+            case Key.F5 when mods == ModifierKeys.None:
+                _ = ReloadAsync();
                 e.Handled = true;
                 break;
             case Key.W when textMode:

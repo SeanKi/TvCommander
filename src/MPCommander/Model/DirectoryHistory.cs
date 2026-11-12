@@ -4,9 +4,13 @@ namespace MPCommander.Model;
 
 public sealed record SmartEntry(string Path, int Visits, double DwellSeconds, bool Pinned);
 
+/// <summary>최근 폴더 하나: 경로와 떠난 시각(UTC)</summary>
+public sealed record RecentEntry(string Path, DateTime LeftUtc);
+
 /// <summary>
 /// 폴더 히스토리 (모든 패널 공용). MP-Commander.ini 에 저장된다.
-///  - 최근 폴더: 폴더를 떠날 때 맨 앞에 추가, MaxHistory 개까지
+///  - 최근 폴더: RecentMinSeconds 이상 머문 폴더를 떠날 때 (또는 끌 때) 맨 앞에 추가, MaxHistory 개까지.
+///    잠깐 스쳐 지나간 폴더(상위로 올라갔다 바로 내려가는 등)는 넣지 않는다.
 ///  - 스마트 히스토리: 머문 시간과 방문 횟수로 점수를 매겨 상위 SmartCount 개.
 ///    오래 안 간 폴더는 점수가 반감기(SmartHalfLifeDays)에 따라 줄어든다.
 ///  - 별표(★)로 직접 올린 폴더는 "고정"으로 항상 맨 앞에 나오고,
@@ -20,7 +24,8 @@ public sealed class DirectoryHistory
         "          SmartCount: 자주 머문 폴더 개수 (0~20, 0 이면 끔)\n" +
         "          SmartHalfLifeDays: 이 일수가 지나면 점수가 절반 (1~365)\n" +
         "          MaxDwellMinutesPerVisit: 한 번 방문에서 인정하는 최대 체류 시간 (1~600)\n" +
-        "[Recent], [Stats], [Pinned], [Excluded] 는 프로그램이 관리한다. Stats = 경로|방문수|체류초|마지막방문(UTC)\n" +
+        "          RecentMinSeconds: 이 초 이상 머문 폴더만 최근 폴더에 (0~3600, 0 이면 모두)\n" +
+        "[Recent] = 경로|떠난 시각(UTC), [Stats], [Pinned], [Excluded] 는 프로그램이 관리한다. Stats = 경로|방문수|체류초|마지막방문(UTC)\n" +
         "[Pinned] = 별표로 올린 폴더 (즐겨찾기 바 순서, 경로|설명), [Excluded] = 별표로 내려 자동 순위에서 뺀 폴더";
     private const int MaxExcluded = 500;
 
@@ -34,7 +39,7 @@ public sealed class DirectoryHistory
 
     private readonly string _file;
     private readonly IniFile _ini;
-    private readonly List<string> _recent = new();
+    private readonly List<RecentEntry> _recent = new();   // 최근에 떠난 것이 앞
     private readonly Dictionary<string, Stat> _stats = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<string> _pinned = new();   // 최근에 올린 것이 앞 (즐겨찾기 바 순서)
     private readonly Dictionary<string, string> _labels = new(StringComparer.OrdinalIgnoreCase);   // 즐겨찾기 설명
@@ -53,6 +58,14 @@ public sealed class DirectoryHistory
     public int SmartCount { get; private set; } = 5;
     public int SmartHalfLifeDays { get; private set; } = 14;
     public int MaxDwellMinutesPerVisit { get; private set; } = 30;
+    public const int DefaultRecentMinSeconds = 20;
+    private int _recentMinSeconds = DefaultRecentMinSeconds;
+    /// <summary>이 초 이상 머문 폴더만 최근 폴더에 넣는다 (0 = 모두)</summary>
+    public int RecentMinSeconds
+    {
+        get => _recentMinSeconds;
+        set => _recentMinSeconds = Math.Max(0, Math.Min(3600, value));
+    }
     private int MaxStats => Math.Max(200, MaxHistory * 4);
 
     public static string DefaultFile => Path.Combine(AppPaths.DataFolder, "MP-Commander.ini");
@@ -70,12 +83,19 @@ public sealed class DirectoryHistory
             SmartCount = ini.GetInt("History", "SmartCount", 5, 0, 20),
             SmartHalfLifeDays = ini.GetInt("History", "SmartHalfLifeDays", 14, 1, 365),
             MaxDwellMinutesPerVisit = ini.GetInt("History", "MaxDwellMinutesPerVisit", 30, 1, 600),
+            RecentMinSeconds = ini.GetInt("History", "RecentMinSeconds", DefaultRecentMinSeconds, 0, 3600),
         };
 
+        var recent = new List<RecentEntry>();
         foreach (var kv in ini.Section("Recent"))
-            if (kv.Value.Length > 0 && !h._recent.Contains(kv.Value, StringComparer.OrdinalIgnoreCase))
-                h._recent.Add(kv.Value);
-        if (h._recent.Count > h.MaxHistory) h._recent.RemoveRange(h.MaxHistory, h._recent.Count - h.MaxHistory);
+        {
+            // 경로|떠난 시각 ('|' 는 경로에 쓸 수 없다). 예전 파일은 경로만 (시각 모름)
+            var parts = kv.Value.Split(['|'], 2);
+            if (parts[0].Length == 0 || recent.Any(r => PathUtil.Same(r.Path, parts[0]))) continue;
+            var t = parts.Length > 1 && DateTime.TryParse(parts[1], CultureInfo.InvariantCulture,
+                        DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var lt) ? lt : DateTime.MinValue;
+            recent.Add(new RecentEntry(parts[0], t));
+        }
 
         foreach (var kv in ini.Section("Stats"))
         {
@@ -90,6 +110,10 @@ public sealed class DirectoryHistory
                     ? t : DateTime.UtcNow,
             };
         }
+
+        // 정리: 예전에 스쳐 지나가며 들어간 폴더 (모든 방문을 합쳐도 기준보다 짧게 머문 곳) 는 뺀다
+        h._recent.AddRange(recent.Where(r => h.RecentMinSeconds == 0 || !h._stats.TryGetValue(r.Path, out var st) || st.DwellSeconds >= h.RecentMinSeconds));
+        if (h._recent.Count > h.MaxHistory) h._recent.RemoveRange(h.MaxHistory, h._recent.Count - h.MaxHistory);
 
         foreach (var kv in ini.Section("Pinned"))
         {
@@ -113,10 +137,16 @@ public sealed class DirectoryHistory
         settings.Add(new("SmartCount", SmartCount.ToString()));
         settings.Add(new("SmartHalfLifeDays", SmartHalfLifeDays.ToString()));
         settings.Add(new("MaxDwellMinutesPerVisit", MaxDwellMinutesPerVisit.ToString()));
+        settings.Add(new("RecentMinSeconds", RecentMinSeconds.ToString()));
 
         var recent = _ini.Section("Recent");
         recent.Clear();
-        for (int i = 0; i < _recent.Count; i++) recent.Add(new((i + 1).ToString(), _recent[i]));
+        for (int i = 0; i < _recent.Count; i++)
+        {
+            var r = _recent[i];
+            recent.Add(new((i + 1).ToString(), r.LeftUtc == DateTime.MinValue ? r.Path
+                : r.Path + "|" + r.LeftUtc.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture)));
+        }
 
         var stats = _ini.Section("Stats");
         stats.Clear();
@@ -141,11 +171,15 @@ public sealed class DirectoryHistory
         catch { /* 히스토리 저장 실패는 치명적이지 않음 */ }
     }
 
-    /// <summary>떠난 폴더를 최근 목록 맨 앞에 넣는다.</summary>
-    public void AddRecent(string path)
+    /// <summary>
+    /// 떠난 폴더를 최근 목록 맨 앞에 넣는다. 이번에 머문 시간이 RecentMinSeconds 보다 짧으면 넣지 않는다
+    /// (이미 목록에 있던 폴더면 그 자리 그대로 — 스쳐 지나갔다고 지우지는 않는다).
+    /// </summary>
+    public void AddRecent(string path, TimeSpan dwell)
     {
-        _recent.RemoveAll(p => PathUtil.Same(p, path));
-        _recent.Insert(0, path);
+        if (dwell.TotalSeconds < RecentMinSeconds) return;
+        _recent.RemoveAll(r => PathUtil.Same(r.Path, path));
+        _recent.Insert(0, new RecentEntry(path, DateTime.UtcNow));
         if (_recent.Count > MaxHistory) _recent.RemoveRange(MaxHistory, _recent.Count - MaxHistory);
     }
 
@@ -268,12 +302,8 @@ public sealed class DirectoryHistory
         Changed?.Invoke();
     }
 
-    /// <summary>최근 폴더 (스마트 목록에 이미 있는 것은 뺀다)</summary>
-    public IReadOnlyList<string> GetRecent(IEnumerable<string>? exclude = null)
-    {
-        var ex = exclude?.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        return _recent.Where(p => ex == null || !ex.Contains(p)).ToList();
-    }
+    /// <summary>최근 폴더: 최근에 떠난 순서 그대로 (자주 머문 폴더에 있어도 빼지 않는다 — 순서가 끊기지 않게)</summary>
+    public IReadOnlyList<RecentEntry> GetRecent() => _recent.ToList();
 
     public void Clear()
     {

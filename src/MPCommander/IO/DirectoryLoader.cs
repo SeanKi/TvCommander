@@ -30,6 +30,12 @@ public static class DirectoryLoader
             throw new HostUnreachableException(host);
         ct.ThrowIfCancellationRequested();
 
+        if (PathUtil.IsServerOnly(path))
+        {
+            // "\\서버" = 공유 폴더 목록 (탐색기처럼). 숨김 공유(이름$)는 숨김 파일 보기일 때만
+            return await GuardedIo.RunAsync(_ => ListShares(path, showHidden), RemoteIdleTimeoutMs, path, ct);
+        }
+
         try
         {
             return await GuardedIo.RunAsync(ctx => Enumerate(path, showHidden, ctx, progress),
@@ -60,6 +66,49 @@ public static class DirectoryLoader
         int rc = NativeMethods.FmEnumDirectory(path, cb, IntPtr.Zero, ctx.CancelFlag, ctx.ProgressCounter);
         GC.KeepAlive(cb);
         if (rc != 0) throw Win32Errors.ToIOException(rc, path);
+        return list;
+    }
+
+    // ── 서버의 공유 목록 (NetShareEnum) ──
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct SHARE_INFO_1
+    {
+        public string shi1_netname;
+        public uint shi1_type;
+        public string shi1_remark;
+    }
+
+    [DllImport("netapi32.dll", CharSet = CharSet.Unicode)]
+    private static extern int NetShareEnum(string server, int level, out IntPtr buffer, int prefMaxLen, out int entriesRead, out int totalEntries, IntPtr resumeHandle);
+
+    [DllImport("netapi32.dll")]
+    private static extern int NetApiBufferFree(IntPtr buffer);
+
+    private const uint STYPE_MASK = 0xFF, STYPE_DISKTREE = 0, STYPE_SPECIAL = 0x80000000;
+
+    private static List<FileItem> ListShares(string server, bool showHidden)
+    {
+        int rc = NetShareEnum(server, 1, out var buf, -1, out int read, out _, IntPtr.Zero);
+        if (rc != 0) throw Win32Errors.ToIOException(rc, server);
+        var list = new List<FileItem>();
+        try
+        {
+            int size = Marshal.SizeOf<SHARE_INFO_1>();
+            for (int i = 0; i < read; i++)
+            {
+                var info = Marshal.PtrToStructure<SHARE_INFO_1>(buf + i * size);
+                if ((info.shi1_type & STYPE_MASK) != STYPE_DISKTREE) continue;            // 프린터·IPC$ 등은 빼고 폴더 공유만
+                bool hidden = (info.shi1_type & STYPE_SPECIAL) != 0 || info.shi1_netname.EndsWith("$");   // C$, ADMIN$ ...
+                if (hidden && !showHidden) continue;
+                list.Add(FileItem.FromNative(server, info.shi1_netname, 0, 0,
+                    (uint)(FileAttributes.Directory | (hidden ? FileAttributes.Hidden : 0))));
+            }
+        }
+        finally
+        {
+            NetApiBufferFree(buf);
+        }
         return list;
     }
 }
