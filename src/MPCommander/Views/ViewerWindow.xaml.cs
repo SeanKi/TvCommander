@@ -89,7 +89,7 @@ public partial class ViewerWindow : Window
 
         HitList.Items = _hits;
         HitList.VBar = HitBar;
-        HitList.RowChosen += i => _ = SelectAsync(i, 0, userAction: true);
+        HitList.RowChosen += i => _ = SelectAsync(i, 0, userAction: true, fromList: true);
         HitList.ContextMenu = HitListMenu();
         TextView.VBar = VBar;
         TextView.HBar = HBar;
@@ -456,7 +456,7 @@ public partial class ViewerWindow : Window
     // ───────────────────────── 이동 ─────────────────────────
 
     /// <summary>hitIndex 번째 찾은 줄의 matchIndex 번째 일치로 (matchIndex = -1 이면 마지막)</summary>
-    private async Task SelectAsync(int hitIndex, int matchIndex, bool userAction)
+    private async Task SelectAsync(int hitIndex, int matchIndex, bool userAction, bool fromList = false)
     {
         if (_source == null || hitIndex < 0 || hitIndex >= _hits.Count) return;
         if (userAction) _userMoved = true;
@@ -472,7 +472,8 @@ public partial class ViewerWindow : Window
         var (start, len) = matches[mi];
         TextView.ShowMatch(hit.Line, start, len);
 
-        HitList.SelectedIndex = hitIndex;
+        // 목록에서 사용자가 고른 것이면 목록 선택은 건드리지 않는다 (여러 줄 선택이 풀리지 않게)
+        if (!fromList) HitList.SelectedIndex = hitIndex;
         ShowDetail(text, matches, mi);
         UpdateFindCount();
     }
